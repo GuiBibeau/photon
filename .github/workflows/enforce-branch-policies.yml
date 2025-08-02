@@ -1,0 +1,126 @@
+name: Enforce Branch Protection Policies
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  enforce-squash-merge:
+    name: Enforce Squash Merge Policy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Check if PR is from squash merge
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            
+            const { data: commits } = await github.rest.pulls.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            
+            if (commits.length > 1 && pr.merge_commit_sha) {
+              core.setFailed('This PR has multiple commits. Please use squash merge when merging.');
+            }
+
+  enforce-up-to-date:
+    name: Enforce Up-to-Date Branch
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Check if branch is up-to-date with main
+        run: |
+          git fetch origin main
+          MAIN_LATEST=$(git rev-parse origin/main)
+          MERGE_BASE=$(git merge-base HEAD origin/main)
+          
+          if [ "$MERGE_BASE" != "$MAIN_LATEST" ]; then
+            echo "Branch is not up-to-date with main"
+            echo "Please rebase or merge the latest changes from main"
+            exit 1
+          else
+            echo "Branch is up-to-date with main"
+          fi
+
+  enforce-merge-method:
+    name: Enforce Squash Merge Method
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Add merge instructions
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Merge Requirements')
+            );
+            
+            const mergeMessage = `## Merge Requirements
+            
+            This repository enforces the following merge policies:
+            
+            ### Requirements
+            - **Squash Merge Required**: All PRs must be squash merged
+            - **Up-to-date Branch**: Branch must be up-to-date with main before merging
+            
+            ### How to fix
+            1. **Update your branch**: Run \`git pull origin main\` and resolve any conflicts
+            2. **Squash commits**: Use the "Squash and merge" option when merging
+            
+            ### Notes
+            - Multiple commits will be automatically squashed during merge
+            - Ensure your branch is rebased on the latest main branch`;
+            
+            if (!botComment) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: mergeMessage
+              });
+            }
+
+  validate-merge-commit:
+    name: Validate Merge Commit Structure
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if last merge was a squash
+        run: |
+          LAST_COMMIT_MSG=$(git log -1 --pretty=%B)
+          
+          if [[ $(git log -1 --pretty=%P | wc -w) -gt 1 ]]; then
+            echo "Last commit was not a squash merge"
+            echo "Please use squash merge for all PRs"
+            exit 1
+          else
+            echo "Last commit appears to be a squash merge"
+          fi
