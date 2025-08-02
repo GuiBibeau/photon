@@ -1,7 +1,7 @@
 {
   "name": "@photon/signers",
   "version": "0.0.0",
-  "description": "signers module for Photon SDK",
+  "description": "Signer utilities for Photon SDK",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -24,7 +24,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/guibibeau/solana-js-sdk.git",
+    "url": "https://github.com/GuiBibeau/photon.git",
     "directory": "packages/signers"
   },
   "license": "MIT",

@@ -1,7 +1,7 @@
 {
   "name": "@photon/sysvars",
   "version": "0.0.0",
-  "description": "sysvars module for Photon SDK",
+  "description": "System variables utilities for Photon SDK",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -24,7 +24,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/guibibeau/solana-js-sdk.git",
+    "url": "https://github.com/GuiBibeau/photon.git",
     "directory": "packages/sysvars"
   },
   "license": "MIT",

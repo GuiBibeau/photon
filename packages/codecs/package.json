@@ -1,7 +1,7 @@
 {
   "name": "@photon/codecs",
   "version": "0.0.0",
-  "description": "codecs module for Photon SDK",
+  "description": "Binary serialization codecs for Photon SDK",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -24,7 +24,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/guibibeau/solana-js-sdk.git",
+    "url": "https://github.com/GuiBibeau/photon.git",
     "directory": "packages/codecs"
   },
   "license": "MIT",
