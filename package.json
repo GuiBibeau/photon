@@ -5,7 +5,7 @@
   "description": "A lightweight, zero-dependency TypeScript SDK for Solana using Web Standards",
   "repository": {
     "type": "git",
-    "url": "https://github.com/guibibeau/solana-js-sdk.git"
+    "url": "https://github.com/GuiBibeau/photon.git"
   },
   "license": "MIT",
   "engines": {

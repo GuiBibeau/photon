@@ -4,8 +4,8 @@
 
 [![npm version](https://img.shields.io/npm/v/@photon/core.svg)](https://www.npmjs.com/package/@photon/core)
 [![Bundle Size](https://img.shields.io/bundlephobia/minzip/@photon/core)](https://bundlephobia.com/package/@photon/core)
-[![License](https://img.shields.io/npm/l/@photon/core.svg)](https://github.com/photon-sdk/photon/blob/main/LICENSE)
-[![CI](https://github.com/photon-sdk/photon/workflows/CI/badge.svg)](https://github.com/photon-sdk/photon/actions)
+[![License](https://img.shields.io/npm/l/@photon/core.svg)](https://github.com/GuiBibeau/photon/blob/main/LICENSE)
+[![CI](https://github.com/GuiBibeau/photon/workflows/CI/badge.svg)](https://github.com/GuiBibeau/photon/actions)
 
 ## Overview
 
@@ -295,7 +295,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ```bash
 # Clone the repo
-git clone https://github.com/photon-sdk/photon.git
+git clone https://github.com/GuiBibeau/photon.git
 
 # Install dependencies
 pnpm install
