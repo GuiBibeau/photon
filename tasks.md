@@ -34,7 +34,7 @@ Set up a pnpm workspace to manage multiple packages within the SDK. This will en
 - Configure root `package.json` with:
   - Workspace scripts for building all packages
   - Common devDependencies
-  - Node.js engine requirements (>=18)
+  - Node.js engine requirements (>=20)
 - Create initial folder structure with placeholder `package.json` files
 - Add `.gitignore` for node_modules and build artifacts
 
@@ -222,7 +222,7 @@ Set up GitHub Actions for continuous integration, ensuring code quality and test
 
 - Create `.github/workflows/ci.yml` with:
   - Trigger on push to main and all PRs
-  - Matrix testing (Node 18, 20, 21)
+  - Matrix testing (Node 20, 22, 24)
   - Steps for:
     - Checkout with submodules
     - pnpm setup with caching
