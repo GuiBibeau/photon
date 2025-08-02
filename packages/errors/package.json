@@ -1,0 +1,32 @@
+{
+  "name": "@photon/errors",
+  "version": "0.0.0",
+  "description": "Error handling utilities for Photon SDK",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "echo 'Build not yet configured'",
+    "test": "echo 'Tests not yet configured'",
+    "lint": "echo 'Linting not yet configured'",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/guibibeau/solana-js-sdk.git",
+    "directory": "packages/errors"
+  },
+  "license": "MIT",
+  "sideEffects": false
+}
