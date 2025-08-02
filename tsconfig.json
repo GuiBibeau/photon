@@ -1,0 +1,44 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@photon/errors": ["packages/errors/src"],
+      "@photon/errors/*": ["packages/errors/src/*"],
+      "@photon/codecs": ["packages/codecs/src"],
+      "@photon/codecs/*": ["packages/codecs/src/*"],
+      "@photon/crypto": ["packages/crypto/src"],
+      "@photon/crypto/*": ["packages/crypto/src/*"],
+      "@photon/addresses": ["packages/addresses/src"],
+      "@photon/addresses/*": ["packages/addresses/src/*"],
+      "@photon/rpc": ["packages/rpc/src"],
+      "@photon/rpc/*": ["packages/rpc/src/*"],
+      "@photon/rpc-subscriptions": ["packages/rpc-subscriptions/src"],
+      "@photon/rpc-subscriptions/*": ["packages/rpc-subscriptions/src/*"],
+      "@photon/signers": ["packages/signers/src"],
+      "@photon/signers/*": ["packages/signers/src/*"],
+      "@photon/sysvars": ["packages/sysvars/src"],
+      "@photon/sysvars/*": ["packages/sysvars/src/*"],
+      "@photon/transaction-messages": ["packages/transaction-messages/src"],
+      "@photon/transaction-messages/*": ["packages/transaction-messages/src/*"],
+      "@photon/transactions": ["packages/transactions/src"],
+      "@photon/transactions/*": ["packages/transactions/src/*"],
+      "@photon/accounts": ["packages/accounts/src"],
+      "@photon/accounts/*": ["packages/accounts/src/*"]
+    }
+  },
+  "references": [
+    { "path": "./packages/errors" },
+    { "path": "./packages/codecs" },
+    { "path": "./packages/crypto" },
+    { "path": "./packages/addresses" },
+    { "path": "./packages/rpc" },
+    { "path": "./packages/rpc-subscriptions" },
+    { "path": "./packages/signers" },
+    { "path": "./packages/sysvars" },
+    { "path": "./packages/transaction-messages" },
+    { "path": "./packages/transactions" },
+    { "path": "./packages/accounts" }
+  ],
+  "exclude": ["node_modules", "**/dist/**", "**/node_modules/**"]
+}
