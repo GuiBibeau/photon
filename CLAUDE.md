@@ -13,6 +13,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `tasks.md`: Detailed implementation roadmap with 60+ tasks across 8 epics
 - `TESTING.md`: Testing guidelines and configuration
 
+### Project Goals
+- **🪶 Lightweight**: Target ~15KB minified (vs ~300KB for @solana/web3.js)
+- **🌲 Tree-shakable**: Import only what you need
+- **🔒 Secure**: Uses native WebCrypto for all cryptographic operations
+- **🚀 Fast**: No polyfills, no legacy code, pure modern JavaScript
+- **📦 Zero Dependencies**: No external packages, just Web Standards
+- **🔧 Modular**: Compose exactly the functionality you need
+- **💪 Type-Safe**: Written in TypeScript with strict types
+
+### Target Environments
+- Chrome/Edge 92+, Firefox 91+, Safari 15+
+- Node.js 18+
+- Deno 1.25+
+- Cloudflare Workers and edge environments
+
 ## Architecture
 
 ### Current Monorepo Structure
@@ -61,10 +76,11 @@ pnpm test:packages     # Run tests in each package individually
 # Run tests for a specific package
 cd packages/[package-name] && pnpm test
 
-# Linting and formatting (not yet configured)
-pnpm lint
-pnpm lint:fix
-pnpm format
+# Linting and formatting
+pnpm lint              # Run ESLint on all packages
+pnpm lint:fix          # Auto-fix ESLint issues
+pnpm format            # Check code formatting with Prettier
+pnpm format:fix        # Auto-format code with Prettier
 
 # Type checking
 pnpm typecheck
@@ -75,8 +91,8 @@ pnpm dev               # Run all packages in watch mode
 # Clean build artifacts
 pnpm clean
 
-# Bundle size analysis (not yet configured)
-pnpm size
+# Bundle size analysis
+pnpm size              # Analyze bundle sizes (not yet implemented)
 ```
 
 ## Code Patterns
@@ -148,12 +164,23 @@ When implementing, follow the epic order from tasks.md:
 2. Add package.json with:
    - Name: `@photon/[package-name]`
    - Proper exports map for ESM/CJS
-   - Scripts matching other packages
-3. Create `tsconfig.json` extending base config
+   - Scripts: build, test, lint, format, typecheck, clean
+   - Main/module/types fields pointing to dist
+3. Create `tsconfig.json` extending `../../tsconfig.base.json`
 4. Create `tsup.config.ts` for build configuration
-5. Create `vitest.config.ts` extending shared config
+5. Create `vitest.config.ts` extending shared config:
+   ```typescript
+   import { defineConfig } from 'vitest/config';
+   import { sharedConfig } from '../../vitest.shared';
+   
+   export default defineConfig({
+     ...sharedConfig,
+     // Package-specific overrides if needed
+   });
+   ```
 6. Add initial `src/index.ts` file
 7. Create `tests/` directory for tests
+8. Update workspace aliases in `vitest.shared.ts` if needed
 
 ### Implementing a Feature
 1. Check tasks.md for requirements
@@ -210,3 +237,71 @@ Packages can depend on each other using workspace protocol:
 - **TypeScript**: Strict mode with composite projects
 - **Entry points**: Support for multiple entry points per package
 - **Tree-shaking**: Enabled via proper ESM exports
+
+## Code Quality Tools
+
+### ESLint Configuration
+- TypeScript ESLint with strict rules
+- Configured for monorepo with flat config (eslint.config.mjs)
+- Rules enforced:
+  - No explicit any
+  - Consistent type imports
+  - No non-null assertions
+  - Prefer const, template strings, arrow functions
+  - Import ordering and deduplication
+
+### Prettier Configuration
+- 100 character line width
+- Single quotes for strings
+- Trailing commas
+- 2-space indentation
+- Configured in `.prettierrc.json`
+
+### Git Hooks
+- Husky manages git hooks
+- Pre-commit: Runs lint-staged for automatic formatting and linting
+- Configured in `.husky/pre-commit` and `.lintstagedrc.json`
+
+## Testing Best Practices
+
+### Running a Single Test
+```bash
+# Run a specific test file
+pnpm test packages/errors/tests/example.test.ts
+
+# Run tests matching a pattern
+pnpm test -- --grep "should encode"
+
+# Run tests for a specific package in watch mode
+cd packages/errors && pnpm test:watch
+```
+
+### Test Coverage
+- View coverage report: `pnpm test:coverage`
+- HTML report generated in `coverage/index.html`
+- Critical packages (crypto, transactions) require 100% coverage
+- Coverage configured per-package in `vitest.config.ts`
+
+## Common Pitfalls
+
+1. **Import Paths**: Always use workspace protocol for internal dependencies
+2. **Test Environment**: Tests run in jsdom by default - use node environment for Node-specific tests
+3. **Bundle Size**: Check impact with build before adding any utility functions
+4. **Type Exports**: Ensure all types are properly exported from package index files
+
+## Development Workflow
+
+### Starting Development
+1. Install dependencies: `pnpm install`
+2. Build all packages: `pnpm build`
+3. Run tests to verify setup: `pnpm test`
+4. Start development in watch mode: `pnpm dev`
+
+### Before Committing
+- Code is automatically formatted and linted on commit via git hooks
+- Run `pnpm lint` and `pnpm format` to check manually
+- Ensure tests pass: `pnpm test`
+- Check types: `pnpm typecheck`
+
+### Package Publishing (Future)
+Packages will be published to npm under the `@photon` scope. Currently all packages are private.

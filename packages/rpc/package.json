@@ -29,9 +29,10 @@
     "test": "vitest run",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
-    "lint": "echo \"Linting not yet configured\"",
-    "lint:fix": "echo \"Linting not yet configured\"",
-    "format": "echo \"Formatting not yet configured\"",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "format": "prettier --check \"src/**/*.{ts,tsx}\"",
+    "format:fix": "prettier --write \"src/**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
     "size": "echo \"Size analysis not yet configured\""
