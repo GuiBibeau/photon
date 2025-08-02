@@ -10,7 +10,7 @@ Building a lightweight, zero-dependency TypeScript library for Solana that lever
 
 **Goal**: Establish a robust foundation with modern tooling for a production-ready SDK
 
-### SDK-2: Initialize pnpm monorepo workspace
+### SDK-2: Initialize pnpm monorepo workspace ✅
 
 **Priority**: Highest | **Story Points**: 2 | **Labels**: `setup`, `core`
 
@@ -48,7 +48,7 @@ packages:
 
 ---
 
-### SDK-3: Configure TypeScript settings
+### SDK-3: Configure TypeScript settings ✅
 
 **Priority**: Highest | **Story Points**: 2 | **Labels**: `setup`, `core`  
 **Dependencies**: SDK-2
@@ -60,7 +60,7 @@ Establish TypeScript configuration that enforces strict type safety while suppor
 
 - Create root `tsconfig.base.json` with:
   - `strict: true` for maximum type safety
-  - `target: "ES2022"` for modern JavaScript features
+  - `target: "ESNext"` for modern JavaScript features
   - `module: "ESNext"` for tree-shaking support
   - `moduleResolution: "bundler"` for modern resolution
 - Create package-specific `tsconfig.json` files that:
