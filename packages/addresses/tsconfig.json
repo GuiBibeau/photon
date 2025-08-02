@@ -7,8 +7,5 @@
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"],
-  "references": [
-    { "path": "../errors" },
-    { "path": "../crypto" }
-  ]
+  "references": [{ "path": "../errors" }, { "path": "../crypto" }]
 }

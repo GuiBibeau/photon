@@ -19,25 +19,25 @@ export const sharedConfig = defineConfig({
         '**/tests/**',
         '**/__tests__/**',
         '**/*.test.ts',
-        '**/*.spec.ts'
+        '**/*.spec.ts',
       ],
       thresholds: {
         lines: 80,
         functions: 80,
         branches: 80,
         statements: 80,
-        perFile: true
-      }
+        perFile: true,
+      },
     },
     include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts}'],
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
       '**/cypress/**',
-      '**/.{idea,git,cache,output,temp}/**'
+      '**/.{idea,git,cache,output,temp}/**',
     ],
     testTimeout: 10000,
-    hookTimeout: 10000
+    hookTimeout: 10000,
   },
   resolve: {
     alias: {
@@ -49,9 +49,12 @@ export const sharedConfig = defineConfig({
       '@photon/rpc-subscriptions': path.resolve(__dirname, './packages/rpc-subscriptions/src'),
       '@photon/signers': path.resolve(__dirname, './packages/signers/src'),
       '@photon/sysvars': path.resolve(__dirname, './packages/sysvars/src'),
-      '@photon/transaction-messages': path.resolve(__dirname, './packages/transaction-messages/src'),
+      '@photon/transaction-messages': path.resolve(
+        __dirname,
+        './packages/transaction-messages/src',
+      ),
       '@photon/transactions': path.resolve(__dirname, './packages/transactions/src'),
-      '@photon/accounts': path.resolve(__dirname, './packages/accounts/src')
-    }
-  }
+      '@photon/accounts': path.resolve(__dirname, './packages/accounts/src'),
+    },
+  },
 });
