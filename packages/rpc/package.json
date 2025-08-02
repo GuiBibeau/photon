@@ -2,25 +2,39 @@
   "name": "@photon/rpc",
   "version": "0.0.0",
   "description": "JSON-RPC client for Photon SDK",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js",
+      "require": "./dist/*.cjs"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "src",
+    "README.md"
   ],
   "scripts": {
-    "build": "echo 'Build not yet configured'",
-    "test": "echo 'Tests not yet configured'",
-    "lint": "echo 'Linting not yet configured'",
+    "build": "tsup",
+    "build:watch": "tsup --watch",
+    "dev": "tsup --watch",
+    "test": "echo \"No tests yet\"",
+    "test:watch": "echo \"No tests yet\"",
+    "test:coverage": "echo \"No tests yet\"",
+    "lint": "echo \"Linting not yet configured\"",
+    "lint:fix": "echo \"Linting not yet configured\"",
+    "format": "echo \"Formatting not yet configured\"",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "size": "echo \"Size analysis not yet configured\""
   },
   "repository": {
     "type": "git",
@@ -28,5 +42,8 @@
     "directory": "packages/rpc"
   },
   "license": "MIT",
-  "sideEffects": false
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  }
 }
