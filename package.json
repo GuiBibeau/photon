@@ -13,9 +13,13 @@
   },
   "scripts": {
     "build": "pnpm -r build",
-    "test": "pnpm -r test",
-    "test:watch": "pnpm -r test:watch",
-    "test:coverage": "pnpm -r test:coverage",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "test:packages": "pnpm -r test",
+    "test:packages:watch": "pnpm -r test:watch",
+    "test:packages:coverage": "pnpm -r test:coverage",
     "lint": "pnpm -r lint",
     "lint:fix": "pnpm -r lint:fix",
     "format": "pnpm -r format",
@@ -25,7 +29,12 @@
     "size": "pnpm -r size"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/ui": "^3.2.4",
+    "happy-dom": "^18.0.1",
+    "jsdom": "^26.1.0",
     "tsup": "^8.5.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^3.2.4"
   }
 }

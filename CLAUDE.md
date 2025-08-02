@@ -6,30 +6,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Photon SDK** - A lightweight, zero-dependency Solana SDK alternative to @solana/web3.js (15KB vs 300KB).
 
-**Current Status**: Planning phase - implementation has not started yet. The repository contains comprehensive planning documents.
+**Current Status**: Early implementation phase. Project setup and testing framework configured. Core implementation follows the roadmap in `tasks.md`.
 
 **Key Documents**:
 - `README.md`: Public-facing documentation and API design
 - `tasks.md`: Detailed implementation roadmap with 60+ tasks across 8 epics
+- `TESTING.md`: Testing guidelines and configuration
 
 ## Architecture
 
-### Monorepo Structure (Planned)
+### Current Monorepo Structure
 ```
 photon/
 ├── packages/
-│   ├── core/           # Ed25519, X25519, transactions, addresses
-│   ├── rpc/            # JSON-RPC client
-│   ├── programs/       # Program-specific clients
-│   ├── crypto/         # WebCrypto utilities
-│   ├── codecs/         # Serialization/deserialization
-│   ├── actions/        # Solana Actions & Blinks
-│   ├── wallet/         # Wallet Standard integration
-│   ├── mobile/         # Mobile Wallet Adapter
-│   ├── qr/             # QR code generation
-│   └── utils/          # Shared utilities
-└── apps/
-    └── playground/     # Interactive demo
+│   ├── accounts/              # Account fetching and parsing
+│   ├── addresses/             # Base58 encoding, address validation
+│   ├── codecs/                # Binary serialization/deserialization
+│   ├── crypto/                # WebCrypto Ed25519 operations
+│   ├── errors/                # Error handling utilities
+│   ├── rpc/                   # JSON-RPC client
+│   ├── rpc-subscriptions/     # WebSocket subscriptions
+│   ├── signers/               # Transaction signing abstraction
+│   ├── sysvars/               # System variable utilities
+│   ├── transaction-messages/  # Transaction message building
+│   └── transactions/          # Transaction creation and signing
+├── vitest.shared.ts           # Shared Vitest configuration
+├── vitest.workspace.ts        # Vitest workspace setup
+└── tsconfig.base.json         # Base TypeScript configuration
 ```
 
 ### Design Principles
@@ -41,28 +44,38 @@ photon/
 
 ## Development Commands
 
-Since implementation hasn't started, here are the planned development commands:
-
 ```bash
-# Install dependencies (when package.json exists)
+# Install dependencies
 pnpm install
 
 # Build all packages
 pnpm build
 
-# Run tests
-pnpm test
-pnpm test:unit
-pnpm test:integration
+# Testing
+pnpm test              # Run all tests using Vitest workspace
+pnpm test:watch        # Run tests in watch mode
+pnpm test:coverage     # Run tests with coverage report
+pnpm test:ui           # Open Vitest UI
+pnpm test:packages     # Run tests in each package individually
 
-# Linting and formatting
+# Run tests for a specific package
+cd packages/[package-name] && pnpm test
+
+# Linting and formatting (not yet configured)
 pnpm lint
+pnpm lint:fix
 pnpm format
 
 # Type checking
 pnpm typecheck
 
-# Bundle size analysis
+# Development
+pnpm dev               # Run all packages in watch mode
+
+# Clean build artifacts
+pnpm clean
+
+# Bundle size analysis (not yet configured)
 pnpm size
 ```
 
@@ -102,10 +115,21 @@ const keyPair = await crypto.subtle.generateKey(
 ```
 
 ## Testing Strategy
-- Unit tests for all utilities and pure functions
-- Integration tests for RPC interactions
-- Use native Node.js test runner (no Jest)
-- Mock WebCrypto when necessary for Node.js compatibility
+
+### Framework
+- **Test Runner**: Vitest v3.2.4 with workspace configuration
+- **Test Environment**: jsdom for browser API compatibility
+- **Coverage**: V8 provider with 80% default threshold, 100% for crypto/transactions
+
+### Test Organization
+- Place tests in `packages/[package-name]/tests/*.test.ts`
+- Each package has its own `vitest.config.ts` extending shared configuration
+- Use `import { describe, it, expect } from 'vitest'` for test structure
+
+### Coverage Requirements
+- Default packages: 80% coverage for lines, functions, branches, statements
+- Critical packages (crypto, transactions): 100% coverage required
+- Coverage reports available in text, lcov, and html formats
 
 ## Implementation Priorities
 
@@ -121,10 +145,15 @@ When implementing, follow the epic order from tasks.md:
 
 ### Adding a New Package
 1. Create directory under `packages/`
-2. Add package.json with proper exports map
-3. Ensure zero dependencies
-4. Add to workspace configuration
-5. Export from root package
+2. Add package.json with:
+   - Name: `@photon/[package-name]`
+   - Proper exports map for ESM/CJS
+   - Scripts matching other packages
+3. Create `tsconfig.json` extending base config
+4. Create `tsup.config.ts` for build configuration
+5. Create `vitest.config.ts` extending shared config
+6. Add initial `src/index.ts` file
+7. Create `tests/` directory for tests
 
 ### Implementing a Feature
 1. Check tasks.md for requirements
@@ -153,3 +182,31 @@ When implementing, follow the epic order from tasks.md:
 - Validate all external inputs
 - Follow Solana security best practices
 - Clear sensitive data from memory when possible
+
+## Package Dependencies
+
+### Internal Dependencies
+Packages can depend on each other using workspace protocol:
+```json
+"dependencies": {
+  "@photon/errors": "workspace:*"
+}
+```
+
+### Package Hierarchy (dependency order)
+1. `errors` - Base error handling (no deps)
+2. `codecs` - Serialization primitives (depends on errors)
+3. `crypto` - Cryptographic operations (depends on errors)
+4. `addresses` - Address handling (depends on errors, crypto)
+5. `signers` - Signing abstraction (depends on errors, addresses)
+6. `rpc` - RPC client (depends on errors, addresses)
+7. `transaction-messages` - Message building (depends on all above)
+8. `transactions` - Full transactions (depends on all above)
+
+## Build System
+
+- **Bundler**: tsup (ESBuild-based)
+- **Output formats**: ESM and CJS
+- **TypeScript**: Strict mode with composite projects
+- **Entry points**: Support for multiple entry points per package
+- **Tree-shaking**: Enabled via proper ESM exports
