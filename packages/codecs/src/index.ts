@@ -22,3 +22,27 @@ export {
   assertSufficientBytes,
   assertValidOffset,
 } from './errors.js';
+
+// Primitive codecs
+export {
+  // Numeric
+  u8,
+  u16,
+  u32,
+  u64,
+  i8,
+  i16,
+  i32,
+  i64,
+  // Bytes
+  fixedBytes,
+  bytes,
+  bytesWithCustomSize,
+  publicKey,
+  // String
+  string,
+  stringWithCustomSize,
+  fixedString,
+  // Boolean
+  boolean,
+} from './primitives/index.js';
