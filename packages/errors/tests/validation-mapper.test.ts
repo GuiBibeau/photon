@@ -63,6 +63,13 @@ describe('Validation Mapper', () => {
         expect(error.context?.length).toBe(10);
       });
 
+      it('should create length error with default length when no number found', () => {
+        const error = createAddressValidationError('addr', 'Invalid length: no numbers');
+
+        expect(error.code).toBe('INVALID_ADDRESS_LENGTH');
+        expect(error.context?.length).toBe(0);
+      });
+
       it('should create format error for format-related reasons', () => {
         const formatReasons = [
           'Invalid format',
@@ -130,6 +137,13 @@ describe('Validation Mapper', () => {
 
         expect(error.code).toBe('INVALID_SIGNATURE_LENGTH');
         expect(error.context?.length).toBe(32);
+      });
+
+      it('should create length error with default length when no number found', () => {
+        const error = createSignatureValidationError('sig', 'Invalid length: no numbers');
+
+        expect(error.code).toBe('INVALID_SIGNATURE_LENGTH');
+        expect(error.context?.length).toBe(0);
       });
 
       it('should create format error for format-related reasons', () => {

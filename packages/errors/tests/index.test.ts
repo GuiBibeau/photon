@@ -68,4 +68,111 @@ describe('Error Module Exports', () => {
     expect(addressError.code).toBe('INVALID_ADDRESS');
     expect(addressError.context?.address).toBe('test-address');
   });
+
+  describe('Error Code Mapping Accuracy', () => {
+    it('should have consistent error code values', () => {
+      // Verify that each error code maps to itself
+      Object.entries(SolanaErrorCodes).forEach(([key, value]) => {
+        expect(value).toBe(key);
+      });
+    });
+
+    it('should support all error codes for SolanaError construction', () => {
+      // Test that all error codes can be used to create SolanaError instances
+      Object.values(SolanaErrorCodes).forEach((code) => {
+        const error = new SolanaError(code);
+        expect(error.code).toBe(code);
+        expect(error.message).toBeTruthy();
+        expect(error.message.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should categorize error codes correctly', () => {
+      const originalCodes = [
+        'INVALID_KEYPAIR',
+        'INVALID_ADDRESS',
+        'RPC_ERROR',
+        'TRANSACTION_FAILED',
+        'INSUFFICIENT_BALANCE',
+      ];
+
+      const rpcCodes = [
+        'RPC_PARSE_ERROR',
+        'RPC_INVALID_REQUEST',
+        'RPC_METHOD_NOT_FOUND',
+        'RPC_INVALID_PARAMS',
+        'RPC_INTERNAL_ERROR',
+        'RPC_SERVER_ERROR',
+        'RPC_TRANSACTION_PRECOMPILE_VERIFICATION_FAILURE',
+        'RPC_BLOCKHASH_NOT_FOUND',
+        'RPC_SLOT_SKIPPED',
+        'RPC_NO_HEALTHY_CONNECTION',
+      ];
+
+      const validationCodes = [
+        'INVALID_SIGNATURE',
+        'INVALID_SIGNATURE_LENGTH',
+        'INVALID_ADDRESS_LENGTH',
+        'INVALID_ADDRESS_FORMAT',
+        'TRANSACTION_TOO_LARGE',
+        'INSUFFICIENT_SIGNATURES',
+        'DUPLICATE_SIGNATURE',
+        'INVALID_ACCOUNT_INDEX',
+        'INVALID_INSTRUCTION_DATA',
+      ];
+
+      const networkCodes = ['NETWORK_ERROR', 'TIMEOUT_ERROR', 'CONNECTION_ERROR'];
+
+      const simulationCodes = [
+        'SIMULATION_FAILED',
+        'PREFLIGHT_FAILURE',
+        'ACCOUNT_NOT_FOUND',
+        'PROGRAM_ERROR',
+      ];
+
+      // Verify all codes are accounted for
+      const allExpectedCodes = [
+        ...originalCodes,
+        ...rpcCodes,
+        ...validationCodes,
+        ...networkCodes,
+        ...simulationCodes,
+      ];
+
+      const actualCodes = Object.keys(SolanaErrorCodes);
+      expect(actualCodes.sort()).toEqual(allExpectedCodes.sort());
+    });
+
+    it('should generate appropriate error messages for each code category', () => {
+      // Test RPC errors contain appropriate terms in message
+      const rpcCodes = Object.keys(SolanaErrorCodes).filter((code) => code.startsWith('RPC_'));
+      rpcCodes.forEach((code) => {
+        const error = new SolanaError(code as any);
+        expect(error.message.toLowerCase()).toMatch(
+          /rpc|request|server|internal|parse|method|param|transaction|blockhash|slot|connection|precompile|verification/,
+        );
+      });
+
+      // Test validation errors are descriptive
+      const validationCodes = [
+        'INVALID_SIGNATURE',
+        'INVALID_ADDRESS',
+        'TRANSACTION_TOO_LARGE',
+        'INSUFFICIENT_SIGNATURES',
+      ];
+      validationCodes.forEach((code) => {
+        const error = new SolanaError(code as any);
+        expect(error.message.toLowerCase()).toMatch(
+          /invalid|insufficient|signature|address|transaction|large/,
+        );
+      });
+
+      // Test network errors mention network/connection
+      const networkCodes = ['NETWORK_ERROR', 'TIMEOUT_ERROR', 'CONNECTION_ERROR'];
+      networkCodes.forEach((code) => {
+        const error = new SolanaError(code as any);
+        expect(error.message.toLowerCase()).toMatch(/network|timeout|connection/);
+      });
+    });
+  });
 });
