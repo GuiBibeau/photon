@@ -372,6 +372,68 @@ export const ERROR_RECOVERY_MAP: Record<SolanaErrorCode, ErrorRecovery> = {
       'Refer to the program documentation',
     ],
   },
+
+  // Cryptographic errors
+  CRYPTO_NOT_SUPPORTED: {
+    error: 'CRYPTO_NOT_SUPPORTED',
+    description: 'The required cryptographic operation is not supported in this environment.',
+    suggestions: [
+      'Use a modern browser that supports WebCrypto API',
+      'Ensure your browser supports Ed25519 operations',
+      'Update your browser to the latest version',
+      'Check if running in a secure context (HTTPS)',
+      'Consider using a Node.js environment with crypto support',
+    ],
+    references: [
+      'https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API',
+      'https://caniuse.com/cryptography',
+    ],
+  },
+
+  KEY_GENERATION_FAILED: {
+    error: 'KEY_GENERATION_FAILED',
+    description: 'Failed to generate cryptographic keys.',
+    suggestions: [
+      'Retry the key generation operation',
+      'Check browser console for detailed error messages',
+      'Ensure the browser supports Ed25519 key generation',
+      'Try in a different browser or environment',
+      'Check if the environment has sufficient entropy',
+    ],
+  },
+
+  INVALID_KEY_OPTIONS: {
+    error: 'INVALID_KEY_OPTIONS',
+    description: 'The provided key generation options are invalid.',
+    suggestions: [
+      'Check that options parameter is an object',
+      'Verify extractable flag is a boolean if provided',
+      'Remove any unsupported option properties',
+      'Use default options if unsure about requirements',
+    ],
+  },
+
+  KEY_EXTRACTION_FAILED: {
+    error: 'KEY_EXTRACTION_FAILED',
+    description: 'Failed to extract key material from the cryptographic key.',
+    suggestions: [
+      'Ensure the key was generated as extractable if extraction is needed',
+      'Check that you have permission to extract the key',
+      'Verify the key is in the correct format',
+      'Try regenerating the key with extractable: true',
+    ],
+  },
+
+  INVALID_KEY_TYPE: {
+    error: 'INVALID_KEY_TYPE',
+    description: 'The provided key type or format is invalid.',
+    suggestions: [
+      'Ensure you are providing a valid CryptoKeyPair',
+      'Check that both private and public keys are present',
+      'Verify the key algorithm is Ed25519',
+      'Make sure the key has the correct usage permissions',
+    ],
+  },
 } as const;
 
 /**
