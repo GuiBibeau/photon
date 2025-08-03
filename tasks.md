@@ -474,7 +474,7 @@ Thorough testing of all codec implementations, including edge cases and composit
 
 **Goal**: Implement all cryptographic operations using WebCrypto API
 
-### SDK-17: Implement Ed25519 key generation
+### SDK-17: Implement Ed25519 key generation ✅
 
 **Priority**: Highest | **Story Points**: 3 | **Labels**: `feature`, `crypto`  
 **Dependencies**: SDK-3
@@ -520,7 +520,7 @@ export async function generateKeyPair(options?: {
 
 ---
 
-### SDK-18: Build message signing functionality
+### SDK-18: Build message signing functionality 
 
 **Priority**: Highest | **Story Points**: 3 | **Labels**: `feature`, `crypto`  
 **Dependencies**: SDK-17
