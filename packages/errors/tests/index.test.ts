@@ -52,6 +52,13 @@ describe('Error Module Exports', () => {
       PREFLIGHT_FAILURE: 'PREFLIGHT_FAILURE',
       ACCOUNT_NOT_FOUND: 'ACCOUNT_NOT_FOUND',
       PROGRAM_ERROR: 'PROGRAM_ERROR',
+
+      // Cryptographic errors
+      CRYPTO_NOT_SUPPORTED: 'CRYPTO_NOT_SUPPORTED',
+      KEY_GENERATION_FAILED: 'KEY_GENERATION_FAILED',
+      INVALID_KEY_OPTIONS: 'INVALID_KEY_OPTIONS',
+      KEY_EXTRACTION_FAILED: 'KEY_EXTRACTION_FAILED',
+      INVALID_KEY_TYPE: 'INVALID_KEY_TYPE',
     });
   });
 
@@ -130,6 +137,14 @@ describe('Error Module Exports', () => {
         'PROGRAM_ERROR',
       ];
 
+      const cryptoCodes = [
+        'CRYPTO_NOT_SUPPORTED',
+        'KEY_GENERATION_FAILED',
+        'INVALID_KEY_OPTIONS',
+        'KEY_EXTRACTION_FAILED',
+        'INVALID_KEY_TYPE',
+      ];
+
       // Verify all codes are accounted for
       const allExpectedCodes = [
         ...originalCodes,
@@ -137,6 +152,7 @@ describe('Error Module Exports', () => {
         ...validationCodes,
         ...networkCodes,
         ...simulationCodes,
+        ...cryptoCodes,
       ];
 
       const actualCodes = Object.keys(SolanaErrorCodes);
