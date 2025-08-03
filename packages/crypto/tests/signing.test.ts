@@ -157,7 +157,7 @@ describe('Message Signing', () => {
       result.signatures.forEach((signature) => {
         expect(signature).toBeInstanceOf(Uint8Array);
         expect(signature).toBeDefined();
-        expect(signature?.length).toBe(64);
+        expect(signature.length).toBe(64);
       });
     });
 
@@ -521,8 +521,8 @@ describe('Message Signing', () => {
 
       it('should reject signatures from wrong keys', async () => {
         const otherKeyPair = await generateKeyPair({ extractable: true });
-        const signature = await signBytes(otherKeyPair.cryptoKeyPair.privateKey, testMessage);
-        const isValid = await verifySignature(publicKey, testMessage, signature);
+        const _signature = await signBytes(otherKeyPair.cryptoKeyPair.privateKey, testMessage);
+        const isValid = await verifySignature(publicKey, testMessage, _signature);
 
         expect(isValid).toBe(false);
       });
@@ -617,7 +617,7 @@ describe('Message Signing', () => {
       });
 
       it('should respect validateInputs option', async () => {
-        const signature = await signBytes(privateKey, testMessage);
+        const _signature = await signBytes(privateKey, testMessage);
 
         // Should still return false for invalid signature even with validation disabled
         const invalidSig = new Uint8Array(64).fill(0) as Signature;
