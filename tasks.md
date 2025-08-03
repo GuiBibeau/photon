@@ -373,7 +373,7 @@ export interface Codec<T> {
 
 ---
 
-### SDK-13: Implement primitive codecs
+### SDK-13: Implement primitive codecs ✅
 
 **Priority**: Highest | **Story Points**: 5 | **Labels**: `feature`, `codecs`  
 **Dependencies**: SDK-12
@@ -403,7 +403,7 @@ Build codecs for all primitive types used in Solana, ensuring correct endianness
 
 ---
 
-### SDK-14: Create composite codec utilities
+### SDK-14: Create composite codec utilities ✅
 
 **Priority**: High | **Story Points**: 5 | **Labels**: `feature`, `codecs`  
 **Dependencies**: SDK-13
@@ -447,7 +447,7 @@ const tokenAccountCodec = struct({
 
 ---
 
-### SDK-15: Write codec module tests
+### SDK-15: Write codec module tests ✅
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `test`, `codecs`  
 **Dependencies**: SDK-14
