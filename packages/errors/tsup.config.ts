@@ -1,7 +1,16 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/index.ts'],
+  entry: {
+    index: 'src/index.ts',
+    codes: 'src/codes.ts',
+    error: 'src/error.ts',
+    factories: 'src/factories.ts',
+    'rpc-mapper': 'src/rpc-mapper.ts',
+    'validation-mapper': 'src/validation-mapper.ts',
+    enhancer: 'src/enhancer.ts',
+    recovery: 'src/recovery.ts',
+  },
   format: ['esm', 'cjs'],
   dts: false,
   splitting: true,
