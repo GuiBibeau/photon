@@ -210,7 +210,7 @@ Configure ESLint and Prettier to maintain consistent code quality and formatting
 
 ---
 
-### SDK-7: Configure CI/CD pipeline
+### SDK-7: Configure CI/CD pipeline ✅
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `setup`, `core`, `ci`  
 **Dependencies**: SDK-5
@@ -245,7 +245,7 @@ Set up GitHub Actions for continuous integration, ensuring code quality and test
 
 **Goal**: Build the foundational error handling and serialization systems
 
-### SDK-9: Implement SolanaError class
+### SDK-9: Implement SolanaError class ✅
 
 **Priority**: Highest | **Story Points**: 2 | **Labels**: `feature`, `errors`  
 **Dependencies**: SDK-3

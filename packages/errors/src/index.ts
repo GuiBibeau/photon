@@ -1,5 +1,14 @@
-// Test exports for tree-shaking verification
-export const usedFunction = () => 'This function is used';
-export const unusedFunction = () => 'This function is not used';
-export const USED_CONSTANT = 'USED';
-export const UNUSED_CONSTANT = 'UNUSED';
+// Export error codes
+export { SolanaErrorCodes } from './codes';
+export type { SolanaErrorCode } from './codes';
+
+// Export main error class
+export { SolanaError } from './error';
+
+// Export factory methods
+export { SolanaErrorFactory } from './factories';
+
+// Re-export everything for convenience
+export * from './codes';
+export * from './error';
+export * from './factories';
