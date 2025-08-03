@@ -86,3 +86,139 @@ export interface CryptoCompatibility {
    */
   message: string;
 }
+
+/**
+ * Options for signing operations.
+ */
+export interface SigningOptions {
+  /**
+   * Whether to validate inputs before signing.
+   * @default true
+   */
+  validateInputs?: boolean;
+}
+
+/**
+ * Options for batch signing operations.
+ */
+export interface BatchSigningOptions extends SigningOptions {
+  /**
+   * Whether to fail fast on the first error or collect all results.
+   * @default false
+   */
+  failFast?: boolean;
+
+  /**
+   * Maximum number of concurrent signing operations.
+   * @default 10
+   */
+  maxConcurrency?: number;
+}
+
+/**
+ * Result of a batch signing operation.
+ */
+export interface BatchSigningResult {
+  /**
+   * Successfully generated signatures, indexed by the input array position.
+   */
+  signatures: (Signature | null)[];
+
+  /**
+   * Errors that occurred during signing, indexed by the input array position.
+   */
+  errors: (Error | null)[];
+
+  /**
+   * Number of successful signatures.
+   */
+  successCount: number;
+
+  /**
+   * Number of failed signatures.
+   */
+  errorCount: number;
+}
+
+/**
+ * Options for signature verification operations.
+ */
+export interface VerificationOptions {
+  /**
+   * Whether to validate inputs before verification.
+   * @default true
+   */
+  validateInputs?: boolean;
+}
+
+/**
+ * Options for batch verification operations.
+ */
+export interface BatchVerificationOptions extends VerificationOptions {
+  /**
+   * Whether to fail fast on the first error or collect all results.
+   * @default false
+   */
+  failFast?: boolean;
+
+  /**
+   * Maximum number of concurrent verification operations.
+   * @default 10
+   */
+  maxConcurrency?: number;
+}
+
+/**
+ * Result of a batch verification operation.
+ */
+export interface BatchVerificationResult {
+  /**
+   * Verification results, indexed by the input array position.
+   */
+  results: (boolean | null)[];
+
+  /**
+   * Errors that occurred during verification, indexed by the input array position.
+   */
+  errors: (Error | null)[];
+
+  /**
+   * Number of successful verifications (true results).
+   */
+  validCount: number;
+
+  /**
+   * Number of failed verifications (false results).
+   */
+  invalidCount: number;
+
+  /**
+   * Number of verification errors.
+   */
+  errorCount: number;
+}
+
+/**
+ * Supported public key formats for verification.
+ */
+export type PublicKeyInput = CryptoKey | Uint8Array | Address;
+
+/**
+ * A verification item for batch operations.
+ */
+export interface VerificationItem {
+  /**
+   * The public key to verify against.
+   */
+  publicKey: PublicKeyInput;
+
+  /**
+   * The message that was signed.
+   */
+  message: Uint8Array;
+
+  /**
+   * The signature to verify.
+   */
+  signature: Signature;
+}
