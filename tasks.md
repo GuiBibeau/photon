@@ -6,7 +6,7 @@ Building a lightweight, zero-dependency TypeScript library for Solana that lever
 
 ---
 
-## Epic 1: Project Setup & Infrastructure
+## Epic 1: Project Setup & Infrastructure ✅
 
 **Goal**: Establish a robust foundation with modern tooling for a production-ready SDK
 
@@ -290,7 +290,7 @@ export class SolanaError extends Error {
 
 ---
 
-### SDK-10: Create error mapping utilities
+### SDK-10: Create error mapping utilities ✅
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `errors`  
 **Dependencies**: SDK-9
