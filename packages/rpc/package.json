@@ -23,7 +23,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && tsc --emitDeclarationOnly",
     "build:watch": "tsup --watch",
     "dev": "tsup --watch",
     "test": "vitest run",

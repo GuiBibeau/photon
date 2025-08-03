@@ -1,24 +1,35 @@
 import { describe, it, expect } from 'vitest';
-import { usedFunction, unusedFunction, USED_CONSTANT, UNUSED_CONSTANT } from '../src/index';
+import { SolanaError, SolanaErrorCodes, SolanaErrorFactory } from '../src/index';
 
 describe('Error Module Exports', () => {
-  it('should export usedFunction correctly', () => {
-    expect(usedFunction()).toBe('This function is used');
-    expect(typeof usedFunction).toBe('function');
+  it('should export SolanaError correctly', () => {
+    expect(typeof SolanaError).toBe('function');
+    const error = new SolanaError('INVALID_KEYPAIR');
+    expect(error).toBeInstanceOf(SolanaError);
+    expect(error.code).toBe('INVALID_KEYPAIR');
   });
 
-  it('should export unusedFunction correctly', () => {
-    expect(unusedFunction()).toBe('This function is not used');
-    expect(typeof unusedFunction).toBe('function');
+  it('should export SolanaErrorCodes correctly', () => {
+    expect(SolanaErrorCodes).toEqual({
+      INVALID_KEYPAIR: 'INVALID_KEYPAIR',
+      INVALID_ADDRESS: 'INVALID_ADDRESS',
+      RPC_ERROR: 'RPC_ERROR',
+      TRANSACTION_FAILED: 'TRANSACTION_FAILED',
+      INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
+    });
   });
 
-  it('should export USED_CONSTANT correctly', () => {
-    expect(USED_CONSTANT).toBe('USED');
-    expect(typeof USED_CONSTANT).toBe('string');
+  it('should export SolanaErrorFactory correctly', () => {
+    expect(typeof SolanaErrorFactory.invalidAddress).toBe('function');
+    expect(typeof SolanaErrorFactory.rpcError).toBe('function');
+    expect(typeof SolanaErrorFactory.invalidKeypair).toBe('function');
+    expect(typeof SolanaErrorFactory.transactionFailed).toBe('function');
+    expect(typeof SolanaErrorFactory.insufficientBalance).toBe('function');
   });
 
-  it('should export UNUSED_CONSTANT correctly', () => {
-    expect(UNUSED_CONSTANT).toBe('UNUSED');
-    expect(typeof UNUSED_CONSTANT).toBe('string');
+  it('should create errors using factory methods', () => {
+    const addressError = SolanaErrorFactory.invalidAddress('test-address');
+    expect(addressError.code).toBe('INVALID_ADDRESS');
+    expect(addressError.context?.address).toBe('test-address');
   });
 });
