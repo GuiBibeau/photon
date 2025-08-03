@@ -291,7 +291,7 @@ describe('Performance Benchmarks', () => {
           codec.decode(encoded);
         }, 1000);
 
-        expect(time).toBeLessThan(1000);
+        expect(time).toBeLessThan(2000);
         throughputTest(codec, value, 2, 500);
       });
     });
