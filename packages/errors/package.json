@@ -11,10 +11,40 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
-    "./*": {
-      "types": "./dist/*.d.ts",
-      "import": "./dist/*.js",
-      "require": "./dist/*.cjs"
+    "./codes": {
+      "types": "./dist/codes.d.ts",
+      "import": "./dist/codes.js",
+      "require": "./dist/codes.cjs"
+    },
+    "./error": {
+      "types": "./dist/error.d.ts",
+      "import": "./dist/error.js",
+      "require": "./dist/error.cjs"
+    },
+    "./factories": {
+      "types": "./dist/factories.d.ts",
+      "import": "./dist/factories.js",
+      "require": "./dist/factories.cjs"
+    },
+    "./rpc-mapper": {
+      "types": "./dist/rpc-mapper.d.ts",
+      "import": "./dist/rpc-mapper.js",
+      "require": "./dist/rpc-mapper.cjs"
+    },
+    "./validation-mapper": {
+      "types": "./dist/validation-mapper.d.ts",
+      "import": "./dist/validation-mapper.js",
+      "require": "./dist/validation-mapper.cjs"
+    },
+    "./enhancer": {
+      "types": "./dist/enhancer.d.ts",
+      "import": "./dist/enhancer.js",
+      "require": "./dist/enhancer.cjs"
+    },
+    "./recovery": {
+      "types": "./dist/recovery.d.ts",
+      "import": "./dist/recovery.js",
+      "require": "./dist/recovery.cjs"
     }
   },
   "files": [

@@ -61,12 +61,3 @@ export {
   ERROR_RECOVERY_MAP,
 } from './recovery';
 export type { ErrorRecovery } from './recovery';
-
-// Re-export everything for convenience
-export * from './codes';
-export * from './error';
-export * from './factories';
-export * from './rpc-mapper';
-export * from './validation-mapper';
-export * from './enhancer';
-export * from './recovery';
