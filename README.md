@@ -9,7 +9,7 @@
 
 ## Overview
 
-Photon is a modern, lightweight alternative to `@solana/web3.js` built from the ground up with zero dependencies. It leverages native Web Standards like WebCrypto API, fetch, and WebSocket to provide a minimal, tree-shakable SDK that works in browsers, Node.js 18+, and edge environments.
+Photon is a modern, lightweight alternative to `@solana/web3.js` built from the ground up with zero dependencies. It leverages native Web Standards like WebCrypto API, fetch, and WebSocket to provide a minimal, tree-shakable SDK that works in browsers, Node.js 20+, and edge environments.
 
 ### Why Photon?
 
@@ -285,7 +285,7 @@ Photon is designed for optimal performance:
 - Chrome/Edge 92+
 - Firefox 91+
 - Safari 15+
-- Node.js 18+
+- Node.js 20+
 - Deno 1.25+
 - Cloudflare Workers ✓
 

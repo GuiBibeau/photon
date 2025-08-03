@@ -24,7 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Target Environments
 - Chrome/Edge 92+, Firefox 91+, Safari 15+
-- Node.js 18+
+- Node.js 20+
 - Deno 1.25+
 - Cloudflare Workers and edge environments
 
