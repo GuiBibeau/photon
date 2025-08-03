@@ -46,3 +46,6 @@ temp/
 *.tgz
 package-lock.json
 yarn.lock
+
+# Crush files
+.crush/
