@@ -1,0 +1,110 @@
+name: Publish to npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version type (patch, minor, major, prepatch, preminor, premajor, prerelease)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prepatch
+          - preminor
+          - premajor
+          - prerelease
+      tag:
+        description: 'NPM tag (latest, next, beta, etc.)'
+        required: true
+        default: 'latest'
+        type: string
+      dry-run:
+        description: 'Run in dry-run mode (no actual publish)'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  publish:
+    name: Publish Packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all packages
+        run: pnpm build
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Version packages
+        run: |
+          if [ "${{ inputs.dry-run }}" = "true" ]; then
+            echo "DRY RUN: Would version packages with: pnpm changeset version"
+            echo "Version type: ${{ inputs.version }}"
+          else
+            # Note: This assumes you'll use changesets for versioning
+            # For now, using manual versioning
+            pnpm -r version ${{ inputs.version }} --no-git-tag-version
+          fi
+
+      - name: Publish packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ "${{ inputs.dry-run }}" = "true" ]; then
+            echo "DRY RUN: Would publish packages with tag: ${{ inputs.tag }}"
+            pnpm -r publish --dry-run --tag ${{ inputs.tag }} --no-git-checks
+          else
+            pnpm -r publish --tag ${{ inputs.tag }} --no-git-checks
+          fi
+
+      - name: Create Git tag and release
+        if: inputs.dry-run == false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get the new version from the root package.json
+          VERSION=$(node -p "require('./package.json').version")
+
+          # Create and push tag
+          git add .
+          git commit -m "chore: release v${VERSION}"
+          git tag -a "v${VERSION}" -m "Release v${VERSION}"
+          git push origin main --tags
+
+          # Create GitHub release
+          gh release create "v${VERSION}" \
+            --title "v${VERSION}" \
+            --notes "See [CHANGELOG.md](./CHANGELOG.md) for details" \
+            --target main
