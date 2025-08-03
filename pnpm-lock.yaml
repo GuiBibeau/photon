@@ -69,7 +69,11 @@ importers:
 
   packages/codecs: {}
 
-  packages/crypto: {}
+  packages/crypto:
+    dependencies:
+      '@photon/errors':
+        specifier: workspace:*
+        version: link:../errors
 
   packages/errors: {}
 

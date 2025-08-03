@@ -127,6 +127,18 @@ function createErrorMessage(code: SolanaErrorCode, context?: Record<string, unkn
     case 'PROGRAM_ERROR':
       return `Program error: ${context?.message || 'Unknown program error'}`;
 
+    // Cryptographic errors
+    case 'CRYPTO_NOT_SUPPORTED':
+      return `Cryptographic operation not supported: ${context?.operation || 'Unknown operation'}. This browser may not support the required WebCrypto features.`;
+    case 'KEY_GENERATION_FAILED':
+      return `Key generation failed: ${context?.reason || 'Unknown reason'}`;
+    case 'INVALID_KEY_OPTIONS':
+      return `Invalid key options provided: ${context?.details || 'Unknown validation error'}`;
+    case 'KEY_EXTRACTION_FAILED':
+      return `Failed to extract key material: ${context?.reason || 'Key may not be extractable'}`;
+    case 'INVALID_KEY_TYPE':
+      return `Invalid key type: Expected ${context?.expected || 'unknown'}, got ${context?.actual || 'unknown'}`;
+
     default:
       return 'An unknown error occurred.';
   }
