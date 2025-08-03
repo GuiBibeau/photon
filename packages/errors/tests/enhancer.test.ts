@@ -350,4 +350,224 @@ describe('Error Enhancer', () => {
       });
     });
   });
+
+  describe('Error Context Preservation in Complex Chains', () => {
+    it('should preserve context through multiple enhancements', () => {
+      // Start with a basic error
+      let error = new SolanaError('TRANSACTION_FAILED', { signature: 'abc123' });
+
+      // Add logs
+      error = enhanceErrorWithLogs(error, ['Program log: Starting', 'Program log: Error occurred']);
+
+      // Add account context
+      error = enhanceErrorWithAccount(error, 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA', {
+        lamports: 1000000,
+        owner: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+        executable: false,
+        rentEpoch: 361,
+      });
+
+      // Add transaction context
+      error = enhanceErrorWithTransaction(error, {
+        signature: 'enhanced-sig',
+        slot: 12345,
+        blockTime: 1640995200,
+      });
+
+      // Add program context
+      error = enhanceErrorWithProgram(error, {
+        programId: 'MyProgram',
+        version: '1.0.0',
+      });
+
+      // All contexts should be preserved
+      expect(error.context).toEqual({
+        signature: 'abc123', // Original
+        logs: ['Program log: Starting', 'Program log: Error occurred'], // From logs
+        accountAddress: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA', // From account
+        accountData: {
+          lamports: 1000000,
+          owner: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+          executable: false,
+          rentEpoch: 361,
+        },
+        transaction: {
+          // From transaction
+          signature: 'enhanced-sig',
+          slot: 12345,
+          blockTime: 1640995200,
+        },
+        program: {
+          // From program
+          programId: 'MyProgram',
+          version: '1.0.0',
+        },
+      });
+    });
+
+    it('should handle context conflicts gracefully', () => {
+      // Create error with initial context
+      let error = new SolanaError('RPC_ERROR', {
+        method: 'getAccountInfo',
+        signature: 'original-sig',
+      });
+
+      // Add transaction context with conflicting signature
+      error = enhanceErrorWithTransaction(error, {
+        signature: 'new-sig',
+        slot: 12345,
+      });
+
+      // Should preserve both signatures
+      expect(error.context?.method).toBe('getAccountInfo');
+      expect(error.context?.signature).toBe('original-sig'); // Original preserved
+      expect(error.context?.transaction?.signature).toBe('new-sig'); // New in nested object
+      expect(error.context?.transaction?.slot).toBe(12345);
+    });
+
+    it('should preserve context through error wrapping and merging', () => {
+      // Create a chain of errors with different contexts
+      const originalError = new SolanaError('NETWORK_ERROR', {
+        url: 'https://api.mainnet-beta.solana.com',
+        timeout: 5000,
+      });
+
+      const rpcError = new SolanaError(
+        'RPC_ERROR',
+        {
+          method: 'getAccountInfo',
+          params: ['TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'],
+        },
+        originalError,
+      );
+
+      const transactionError = new SolanaError(
+        'TRANSACTION_FAILED',
+        {
+          signature: 'failed-tx-sig',
+          reason: 'Account not found',
+        },
+        rpcError,
+      );
+
+      // Enhance with simulation data
+      const enhancedError = enhanceErrorWithSimulation(transactionError, {
+        logs: ['Program log: Account not found'],
+        unitsConsumed: 200,
+        err: { InstructionError: [0, 'AccountNotFound'] },
+      });
+
+      // All context should be preserved in the final error
+      expect(enhancedError.context).toEqual({
+        signature: 'failed-tx-sig',
+        reason: 'Account not found',
+        simulation: {
+          logs: ['Program log: Account not found'],
+          unitsConsumed: 200,
+          err: { InstructionError: [0, 'AccountNotFound'] },
+        },
+      });
+
+      // Original contexts should be accessible through cause chain
+      expect(enhancedError.cause).toBe(rpcError);
+      expect((enhancedError.cause as SolanaError).context?.method).toBe('getAccountInfo');
+      expect(((enhancedError.cause as SolanaError).cause as SolanaError).context?.url).toBe(
+        'https://api.mainnet-beta.solana.com',
+      );
+    });
+
+    it('should preserve context when merging multiple errors', () => {
+      const error1 = new SolanaError('INVALID_SIGNATURE', {
+        signature: 'sig1',
+        index: 0,
+      });
+
+      const error2 = new SolanaError('INSUFFICIENT_BALANCE', {
+        address: 'addr1',
+        requiredAmount: '1000',
+        currentAmount: '500',
+      });
+
+      const error3 = new SolanaError('ACCOUNT_NOT_FOUND', {
+        address: 'addr2',
+        slot: 12345,
+      });
+
+      const mergedError = mergeErrors(error1, error2, error3);
+
+      expect(mergedError.context).toEqual({
+        signature: 'sig1',
+        index: 0,
+        additionalErrors: [
+          {
+            index: 0,
+            name: 'SolanaError',
+            message: error2.message,
+            code: 'INSUFFICIENT_BALANCE',
+            context: { address: 'addr1', requiredAmount: '1000', currentAmount: '500' },
+          },
+          {
+            index: 1,
+            name: 'SolanaError',
+            message: error3.message,
+            code: 'ACCOUNT_NOT_FOUND',
+            context: { address: 'addr2', slot: 12345 },
+          },
+        ],
+      });
+    });
+
+    it('should handle deep context nesting without loss', () => {
+      const deepContext = {
+        level1: {
+          level2: {
+            level3: {
+              level4: {
+                data: 'deep-value',
+                array: [1, 2, 3],
+                nested: {
+                  more: 'data',
+                  numbers: [100, 200, 300],
+                },
+              },
+            },
+          },
+        },
+        parallel: {
+          branch: 'value',
+        },
+      };
+
+      let error = new SolanaError('SIMULATION_FAILED', deepContext);
+
+      // Add additional context
+      error = enhanceErrorWithContext(error, {
+        enhancement: 'added',
+        timestamp: '2023-01-01',
+      });
+
+      // Deep context should be preserved
+      expect(error.context?.level1?.level2?.level3?.level4?.data).toBe('deep-value');
+      expect(error.context?.level1?.level2?.level3?.level4?.array).toEqual([1, 2, 3]);
+      expect(error.context?.level1?.level2?.level3?.level4?.nested?.more).toBe('data');
+      expect(error.context?.parallel?.branch).toBe('value');
+
+      // Enhancement should be added
+      expect(error.context?.enhancement).toBe('added');
+      expect(error.context?.timestamp).toBe('2023-01-01');
+    });
+
+    it('should preserve context ordering through sequential enhancements', () => {
+      let error = new SolanaError('PROGRAM_ERROR', { step: 1 });
+
+      // Add context in specific order
+      error = enhanceErrorWithContext(error, { step: 2, phase: 'validation' });
+      error = enhanceErrorWithContext(error, { step: 3, phase: 'execution' });
+      error = enhanceErrorWithContext(error, { step: 4, phase: 'cleanup' });
+
+      // Latest context should override, but structure should be preserved
+      expect(error.context?.step).toBe(4); // Latest value
+      expect(error.context?.phase).toBe('cleanup'); // Latest value
+    });
+  });
 });
