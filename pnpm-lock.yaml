@@ -65,7 +65,14 @@ importers:
 
   packages/accounts: {}
 
-  packages/addresses: {}
+  packages/addresses:
+    dependencies:
+      '@photon/codecs':
+        specifier: workspace:*
+        version: link:../codecs
+      '@photon/errors':
+        specifier: workspace:*
+        version: link:../errors
 
   packages/codecs: {}
 
