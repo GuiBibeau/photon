@@ -251,25 +251,43 @@ function validateSigningKey(privateKey: CryptoKey): void {
 }
 
 /**
+ * Type guard to check if value is Uint8Array-like (handles cross-realm issues)
+ */
+function isUint8ArrayLike(value: unknown): value is Uint8Array {
+  return (
+    value instanceof Uint8Array ||
+    (value !== null &&
+      value !== undefined &&
+      typeof value === 'object' &&
+      'constructor' in value &&
+      value.constructor !== null &&
+      value.constructor !== undefined &&
+      value.constructor.name === 'Uint8Array' &&
+      'length' in value &&
+      typeof value.length === 'number' &&
+      'byteLength' in value &&
+      typeof value.byteLength === 'number')
+  );
+}
+
+/**
  * Validates a message for signing operations.
  * @internal
  */
-function validateMessage(message: Uint8Array): void {
+function validateMessage(message: unknown): void {
   if (!message) {
     throw new SolanaError('INVALID_KEY_OPTIONS', {
       details: 'Message cannot be null or undefined',
     });
   }
 
-  if (!(message instanceof Uint8Array)) {
+  if (!isUint8ArrayLike(message)) {
     throw new SolanaError('INVALID_KEY_OPTIONS', {
       details: `Message must be Uint8Array, got ${typeof message}`,
     });
   }
 
-  if (message.length === 0) {
-    throw new SolanaError('INVALID_KEY_OPTIONS', { details: 'Message cannot be empty' });
-  }
+  // Allow empty messages - Ed25519 can sign empty messages
 
   // Solana doesn't have a strict message size limit for signing, but we can add a reasonable limit
   // to prevent memory issues with extremely large messages
@@ -611,7 +629,8 @@ function validateVerificationKey(publicKey: PublicKeyInput): void {
     return;
   }
 
-  if (publicKey instanceof Uint8Array) {
+  // Check if it's a Uint8Array or has Uint8Array-like properties
+  if (isUint8ArrayLike(publicKey)) {
     if (publicKey.length !== 32) {
       throw new SolanaError('INVALID_KEY_TYPE', {
         reason: `Public key bytes must be 32 bytes, got ${publicKey.length}`,
@@ -646,7 +665,7 @@ function validateSignatureInput(signature: Signature): void {
     });
   }
 
-  if (!(signature instanceof Uint8Array)) {
+  if (!isUint8ArrayLike(signature)) {
     throw new SolanaError('INVALID_SIGNATURE', {
       reason: `Signature must be Uint8Array, got ${typeof signature}`,
     });

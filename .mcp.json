@@ -1,18 +1,17 @@
 {
   "mcpServers": {
-    "github": {
-      "command": "docker",
+    "serena": {
+      "command": "uvx",
       "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-e",
-        "GITHUB_PERSONAL_ACCESS_TOKEN",
-        "ghcr.io/github/github-mcp-server"
-      ],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "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"
-      }
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "ide-assistant",
+        "--project",
+        "/Users/guillaumebibeau-laviolette/github/solana-js-sdk"
+      ]
     }
   }
 }

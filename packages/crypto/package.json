@@ -49,5 +49,9 @@
   },
   "dependencies": {
     "@photon/errors": "workspace:*"
+  },
+  "devDependencies": {
+    "@solana/web3.js": "^1.98.4",
+    "tweetnacl": "^1.0.3"
   }
 }
