@@ -30,6 +30,17 @@ export async function generateKeyPair(options?: KeyGenerationOptions): Promise<K
   }
 
   const extractable = options?.extractable ?? false;
+  const seed = options?.seed;
+
+  // Validate seed if provided
+  if (seed) {
+    if (!(seed instanceof Uint8Array)) {
+      throw new SolanaError('INVALID_KEY_OPTIONS', { details: 'Seed must be a Uint8Array' });
+    }
+    if (seed.length !== 32) {
+      throw new SolanaError('INVALID_KEY_OPTIONS', { details: 'Seed must be exactly 32 bytes' });
+    }
+  }
 
   try {
     // First, test if Ed25519 is actually supported
@@ -41,11 +52,36 @@ export async function generateKeyPair(options?: KeyGenerationOptions): Promise<K
       });
     }
 
-    // Generate the key pair
-    const cryptoKeyPair = await crypto.subtle.generateKey({ name: 'Ed25519' }, extractable, [
-      'sign',
-      'verify',
-    ]);
+    let cryptoKeyPair: CryptoKeyPair;
+
+    if (seed) {
+      // Generate from seed by importing the seed as a private key
+      const privateKey = await crypto.subtle.importKey(
+        'raw',
+        seed as BufferSource,
+        { name: 'Ed25519' },
+        extractable,
+        ['sign'],
+      );
+
+      // Derive the public key from the private key
+      const publicKeyData = await crypto.subtle.exportKey('raw', privateKey);
+      const publicKey = await crypto.subtle.importKey(
+        'raw',
+        publicKeyData,
+        { name: 'Ed25519' },
+        true,
+        ['verify'],
+      );
+
+      cryptoKeyPair = { privateKey, publicKey };
+    } else {
+      // Generate random key pair
+      cryptoKeyPair = await crypto.subtle.generateKey({ name: 'Ed25519' }, extractable, [
+        'sign',
+        'verify',
+      ]);
+    }
 
     // Validate the generated key pair
     if (!cryptoKeyPair || !cryptoKeyPair.privateKey || !cryptoKeyPair.publicKey) {

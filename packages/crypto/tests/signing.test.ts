@@ -64,8 +64,10 @@ describe('Message Signing', () => {
     it('should handle empty messages', async () => {
       const emptyMessage = new Uint8Array(0);
 
-      await expect(signBytes(privateKey, emptyMessage)).rejects.toThrow(SolanaError);
-      await expect(signBytes(privateKey, emptyMessage)).rejects.toThrow('Message cannot be empty');
+      // Empty messages should be signable with Ed25519
+      const signature = await signBytes(privateKey, emptyMessage);
+      expect(signature).toBeInstanceOf(Uint8Array);
+      expect(signature.length).toBe(64);
     });
 
     it('should handle large messages', async () => {
@@ -169,7 +171,7 @@ describe('Message Signing', () => {
     it('should handle mixed valid/invalid messages with failFast=false', async () => {
       const messages = [
         new Uint8Array([86, 97, 108, 105, 100, 32, 109, 101, 115, 115, 97, 103, 101, 32, 49]), // 'Valid message 1'
-        new Uint8Array(0), // Invalid empty message
+        new Uint8Array(0), // Valid empty message (Ed25519 supports this)
         new Uint8Array([86, 97, 108, 105, 100, 32, 109, 101, 115, 115, 97, 103, 101, 32, 50]), // 'Valid message 2'
         null as any, // Invalid null message
       ];
@@ -178,11 +180,11 @@ describe('Message Signing', () => {
         failFast: false,
       });
 
-      // The first and third messages should succeed, second should fail (empty), fourth should fail (null)
-      expect(result.successCount).toBe(2);
-      expect(result.errorCount).toBe(2);
+      // First three messages should succeed, fourth should fail (null)
+      expect(result.successCount).toBe(3);
+      expect(result.errorCount).toBe(1);
       expect(result.signatures[0]).toBeInstanceOf(Uint8Array);
-      expect(result.signatures[1]).toBeNull();
+      expect(result.signatures[1]).toBeInstanceOf(Uint8Array); // Empty message now succeeds
       expect(result.signatures[2]).toBeInstanceOf(Uint8Array);
       expect(result.signatures[3]).toBeNull();
     });
@@ -190,7 +192,7 @@ describe('Message Signing', () => {
     it('should fail fast when failFast=true', async () => {
       const messages = [
         new Uint8Array([86, 97, 108, 105, 100, 32, 109, 101, 115, 115, 97, 103, 101]), // 'Valid message'
-        new Uint8Array(0), // This will cause failure
+        undefined as any, // This will cause failure
         new Uint8Array([
           84, 104, 105, 115, 32, 115, 104, 111, 117, 108, 100, 32, 110, 111, 116, 32, 98, 101, 32,
           112, 114, 111, 99, 101, 115, 115, 101, 100,

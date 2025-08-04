@@ -10,6 +10,13 @@ export interface KeyGenerationOptions {
    * @default false
    */
   extractable?: boolean;
+
+  /**
+   * Seed for deterministic key generation.
+   * Must be exactly 32 bytes.
+   * If not provided, a random key pair is generated.
+   */
+  seed?: Uint8Array;
 }
 
 /**
