@@ -17,3 +17,13 @@ export { string, stringWithCustomSize, fixedString } from './string.js';
 
 // Boolean codec
 export { boolean } from './boolean.js';
+
+// Base58 codecs
+export {
+  base58,
+  base58String,
+  encodeBase58,
+  decodeBase58,
+  isBase58,
+  BASE58_ALPHABET,
+} from './base58.js';

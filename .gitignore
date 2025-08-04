@@ -49,3 +49,6 @@ yarn.lock
 
 # Crush files
 .crush/
+
+# MCP configuration (contains sensitive tokens)
+.mcp.json

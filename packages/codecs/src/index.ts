@@ -45,6 +45,13 @@ export {
   fixedString,
   // Boolean
   boolean,
+  // Base58
+  base58,
+  base58String,
+  encodeBase58,
+  decodeBase58,
+  isBase58,
+  BASE58_ALPHABET,
 } from './primitives/index.js';
 
 // Composite codecs
