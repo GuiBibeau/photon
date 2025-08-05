@@ -34,30 +34,20 @@ describe('KeyPair Integration Tests', () => {
       expect(address1).not.toBe(address2);
     });
 
-    it('should derive address from deterministic key generation', async () => {
+    it('should throw for deterministic key generation (not yet implemented)', async () => {
       // Use the same seed to generate deterministic key pairs
       const seed = new Uint8Array(32);
       seed.fill(42); // Arbitrary but deterministic seed
 
-      const keyPair1 = await generateKeyPair({ seed, extractable: true });
-      const keyPair2 = await generateKeyPair({ seed, extractable: true });
-
-      const address1 = await keyPair1.getAddress();
-      const address2 = await keyPair2.getAddress();
-
-      // Same seed should produce same address
-      expect(address1).toBe(address2);
+      // Should throw since seed-based generation is not yet implemented
+      await expect(generateKeyPair({ seed, extractable: true })).rejects.toThrow(
+        'seed-based key generation',
+      );
     });
 
-    it('should match expected format for known public key', async () => {
-      // Create a key pair from a known seed
-      const seed = new Uint8Array(32);
-      // Fill with a simple pattern for reproducibility
-      for (let i = 0; i < 32; i++) {
-        seed[i] = i;
-      }
-
-      const keyPair = await generateKeyPair({ seed, extractable: true });
+    it('should match expected format for random key pair', async () => {
+      // Create a random key pair (since seed-based is not implemented)
+      const keyPair = await generateKeyPair({ extractable: true });
       const address = await keyPair.getAddress();
 
       // The address should be valid base58

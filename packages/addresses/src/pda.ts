@@ -12,8 +12,7 @@ const MAX_SEED_LENGTH = 32;
 
 /**
  * Check if a 32-byte value represents a valid Ed25519 curve point
- * This is a simplified implementation for PDA generation
- * In practice, most random 32-byte values are off-curve
+ * This uses WebCrypto's validation as the primary check
  */
 async function isOnCurve(bytes: Uint8Array): Promise<boolean> {
   if (bytes.length !== 32) {
@@ -22,6 +21,7 @@ async function isOnCurve(bytes: Uint8Array): Promise<boolean> {
 
   try {
     // Try to import as Ed25519 public key
+    // If WebCrypto can import it successfully, it's a valid curve point
     await crypto.subtle.importKey(
       'raw',
       bytes as BufferSource,
@@ -33,31 +33,11 @@ async function isOnCurve(bytes: Uint8Array): Promise<boolean> {
       ['verify'],
     );
 
-    // WebCrypto import succeeded, but we need additional validation
-    // Ed25519 has specific mathematical constraints
-
-    // Simple heuristic: check if this looks like a typical curve point
-    // Most SHA-256 hashes of PDA inputs won't be valid curve points
-
-    // Check for patterns that indicate off-curve values
-    const lastByte = bytes[31];
-    if (lastByte === undefined) {
-      return false;
-    }
-
-    // Mathematical constraint: valid Ed25519 y-coordinates must satisfy
-    // certain properties. This is a simplified check.
-
-    // If the top bit is set, the coordinate might be >= p
-    // In practice, for PDA generation, we use a statistical approach:
-    // approximately 50% of random 32-byte values are off-curve
-
-    // Simple approach: use a hash-based pseudo-random check
-    // This gives us ~50% off-curve rate which is what we expect
-    const hash = Array.from(bytes).reduce((a, b) => a + b, 0);
-    return hash % 2 === 0;
+    // If we get here, WebCrypto accepted it as a valid Ed25519 public key
+    // This means it's on the curve
+    return true;
   } catch {
-    // WebCrypto rejected it, definitely not a valid curve point
+    // WebCrypto rejected it, so it's not a valid curve point
     return false;
   }
 }
