@@ -1,18 +1,20 @@
 # @photon/rpc
 
-Type-safe JSON-RPC client types for Solana.
+Type-safe JSON-RPC client for Solana with pluggable transport and middleware support.
 
 ## Overview
 
-This package provides comprehensive TypeScript types for all Solana JSON-RPC methods, ensuring type safety and excellent developer experience when building RPC clients.
+This package provides a complete RPC client factory with comprehensive TypeScript types for all Solana JSON-RPC methods, ensuring type safety and excellent developer experience.
 
 ## Features
 
 - 🔒 **Type-Safe**: Complete TypeScript definitions for all RPC methods
+- 🔌 **Pluggable Transport**: Support for custom transports (HTTP, WebSocket, etc.)
+- 🔗 **Middleware Pipeline**: Composable middleware for request/response processing
 - 📝 **Documented**: JSDoc comments for all types and methods
-- 🎯 **Accurate**: Types match Solana's actual RPC interface
-- 🔧 **Helpers**: Utility types for extracting method parameters and returns
-- ✅ **Tested**: Comprehensive type tests ensure correctness
+- 🎯 **Zero Dependencies**: Pure TypeScript implementation
+- 🔧 **Helpers**: Utility types and convenience functions
+- ✅ **Tested**: Comprehensive type and unit tests
 
 ## Installation
 
@@ -21,6 +23,32 @@ npm install @photon/rpc
 ```
 
 ## Usage
+
+### Create RPC Client
+
+```typescript
+import { createSolanaRpcFromTransport, createMockTransport } from '@photon/rpc';
+
+// Create a mock transport for testing
+const transport = createMockTransport(
+  new Map([
+    ['getBalance', 1000000000n],
+    ['getBlockHeight', 123456],
+  ])
+);
+
+// Create RPC client
+const rpc = createSolanaRpcFromTransport(transport, {
+  commitment: 'confirmed',
+  timeout: 30000,
+});
+
+// Make type-safe RPC calls
+const balance = await rpc.getBalance(address);
+const block = await rpc.getBlock(slot);
+```
+
+Note: HTTP transport will be implemented in SDK-28. Use `createSolanaRpcFromTransport` with a custom transport for now.
 
 ### Import Types
 
