@@ -1,3 +1,5 @@
+import type { Address } from '@photon/addresses';
+
 /**
  * Options for key pair generation.
  */
@@ -25,12 +27,8 @@ export interface KeyGenerationOptions {
  */
 export type Signature = Uint8Array & { readonly __brand: unique symbol };
 
-/**
- * Represents a public key address.
- * This will be properly defined when the addresses package is implemented.
- * For now, we use a placeholder type.
- */
-export type Address = string & { readonly __brand: unique symbol };
+// Address type is imported from @photon/addresses
+export type { Address } from '@photon/addresses';
 
 /**
  * Ed25519 key pair wrapper interface.

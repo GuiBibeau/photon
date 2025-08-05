@@ -1,3 +1,4 @@
+import { getAddressFromPublicKeyBytes } from '@photon/addresses';
 import { SolanaError } from '@photon/errors';
 import type { IKeyPair, Signature, Address } from './types.js';
 
@@ -80,7 +81,6 @@ export class KeyPair implements IKeyPair {
 
   /**
    * Get the public key address.
-   * For now, this returns a placeholder since the addresses package is not implemented yet.
    * @returns Promise resolving to the address derived from the public key
    */
   async getAddress(): Promise<Address> {
@@ -88,16 +88,8 @@ export class KeyPair implements IKeyPair {
       return this._address;
     }
 
-    // TODO: Implement proper address derivation when addresses package is ready
-    // For now, we'll create a simple base58-like representation
     const publicKeyBytes = await this.getPublicKeyBytes();
-
-    // Simple hex representation as placeholder
-    const hexString = Array.from(publicKeyBytes)
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
-
-    this._address = hexString as Address;
+    this._address = getAddressFromPublicKeyBytes(publicKeyBytes);
     return this._address;
   }
 

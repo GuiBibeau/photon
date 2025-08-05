@@ -184,3 +184,20 @@ export const NATIVE_MINT_ADDRESS = address('So1111111111111111111111111111111111
 export const ASSOCIATED_TOKEN_PROGRAM_ADDRESS = address(
   'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
 );
+
+// Address derivation utilities
+export {
+  getAddressFromPublicKey,
+  getAddressFromPublicKeyBytes,
+  getAddressFromPublicKeyAsync,
+} from './derive.js';
+
+// Program Derived Address (PDA) utilities
+export {
+  createProgramAddress,
+  findProgramAddressSync,
+  isProgramAddress,
+  isProgramAddressSync,
+  createPdaSeed,
+  createPdaSeedFromNumber,
+} from './pda.js';

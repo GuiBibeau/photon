@@ -48,6 +48,7 @@
     "access": "public"
   },
   "dependencies": {
+    "@photon/addresses": "workspace:*",
     "@photon/errors": "workspace:*"
   },
   "devDependencies": {
