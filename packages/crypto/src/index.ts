@@ -23,6 +23,9 @@ export {
 // Signature verification functionality
 export { verifySignature, verifyBatch, createVerifier } from './signing.js';
 
+// Hashing utilities
+export { sha256, sha256Concat } from './hash.js';
+
 // Type definitions
 export type {
   KeyGenerationOptions,
