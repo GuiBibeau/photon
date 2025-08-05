@@ -39,3 +39,51 @@ export {
   paramsBuilder,
   getMethodMetadata,
 } from './helpers.js';
+
+// Export client factory
+export {
+  createSolanaRpc,
+  createSolanaRpcFromTransport,
+  createBatch,
+  type RpcClientConfig,
+} from './client.js';
+
+// Export transport interface
+export {
+  type Transport,
+  type ConfigurableTransport,
+  type TransportConfig,
+  type JsonRpcRequest,
+  type JsonRpcResponse,
+  type JsonRpcResponseSuccess,
+  type JsonRpcResponseError,
+  isConfigurableTransport,
+  createMockTransport,
+} from './transport.js';
+
+// Export middleware utilities
+export {
+  type Middleware,
+  type MiddlewareContext,
+  composeMiddleware,
+  requestIdMiddleware,
+  defaultCommitmentMiddleware,
+  retryMiddleware,
+  timeoutMiddleware,
+  loggingMiddleware,
+} from './middleware.js';
+
+// Export convenience utilities
+export {
+  type RpcHealthCheck,
+  type ClusterInfo,
+  type RpcMetrics,
+  checkRpcHealth,
+  getClusterInfo,
+  createMetricsCollector,
+  isSuccessResponse,
+  isErrorResponse,
+  extractResult,
+  generateRequestId,
+  createCorrelationId,
+} from './convenience.js';
