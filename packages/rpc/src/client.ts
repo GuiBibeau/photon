@@ -8,7 +8,8 @@
 import type { SolanaRpcApi } from './api.js';
 import type { Commitment } from './types.js';
 import type { RpcClient, RpcMethodNames, RpcMethodParams, RpcMethodReturn } from './helpers.js';
-import type { Transport, JsonRpcRequest, JsonRpcResponse } from './transport.js';
+import type { Transport, TransportConfig, JsonRpcRequest, JsonRpcResponse } from './transport.js';
+import { createHttpTransport } from './transport.js';
 import type { Middleware } from './middleware.js';
 import {
   composeMiddleware,
@@ -193,24 +194,25 @@ export function createSolanaRpcFromTransport(
 /**
  * Create a Solana RPC client with a URL endpoint.
  *
- * This is a convenience function that will create an HTTP transport
- * internally. For now, it creates a placeholder that will be replaced
- * when SDK-28 (HTTP transport) is implemented.
+ * This is a convenience function that creates an HTTP transport internally.
  *
- * @param _endpoint - RPC endpoint URL (not used yet, will be used in SDK-28)
+ * @param endpoint - RPC endpoint URL
  * @param config - Optional client configuration
  * @returns Type-safe RPC client
  */
-export function createSolanaRpc(_endpoint: string, config?: RpcClientConfig): RpcClient {
-  // TODO: This will be implemented in SDK-28 with actual HTTP transport
-  // For now, create a placeholder transport that throws an error
-  const placeholderTransport: Transport = async () => {
-    throw new Error(
-      'HTTP transport not yet implemented. Use createSolanaRpcFromTransport with a custom transport for now.',
-    );
-  };
+export function createSolanaRpc(endpoint: string, config?: RpcClientConfig): RpcClient {
+  // Create HTTP transport with headers and timeout from config
+  const transportConfig: TransportConfig = {};
+  if (config?.headers) {
+    transportConfig.headers = config.headers;
+  }
+  if (config?.timeout) {
+    transportConfig.timeout = config.timeout;
+  }
 
-  return createSolanaRpcFromTransport(placeholderTransport, config);
+  const transport = createHttpTransport(endpoint, transportConfig);
+
+  return createSolanaRpcFromTransport(transport, config);
 }
 
 /**

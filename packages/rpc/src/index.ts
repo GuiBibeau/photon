@@ -58,6 +58,7 @@ export {
   type JsonRpcResponseSuccess,
   type JsonRpcResponseError,
   isConfigurableTransport,
+  createHttpTransport,
   createMockTransport,
 } from './transport.js';
 
