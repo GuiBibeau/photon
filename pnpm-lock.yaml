@@ -94,7 +94,11 @@ importers:
 
   packages/errors: {}
 
-  packages/rpc: {}
+  packages/rpc:
+    dependencies:
+      '@photon/addresses':
+        specifier: workspace:*
+        version: link:../addresses
 
   packages/rpc-subscriptions: {}
 
