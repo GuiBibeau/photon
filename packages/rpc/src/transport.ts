@@ -103,6 +103,140 @@ export function isConfigurableTransport(
 }
 
 /**
+ * Create an HTTP transport for JSON-RPC communication.
+ *
+ * @param url - The RPC endpoint URL
+ * @param config - Optional transport configuration
+ * @returns A configurable transport implementation
+ */
+export function createHttpTransport(url: string, config?: TransportConfig): ConfigurableTransport {
+  const transport = async <TMethod extends RpcMethodNames>(
+    request: JsonRpcRequest<TMethod>,
+  ): Promise<JsonRpcResponse<RpcMethodReturn<TMethod>>> => {
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let didTimeout = false;
+
+    // Set up timeout if configured
+    if (config?.timeout) {
+      timeoutId = setTimeout(() => {
+        didTimeout = true;
+        controller.abort();
+      }, config.timeout);
+    }
+
+    // Combine signals if one was provided
+    let signal: AbortSignal;
+    if (config?.signal) {
+      // Check if AbortSignal.any is available (Node 20+)
+      if ('any' in AbortSignal && typeof AbortSignal.any === 'function') {
+        signal = AbortSignal.any([controller.signal, config.signal]);
+      } else {
+        // Fallback for older environments
+        signal = controller.signal;
+        config.signal.addEventListener('abort', () => {
+          if (!didTimeout) {
+            controller.abort();
+          }
+        });
+      }
+    } else {
+      signal = controller.signal;
+    }
+
+    try {
+      // Make the fetch request
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...config?.headers,
+        },
+        body: JSON.stringify(request),
+        signal,
+        // Connection hints for better performance
+        keepalive: true,
+        // Enable compression if available
+        ...(typeof CompressionStream !== 'undefined' && {
+          compress: true,
+        }),
+      });
+
+      // Clear timeout if set
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
+      // Check HTTP status
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
+      }
+
+      // Parse JSON response
+      let jsonResponse: unknown;
+      try {
+        jsonResponse = await response.json();
+      } catch (error) {
+        throw new Error(
+          `Failed to parse JSON response: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
+      }
+
+      // Validate JSON-RPC response format
+      if (
+        typeof jsonResponse !== 'object' ||
+        jsonResponse === null ||
+        !('jsonrpc' in jsonResponse) ||
+        (jsonResponse as { jsonrpc: unknown }).jsonrpc !== '2.0'
+      ) {
+        throw new Error('Invalid JSON-RPC response format');
+      }
+
+      const rpcResponse = jsonResponse as JsonRpcResponse<RpcMethodReturn<TMethod>>;
+
+      // Validate response ID matches request ID
+      if (rpcResponse.id !== request.id) {
+        throw new Error(`Response ID mismatch. Expected ${request.id}, got ${rpcResponse.id}`);
+      }
+
+      return rpcResponse;
+    } catch (error) {
+      // Clear timeout if set
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
+      // Handle abort errors (DOMException or Error)
+      if (
+        (error instanceof Error ||
+          (typeof DOMException !== 'undefined' && error instanceof DOMException)) &&
+        (error as Error).name === 'AbortError'
+      ) {
+        // Check if the abort was due to timeout
+        if (didTimeout) {
+          throw new Error(`Request timeout after ${config?.timeout}ms`);
+        }
+        // Re-throw the original abort error for external aborts
+        throw error;
+      }
+
+      // Re-throw other errors
+      throw error;
+    }
+  };
+
+  // Create configurable transport
+  const configurableTransport = Object.assign(transport, {
+    withConfig(newConfig: TransportConfig): ConfigurableTransport {
+      return createHttpTransport(url, { ...config, ...newConfig });
+    },
+  });
+
+  return configurableTransport;
+}
+
+/**
  * Mock transport for testing purposes.
  */
 export function createMockTransport<TMethod extends RpcMethodNames>(
