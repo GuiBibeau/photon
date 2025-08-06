@@ -48,7 +48,7 @@ export {
   type RpcClientConfig,
 } from './client.js';
 
-// Export transport interface
+// Export transport interface and utilities
 export {
   type Transport,
   type ConfigurableTransport,
@@ -60,6 +60,17 @@ export {
   isConfigurableTransport,
   createHttpTransport,
   createMockTransport,
+  // Transport wrappers
+  createRetryTransport,
+  createLoggingTransport,
+  createCacheTransport,
+  createLoadBalancerTransport,
+  createAuthenticatedTransport,
+  type RetryTransportOptions,
+  type LoggingTransportOptions,
+  type CacheTransportOptions,
+  type LoadBalancerTransportOptions,
+  type AuthenticatedTransportOptions,
 } from './transport.js';
 
 // Export middleware utilities
