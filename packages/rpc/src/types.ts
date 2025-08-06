@@ -32,6 +32,11 @@ export type TransactionEncoding = 'base58' | 'base64' | 'json' | 'jsonParsed';
 export type TransactionVersion = 'legacy' | 0;
 
 /**
+ * Transaction signature string.
+ */
+export type TransactionSignature = string;
+
+/**
  * Transaction details level.
  */
 export type TransactionDetails = 'full' | 'accounts' | 'signatures' | 'none';
@@ -459,6 +464,11 @@ export interface ProgramAccount {
 }
 
 /**
+ * Get program accounts response type.
+ */
+export type GetProgramAccountsResponse = ProgramAccount;
+
+/**
  * Signature information for recent transactions.
  */
 export interface SignatureInfo {
@@ -517,6 +527,22 @@ export interface SimulationResult {
     programId: string;
     data: [string, Encoding];
   } | null;
+}
+
+/**
+ * Simulate transaction response type.
+ */
+export type SimulateTransactionResponse = SimulationResult;
+
+/**
+ * Transaction with metadata.
+ */
+export interface TransactionWithMeta {
+  slot: number;
+  transaction: Transaction;
+  meta: TransactionMeta | null;
+  blockTime?: number | null;
+  version?: TransactionVersion;
 }
 
 /**

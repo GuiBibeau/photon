@@ -99,3 +99,9 @@ export {
   generateRequestId,
   createCorrelationId,
 } from './convenience.js';
+
+// Export method implementations
+export * from './methods/index.js';
+
+// Export parsers
+export * from './parsers/index.js';
