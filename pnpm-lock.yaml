@@ -100,7 +100,14 @@ importers:
         specifier: workspace:*
         version: link:../addresses
 
-  packages/rpc-subscriptions: {}
+  packages/rpc-subscriptions:
+    dependencies:
+      '@photon/addresses':
+        specifier: workspace:*
+        version: link:../addresses
+      '@photon/rpc':
+        specifier: workspace:*
+        version: link:../rpc
 
   packages/signers: {}
 

@@ -11,10 +11,20 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
-    "./*": {
-      "types": "./dist/*.d.ts",
-      "import": "./dist/*.js",
-      "require": "./dist/*.cjs"
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js",
+      "require": "./dist/client.cjs"
+    },
+    "./create-subscription-client": {
+      "types": "./dist/create-subscription-client.d.ts",
+      "import": "./dist/create-subscription-client.js",
+      "require": "./dist/create-subscription-client.cjs"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js",
+      "require": "./dist/types.cjs"
     }
   },
   "files": [
@@ -46,5 +56,9 @@
   "sideEffects": false,
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "@photon/addresses": "workspace:*",
+    "@photon/rpc": "workspace:*"
   }
 }
