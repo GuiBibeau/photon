@@ -5,7 +5,6 @@
  * with support for custom transports, middleware, and configuration options.
  */
 
-import type { SolanaRpcApi } from './api.js';
 import type { Commitment } from './types.js';
 import type { RpcClient, RpcMethodNames, RpcMethodParams, RpcMethodReturn } from './helpers.js';
 import type { Transport, TransportConfig, JsonRpcRequest, JsonRpcResponse } from './transport.js';
@@ -133,62 +132,35 @@ export function createSolanaRpcFromTransport(
     middlewares.length > 0 ? composeMiddleware(...middlewares)(transport) : transport;
 
   // Create the RPC client using a Proxy
-  return new Proxy({} as RpcClient, {
-    get<T extends object>(_target: T, method: PropertyKey): unknown {
-      // Check if the method is a valid RPC method
-      if (typeof method !== 'string') {
-        return undefined;
-      }
+  // Note: TypeScript has limitations with Proxy type inference
+  // The returned client works correctly at runtime but TypeScript
+  // cannot properly infer method return types through the Proxy
+  const client = new Proxy(
+    {},
+    {
+      get(_target, prop) {
+        if (typeof prop !== 'string') {
+          return undefined;
+        }
 
-      // Return a function that calls the transport
-      return async (...args: unknown[]) => {
-        const request: JsonRpcRequest = {
-          jsonrpc: '2.0',
-          id: 0, // Will be replaced by middleware if configured
-          method: method as RpcMethodNames,
-          params: args as RpcMethodParams<RpcMethodNames>,
+        // Return a function that calls the transport
+        return async (...args: unknown[]) => {
+          const request: JsonRpcRequest = {
+            jsonrpc: '2.0',
+            id: 0, // Will be replaced by middleware if configured
+            method: prop as RpcMethodNames,
+            params: args as RpcMethodParams<RpcMethodNames>,
+          };
+
+          const response = await enhancedTransport(request);
+          return extractResult(response as JsonRpcResponse<RpcMethodReturn<RpcMethodNames>>);
         };
-
-        const response = await enhancedTransport(request);
-        return extractResult(response as JsonRpcResponse<RpcMethodReturn<RpcMethodNames>>);
-      };
+      },
     },
+  );
 
-    has(_target, method) {
-      // Check if the method exists on the SolanaRpcApi interface
-      return typeof method === 'string' && method in ({} as SolanaRpcApi);
-    },
-
-    ownKeys() {
-      // Return all method names from the SolanaRpcApi interface
-      // This is primarily for debugging and introspection
-      return Object.keys({} as SolanaRpcApi);
-    },
-
-    getOwnPropertyDescriptor(_target, method) {
-      // Provide property descriptor for valid methods
-      if (typeof method === 'string') {
-        return {
-          configurable: true,
-          enumerable: true,
-          get() {
-            return async (...args: unknown[]) => {
-              const request: JsonRpcRequest = {
-                jsonrpc: '2.0',
-                id: 0, // Will be replaced by middleware if configured
-                method: method as RpcMethodNames,
-                params: args as RpcMethodParams<RpcMethodNames>,
-              };
-
-              const response = await enhancedTransport(request);
-              return extractResult(response as JsonRpcResponse<RpcMethodReturn<RpcMethodNames>>);
-            };
-          },
-        };
-      }
-      return undefined;
-    },
-  });
+  // Cast to RpcClient - this is safe because we implement the contract
+  return client as unknown as RpcClient;
 }
 
 /**

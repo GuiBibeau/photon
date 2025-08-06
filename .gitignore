@@ -52,3 +52,6 @@ yarn.lock
 
 # MCP configuration (contains sensitive tokens)
 .mcp.json
+
+# Serena AI assistant
+.serena/
