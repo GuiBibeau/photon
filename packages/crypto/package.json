@@ -2,19 +2,44 @@
   "name": "@photon/crypto",
   "version": "0.0.0",
   "description": "Cryptographic utilities for Photon SDK",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     },
-    "./*": {
-      "types": "./dist/*.d.ts",
-      "import": "./dist/*.js",
-      "require": "./dist/*.cjs"
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.mjs",
+      "require": "./dist/types.js"
+    },
+    "./keypair": {
+      "types": "./dist/keypair.d.ts",
+      "import": "./dist/keypair.mjs",
+      "require": "./dist/keypair.js"
+    },
+    "./key-generation": {
+      "types": "./dist/key-generation.d.ts",
+      "import": "./dist/key-generation.mjs",
+      "require": "./dist/key-generation.js"
+    },
+    "./hash": {
+      "types": "./dist/hash.d.ts",
+      "import": "./dist/hash.mjs",
+      "require": "./dist/hash.js"
+    },
+    "./signing": {
+      "types": "./dist/signing.d.ts",
+      "import": "./dist/signing.mjs",
+      "require": "./dist/signing.js"
+    },
+    "./compatibility": {
+      "types": "./dist/compatibility.d.ts",
+      "import": "./dist/compatibility.mjs",
+      "require": "./dist/compatibility.js"
     }
   },
   "files": [

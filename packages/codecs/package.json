@@ -2,19 +2,89 @@
   "name": "@photon/codecs",
   "version": "0.0.0",
   "description": "Binary serialization codecs for Photon SDK",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     },
-    "./*": {
-      "types": "./dist/*.d.ts",
-      "import": "./dist/*.js",
-      "require": "./dist/*.cjs"
+    "./codec": {
+      "types": "./dist/codec.d.ts",
+      "import": "./dist/codec.mjs",
+      "require": "./dist/codec.js"
+    },
+    "./composition": {
+      "types": "./dist/composition.d.ts",
+      "import": "./dist/composition.mjs",
+      "require": "./dist/composition.js"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "import": "./dist/errors.mjs",
+      "require": "./dist/errors.js"
+    },
+    "./primitives": {
+      "types": "./dist/primitives/index.d.ts",
+      "import": "./dist/primitives/index.mjs",
+      "require": "./dist/primitives/index.js"
+    },
+    "./primitives/base58": {
+      "types": "./dist/primitives/base58.d.ts",
+      "import": "./dist/primitives/base58.mjs",
+      "require": "./dist/primitives/base58.js"
+    },
+    "./primitives/boolean": {
+      "types": "./dist/primitives/boolean.d.ts",
+      "import": "./dist/primitives/boolean.mjs",
+      "require": "./dist/primitives/boolean.js"
+    },
+    "./primitives/bytes": {
+      "types": "./dist/primitives/bytes.d.ts",
+      "import": "./dist/primitives/bytes.mjs",
+      "require": "./dist/primitives/bytes.js"
+    },
+    "./primitives/numeric": {
+      "types": "./dist/primitives/numeric.d.ts",
+      "import": "./dist/primitives/numeric.mjs",
+      "require": "./dist/primitives/numeric.js"
+    },
+    "./primitives/string": {
+      "types": "./dist/primitives/string.d.ts",
+      "import": "./dist/primitives/string.mjs",
+      "require": "./dist/primitives/string.js"
+    },
+    "./composites": {
+      "types": "./dist/composites/index.d.ts",
+      "import": "./dist/composites/index.mjs",
+      "require": "./dist/composites/index.js"
+    },
+    "./composites/array": {
+      "types": "./dist/composites/array.d.ts",
+      "import": "./dist/composites/array.mjs",
+      "require": "./dist/composites/array.js"
+    },
+    "./composites/enum": {
+      "types": "./dist/composites/enum.d.ts",
+      "import": "./dist/composites/enum.mjs",
+      "require": "./dist/composites/enum.js"
+    },
+    "./composites/lazy": {
+      "types": "./dist/composites/lazy.d.ts",
+      "import": "./dist/composites/lazy.mjs",
+      "require": "./dist/composites/lazy.js"
+    },
+    "./composites/option": {
+      "types": "./dist/composites/option.d.ts",
+      "import": "./dist/composites/option.mjs",
+      "require": "./dist/composites/option.js"
+    },
+    "./composites/struct": {
+      "types": "./dist/composites/struct.d.ts",
+      "import": "./dist/composites/struct.mjs",
+      "require": "./dist/composites/struct.js"
     }
   },
   "files": [
