@@ -25,7 +25,8 @@ export type RpcMethodParams<TMethod extends RpcMethodNames> = SolanaRpcApi[TMeth
  * Extract the return type for a specific RPC method.
  */
 export type RpcMethodReturn<TMethod extends RpcMethodNames> = SolanaRpcApi[TMethod] extends (
-  ...args: unknown[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ...args: any[]
 ) => Promise<infer R>
   ? R
   : never;

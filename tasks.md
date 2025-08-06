@@ -765,11 +765,11 @@ Complete test coverage for address handling, including validation, conversion, a
 
 ---
 
-## Epic 4: RPC Communication Layer
+## Epic 4: RPC Communication Layer ✅
 
 **Goal**: Build a type-safe JSON-RPC client using native fetch
 
-### SDK-26: Define RPC types
+### SDK-26: Define RPC types ✅
 
 **Priority**: Highest | **Story Points**: 5 | **Labels**: `feature`, `rpc`  
 **Dependencies**: SDK-3
@@ -821,7 +821,7 @@ export interface SolanaRpcApi {
 
 ---
 
-### SDK-27: Implement RPC client factory
+### SDK-27: Implement RPC client factory ✅
 
 **Priority**: Highest | **Story Points**: 3 | **Labels**: `feature`, `rpc`  
 **Dependencies**: SDK-26
@@ -855,7 +855,7 @@ Create a factory function that produces type-safe RPC clients with configurable 
 
 ---
 
-### SDK-28: Create HTTP transport
+### SDK-28: Create HTTP transport ✅
 
 **Priority**: Highest | **Story Points**: 3 | **Labels**: `feature`, `rpc`  
 **Dependencies**: SDK-27
@@ -906,7 +906,7 @@ export function createHttpTransport(url: string): Transport {
 
 ---
 
-### SDK-29: Add custom transport support
+### SDK-29: Add custom transport support ✅
 
 **Priority**: Medium | **Story Points**: 2 | **Labels**: `feature`, `rpc`  
 **Dependencies**: SDK-28
@@ -940,7 +940,7 @@ Enable users to provide custom transport implementations for advanced scenarios 
 
 ---
 
-### SDK-30: Implement core RPC methods
+### SDK-30: Implement core RPC methods ✅
 
 **Priority**: Highest | **Story Points**: 5 | **Labels**: `feature`, `rpc`  
 **Dependencies**: SDK-28
@@ -976,7 +976,7 @@ Implement the most commonly used RPC methods with proper typing, error handling,
 
 ---
 
-### SDK-31: Write RPC module tests
+### SDK-31: Write RPC module tests ✅
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `test`, `rpc`  
 **Dependencies**: SDK-30
@@ -1009,11 +1009,11 @@ Comprehensive testing of all RPC functionality including success cases, error ha
 
 ---
 
-## Epic 5: WebSocket Subscriptions
+## Epic 5: WebSocket Subscriptions 🚧
 
 **Goal**: Implement real-time data subscriptions using native WebSocket API
 
-### SDK-33: Create WebSocket subscription client
+### SDK-33: Create WebSocket subscription client 🚧
 
 **Priority**: High | **Story Points**: 5 | **Labels**: `feature`, `rpc-subscriptions`  
 **Dependencies**: SDK-26
@@ -1059,7 +1059,7 @@ export class WebSocketSubscriptionClient {
 
 ---
 
-### SDK-34: Implement subscription methods
+### SDK-34: Implement subscription methods ⏳
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `rpc-subscriptions`  
 **Dependencies**: SDK-33
@@ -1099,7 +1099,7 @@ for await (const update of rpc.accountSubscribe(address)) {
 
 ---
 
-### SDK-35: Build subscription management
+### SDK-35: Build subscription management ⏳
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `rpc-subscriptions`  
 **Dependencies**: SDK-34
@@ -1132,7 +1132,7 @@ Implement robust subscription lifecycle management including cleanup, error reco
 
 ---
 
-### SDK-36: Write subscription tests
+### SDK-36: Write subscription tests ⏳
 
 **Priority**: Medium | **Story Points**: 3 | **Labels**: `test`, `rpc-subscriptions`  
 **Dependencies**: SDK-35
