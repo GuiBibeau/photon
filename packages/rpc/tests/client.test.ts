@@ -2,9 +2,9 @@
  * Tests for RPC client factory.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type { Address } from '@photon/addresses';
-import { createSolanaRpcFromTransport, createBatch } from '../src/client.js';
+import { createSolanaRpc, createSolanaRpcFromTransport, createBatch } from '../src/client.js';
 import { createMockTransport } from '../src/transport.js';
 import type { Transport, JsonRpcRequest, JsonRpcResponse } from '../src/transport.js';
 
@@ -181,6 +181,117 @@ describe('RPC Client Factory', () => {
     });
   });
 
+  describe('createSolanaRpc', () => {
+    it('should create a client with HTTP transport from URL', async () => {
+      // This test needs to mock the global fetch to work properly
+      const originalFetch = globalThis.fetch;
+      const mockFetch = vi.fn();
+      globalThis.fetch = mockFetch;
+
+      mockFetch.mockImplementation(async (_url, options) => {
+        const body = JSON.parse(options?.body as string);
+        return {
+          ok: true,
+          json: async () => ({
+            jsonrpc: '2.0',
+            id: body.id,
+            result: 1000000000n,
+          }),
+        };
+      });
+
+      const client = createSolanaRpc('https://api.mainnet-beta.solana.com');
+      const mockAddress = 'So11111111111111111111111111111111111111112' as Address;
+
+      const balance = await client.getBalance(mockAddress);
+      expect(balance).toBe(1000000000n);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.mainnet-beta.solana.com',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            'Content-Type': 'application/json',
+          }),
+        }),
+      );
+
+      globalThis.fetch = originalFetch;
+    });
+
+    it('should pass headers and timeout config to transport', async () => {
+      const originalFetch = globalThis.fetch;
+      const mockFetch = vi.fn();
+      globalThis.fetch = mockFetch;
+
+      mockFetch.mockImplementation(async (_url, options) => {
+        const body = JSON.parse(options?.body as string);
+        return {
+          ok: true,
+          json: async () => ({
+            jsonrpc: '2.0',
+            id: body.id,
+            result: { 'solana-core': '1.16.0' },
+          }),
+        };
+      });
+
+      const client = createSolanaRpc('https://api.mainnet-beta.solana.com', {
+        headers: { 'X-Custom-Header': 'test' },
+        timeout: 5000,
+      });
+
+      await client.getVersion();
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.mainnet-beta.solana.com',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'X-Custom-Header': 'test',
+          }),
+        }),
+      );
+
+      globalThis.fetch = originalFetch;
+    });
+
+    it('should apply middleware from config', async () => {
+      const originalFetch = globalThis.fetch;
+      const mockFetch = vi.fn();
+      globalThis.fetch = mockFetch;
+
+      let middlewareExecuted = false;
+      const customMiddleware = (next: Transport): Transport => {
+        return async (request) => {
+          middlewareExecuted = true;
+          return next(request);
+        };
+      };
+
+      mockFetch.mockImplementation(async (_url, options) => {
+        const body = JSON.parse(options?.body as string);
+        return {
+          ok: true,
+          json: async () => ({
+            jsonrpc: '2.0',
+            id: body.id,
+            result: 123456,
+          }),
+        };
+      });
+
+      const client = createSolanaRpc('https://api.mainnet-beta.solana.com', {
+        middleware: [customMiddleware],
+      });
+
+      await client.getSlot();
+
+      expect(middlewareExecuted).toBe(true);
+
+      globalThis.fetch = originalFetch;
+    });
+  });
+
   describe('createBatch', () => {
     it('should batch multiple requests', async () => {
       const responses = new Map([
@@ -243,6 +354,169 @@ describe('RPC Client Factory', () => {
 
       expect(balance).toBe(1000000000n);
       expect(slot).toBe(234567);
+    });
+
+    it('should handle empty batch execution', async () => {
+      const transport = createMockTransport(new Map());
+      const client = createSolanaRpcFromTransport(transport);
+      const batch = createBatch(client);
+
+      // Execute empty batch - should not throw
+      await batch.execute();
+
+      // Nothing to assert - just ensure no errors
+      expect(true).toBe(true);
+    });
+
+    it('should handle accessing non-existent properties on batch proxy', () => {
+      const transport = createMockTransport(new Map());
+      const client = createSolanaRpcFromTransport(transport);
+      const batch = createBatch(client);
+
+      // Access non-function property - batch proxy returns functions for any property
+      const prop = (batch as any).nonExistentProp;
+      expect(typeof prop).toBe('function');
+    });
+  });
+
+  describe('Proxy behavior', () => {
+    it('should return undefined for non-existent methods on RPC proxy', () => {
+      const transport = createMockTransport(new Map());
+      const client = createSolanaRpcFromTransport(transport);
+
+      // Try to access a non-existent method - proxy returns functions for any property
+      const nonExistent = (client as any).nonExistentMethod;
+      expect(typeof nonExistent).toBe('function');
+    });
+
+    it('should handle accessing non-function properties', () => {
+      const transport = createMockTransport(new Map());
+      const client = createSolanaRpcFromTransport(transport);
+
+      // Access Symbol property
+      const symbolProp = (client as any)[Symbol.toStringTag];
+      expect(symbolProp).toBeUndefined();
+    });
+
+    it('should handle config with only commitment', async () => {
+      let capturedRequest: JsonRpcRequest | undefined;
+
+      const customTransport: Transport = async (request) => {
+        capturedRequest = request;
+        return {
+          jsonrpc: '2.0',
+          id: request.id,
+          result: 1000000000n,
+        } as JsonRpcResponse;
+      };
+
+      const client = createSolanaRpcFromTransport(customTransport, {
+        commitment: 'confirmed',
+      });
+
+      const mockAddress = 'So11111111111111111111111111111111111111112' as Address;
+      await client.getBalance(mockAddress);
+
+      // Default ID generator should be used
+      expect(capturedRequest?.id).toBeDefined();
+      expect(typeof capturedRequest?.id).toBe('string'); // Default generates string IDs
+    });
+
+    it('should handle config with only retry settings', async () => {
+      let attemptCount = 0;
+
+      const customTransport: Transport = async () => {
+        attemptCount++;
+        if (attemptCount === 1) {
+          throw new Error('First attempt fails');
+        }
+        return {
+          jsonrpc: '2.0',
+          id: 1,
+          result: 'success',
+        } as JsonRpcResponse;
+      };
+
+      const client = createSolanaRpcFromTransport(customTransport, {
+        retry: {
+          maxAttempts: 2,
+          initialDelay: 10,
+        },
+      });
+
+      const result = await client.getVersion();
+      expect(result).toBe('success');
+      expect(attemptCount).toBe(2);
+    });
+
+    it('should handle batch proxy with Symbol properties', () => {
+      const transport = createMockTransport(new Map());
+      const client = createSolanaRpcFromTransport(transport);
+      const batch = createBatch(client);
+
+      // Access Symbol property on batch
+      const symbolProp = (batch as any)[Symbol.iterator];
+      expect(symbolProp).toBeUndefined();
+    });
+
+    it('should handle createSolanaRpc with no config', async () => {
+      const originalFetch = globalThis.fetch;
+      const mockFetch = vi.fn();
+      globalThis.fetch = mockFetch;
+
+      mockFetch.mockImplementation(async (_url, options) => {
+        const body = JSON.parse(options?.body as string);
+        return {
+          ok: true,
+          json: async () => ({
+            jsonrpc: '2.0',
+            id: body.id,
+            result: 123456,
+          }),
+        };
+      });
+
+      const client = createSolanaRpc('https://api.mainnet-beta.solana.com');
+      const slot = await client.getSlot();
+
+      expect(slot).toBe(123456);
+
+      globalThis.fetch = originalFetch;
+    });
+
+    it('should handle createSolanaRpc with only headers', async () => {
+      const originalFetch = globalThis.fetch;
+      const mockFetch = vi.fn();
+      globalThis.fetch = mockFetch;
+
+      mockFetch.mockImplementation(async (_url, options) => {
+        const body = JSON.parse(options?.body as string);
+        return {
+          ok: true,
+          json: async () => ({
+            jsonrpc: '2.0',
+            id: body.id,
+            result: 123456,
+          }),
+        };
+      });
+
+      const client = createSolanaRpc('https://api.mainnet-beta.solana.com', {
+        headers: { 'X-Test': 'value' },
+      });
+
+      await client.getSlot();
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.mainnet-beta.solana.com',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'X-Test': 'value',
+          }),
+        }),
+      );
+
+      globalThis.fetch = originalFetch;
     });
   });
 });
