@@ -2,10 +2,9 @@
 
 > ⚡ A lightweight, zero-dependency TypeScript SDK for Solana using Web Standards
 
-[![npm version](https://img.shields.io/npm/v/@photon/core.svg)](https://www.npmjs.com/package/@photon/core)
-[![Bundle Size](https://img.shields.io/bundlephobia/minzip/@photon/core)](https://bundlephobia.com/package/@photon/core)
-[![License](https://img.shields.io/npm/l/@photon/core.svg)](https://github.com/GuiBibeau/photon/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/GuiBibeau/photon/blob/main/LICENSE)
 [![CI](https://github.com/GuiBibeau/photon/workflows/CI/badge.svg)](https://github.com/GuiBibeau/photon/actions)
+![Status: Early Development](https://img.shields.io/badge/Status-Early%20Development-orange)
 
 ## Overview
 
@@ -13,77 +12,67 @@ Photon is a modern, lightweight alternative to `@solana/web3.js` built from the 
 
 ### Why Photon?
 
-- **🪶 Lightweight**: ~15KB minified (vs ~300KB for @solana/web3.js)
-- **🌲 Tree-shakable**: Import only what you need
+- **🪶 Lightweight**: ~15-25KB typical usage with tree-shaking (vs ~300KB for @solana/web3.js)
+- **🌲 Tree-shakable**: Multiple entry points per package for granular imports
 - **🔒 Secure**: Uses native WebCrypto for all cryptographic operations
 - **🚀 Fast**: No polyfills, no legacy code, pure modern JavaScript
-- **📦 Zero Dependencies**: No external packages, just Web Standards
-- **🔧 Modular**: Compose exactly the functionality you need
-- **💪 Type-Safe**: Written in TypeScript with strict types
+- **📦 Zero Dependencies**: No external runtime dependencies, just Web Standards
+- **🔧 Modular**: 11 focused packages, compose exactly what you need
+- **💪 Type-Safe**: Written in TypeScript with branded types and strict typing
 
 ## Installation
 
+> ⚠️ **Note**: Photon SDK is currently in early development. Packages are not yet published to npm.
+
 ```bash
-npm install @photon/core
+# Clone and build locally
+git clone https://github.com/GuiBibeau/photon.git
+cd photon
+pnpm install
+pnpm build
 ```
 
-Or install specific modules:
-
+Future npm installation (coming soon):
 ```bash
-npm install @photon/transactions @photon/rpc @photon/crypto
+npm install @photon/rpc @photon/crypto @photon/addresses
 ```
 
 ## Quick Start
 
-### Send SOL
+### Current API Examples
 
 ```typescript
-import {
-  createSolanaRpc,
-  generateKeyPair,
-  createTransaction,
-  systemProgram,
-  sendAndConfirmTransaction,
-} from "@photon/core";
+// RPC Client
+import { createSolanaRpc } from "@photon/rpc/client";
+import { address } from "@photon/addresses";
 
-// Connect to cluster
 const rpc = createSolanaRpc("https://api.devnet.solana.com");
+const balance = await rpc.getBalance(address("So11..."));
 
-// Generate a keypair
-const keypair = await generateKeyPair();
+// Cryptographic Operations
+import { generateKeyPair, sign } from "@photon/crypto";
 
-// Create a transaction
-const transaction = createTransaction({
-  version: "legacy",
-  feePayer: keypair.address,
-  instructions: [
-    systemProgram.transfer({
-      from: keypair.address,
-      to: 'Bk5..."', // recipient address
-      lamports: 1_000_000n, // 0.001 SOL
-    }),
-  ],
-});
+const keyPair = await generateKeyPair();
+const signature = await sign(message, keyPair.privateKey);
 
-// Send and confirm
-const signature = await sendAndConfirmTransaction(transaction, {
-  rpc,
-  signers: [keypair],
-});
+// Address Operations
+import { address, findProgramAddressSync } from "@photon/addresses/pda";
+
+const programAddress = address("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+const [pda, bump] = findProgramAddressSync(
+  [Buffer.from("metadata"), programId.toBuffer(), mint.toBuffer()],
+  programAddress
+);
 ```
 
-### Monitor Account Changes
+### Tree-Shaking with Granular Imports
 
 ```typescript
-import { createSolanaRpcSubscriptions, address } from "@photon/core";
-
-const ws = createSolanaRpcSubscriptions("wss://api.devnet.solana.com");
-const accountAddress = address("Bk5...");
-
-// Subscribe to account changes
-for await (const update of ws.accountSubscribe(accountAddress)) {
-  console.log("Account updated:", update);
-}
+// Import only what you need - reduces bundle size by 50-60%
+import { createSolanaRpc } from "@photon/rpc/client";
+import { u8, u32, struct } from "@photon/codecs/primitives/numeric";
+import { base58 } from "@photon/codecs/primitives/base58";
+import { sha256 } from "@photon/crypto/hash";
 ```
 
 ## Core Concepts
@@ -151,16 +140,19 @@ const tokenAccount = tokenAccountCodec.decode(accountInfo.data);
 
 ## Modules
 
-Photon is organized into focused modules:
+Photon is organized into focused, tree-shakable modules:
 
-| Module                 | Description                      | Size |
-| ---------------------- | -------------------------------- | ---- |
-| `@photon/addresses`    | Address parsing and validation   | ~2KB |
-| `@photon/crypto`       | Ed25519 operations via WebCrypto | ~3KB |
-| `@photon/codecs`       | Binary serialization             | ~4KB |
-| `@photon/rpc`          | JSON-RPC client                  | ~5KB |
-| `@photon/transactions` | Transaction building and signing | ~6KB |
-| `@photon/errors`       | Error handling                   | ~1KB |
+| Module                      | Description                        | Status      | Size (min) |
+| --------------------------- | ---------------------------------- | ----------- | ---------- |
+| `@photon/addresses`         | Address parsing, validation, PDAs  | ✅ Complete | ~8KB       |
+| `@photon/crypto`            | Ed25519 operations via WebCrypto  | ✅ Complete | ~22KB      |
+| `@photon/codecs`            | Binary serialization/deserialization| ✅ Complete | ~43KB      |
+| `@photon/rpc`               | Type-safe JSON-RPC client         | ✅ Complete | ~53KB      |
+| `@photon/errors`            | Error handling utilities          | ✅ Complete | ~38KB      |
+| `@photon/transactions`      | Transaction building and signing  | 🚧 Planned  | -          |
+| `@photon/rpc-subscriptions` | WebSocket subscriptions           | 🚧 Planned  | -          |
+
+*Note: Sizes shown are for full modules. With tree-shaking and importing only what you need, typical usage is 15-25KB total.*
 
 ## Migrating from @solana/web3.js
 
@@ -274,11 +266,13 @@ Photon is designed for optimal performance:
 
 ### Bundle Size Comparison
 
-| Feature        | @solana/web3.js | Photon |
-| -------------- | --------------- | ------ |
-| Basic Transfer | ~300KB          | ~15KB  |
-| Key Generation | ~180KB          | ~3KB   |
-| RPC Client     | ~150KB          | ~5KB   |
+| Use Case                | @solana/web3.js | Photon (with tree-shaking) |
+| ----------------------- | --------------- | --------------------------- |
+| RPC Client Only         | ~300KB          | ~10-15KB                    |
+| Crypto Operations       | ~300KB          | ~5-8KB                      |
+| Address Operations      | ~300KB          | ~3-5KB                      |
+| Full SDK                | ~300KB          | ~165KB (all modules)        |
+| Typical Application     | ~300KB          | ~15-25KB                    |
 
 ## Browser Support
 
@@ -309,11 +303,21 @@ pnpm build
 
 ## Roadmap
 
-- [x] Core modules (addresses, crypto, codecs, RPC)
-- [x] Transaction building and signing
-- [x] WebSocket subscriptions
+### Completed ✅
+- [x] Core infrastructure (errors, codecs)
+- [x] Cryptographic operations (Ed25519 via WebCrypto)
+- [x] Address handling and PDA derivation
+- [x] RPC client with type-safe methods
+- [x] Tree-shaking optimization (multiple entry points)
+
+### In Progress 🚧
+- [ ] Transaction building and signing
+- [ ] WebSocket subscriptions
+
+### Planned 📋
 - [ ] Token program helpers
 - [ ] Metaplex program support
+- [ ] Wallet adapter integration
 - [ ] React hooks package
 - [ ] CLI tools
 

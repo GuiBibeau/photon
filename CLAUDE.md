@@ -4,29 +4,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Photon SDK** - A lightweight, zero-dependency Solana SDK alternative to @solana/web3.js (15KB vs 300KB).
+**Photon SDK** - A lightweight, zero-dependency Solana SDK alternative to @solana/web3.js. Currently ~165KB total (all packages), targeting ~15KB for typical usage with tree-shaking.
 
-**Current Status**: Early implementation phase. Project setup and testing framework configured. Core implementation follows the roadmap in `tasks.md`.
+**Current Status**: Core packages implemented (addresses, crypto, codecs, errors, RPC). Following implementation roadmap in `tasks.md` (8 epics, 60+ tasks).
 
 **Key Documents**:
-- `README.md`: Public-facing documentation and API design
-- `tasks.md`: Detailed implementation roadmap with 60+ tasks across 8 epics
-- `TESTING.md`: Testing guidelines and configuration
+- `README.md`: Public API design and usage examples
+- `tasks.md`: Implementation roadmap - Epic 1-3 complete, Epic 4-5 in progress
+- `TESTING.md`: Testing configuration and guidelines
 
 ### Project Goals
-- **🪶 Lightweight**: Target ~15KB minified (vs ~300KB for @solana/web3.js)
-- **🌲 Tree-shakable**: Import only what you need
-- **🔒 Secure**: Uses native WebCrypto for all cryptographic operations
-- **🚀 Fast**: No polyfills, no legacy code, pure modern JavaScript
-- **📦 Zero Dependencies**: No external packages, just Web Standards
-- **🔧 Modular**: Compose exactly the functionality you need
-- **💪 Type-Safe**: Written in TypeScript with strict types
+- **🪶 Lightweight**: ~15KB minified typical usage (vs ~300KB for @solana/web3.js)
+- **🌲 Tree-shakable**: Multiple entry points per package for granular imports
+- **🔒 Secure**: Native WebCrypto API for all cryptographic operations
+- **🚀 Fast**: No polyfills, pure Web Standards
+- **📦 Zero Dependencies**: No external runtime dependencies
+- **🔧 Modular**: 11 focused packages, compose what you need
+- **💪 Type-Safe**: TypeScript with branded types and discriminated unions
 
 ### Target Environments
-- Chrome/Edge 92+, Firefox 91+, Safari 15+
-- Node.js 20+
-- Deno 1.25+
-- Cloudflare Workers and edge environments
+- Browsers: Chrome/Edge 92+, Firefox 91+, Safari 15+
+- Node.js 20+ (uses native WebCrypto)
+- Edge runtimes: Deno, Cloudflare Workers, Vercel Edge
 
 ## Architecture
 
@@ -73,8 +72,10 @@ pnpm test:coverage     # Run tests with coverage report
 pnpm test:ui           # Open Vitest UI
 pnpm test:packages     # Run tests in each package individually
 
-# Run tests for a specific package
-cd packages/[package-name] && pnpm test
+# Run tests for specific files/patterns
+pnpm test packages/rpc/tests/client.test.ts  # Single file
+pnpm test -- --grep "should parse"           # Pattern matching
+cd packages/[package-name] && pnpm test      # Single package
 
 # Linting and formatting
 pnpm lint              # Run ESLint on all packages
@@ -83,16 +84,16 @@ pnpm format            # Check code formatting with Prettier
 pnpm format:fix        # Auto-format code with Prettier
 
 # Type checking
-pnpm typecheck
+pnpm typecheck         # Check TypeScript types in all packages
 
 # Development
 pnpm dev               # Run all packages in watch mode
 
 # Clean build artifacts
-pnpm clean
+pnpm clean             # Remove all dist folders
 
-# Bundle size analysis
-pnpm size              # Analyze bundle sizes (not yet implemented)
+# Bundle size analysis (manual)
+ls -lh packages/*/dist/*.mjs | grep -v map   # Check individual sizes
 ```
 
 ## Code Patterns
@@ -147,15 +148,29 @@ const keyPair = await crypto.subtle.generateKey(
 - Critical packages (crypto, transactions): 100% coverage required
 - Coverage reports available in text, lcov, and html formats
 
-## Implementation Priorities
+## Implementation Status
 
-When implementing, follow the epic order from tasks.md:
-1. Core functionality (Ed25519, transactions)
-2. RPC communication
-3. Program interfaces
-4. Actions & Blinks
-5. Wallet integrations
-6. Advanced features
+### Completed Packages
+- **@photon/errors**: Error handling with discriminated unions ✅
+- **@photon/codecs**: Binary serialization (primitives & composites) ✅
+- **@photon/crypto**: Ed25519 operations via WebCrypto ✅
+- **@photon/addresses**: Base58 encoding, address validation, PDAs ✅
+- **@photon/rpc**: JSON-RPC client with type-safe methods ✅
+
+### In Progress
+- **@photon/rpc-subscriptions**: WebSocket subscriptions (placeholder)
+- **@photon/transactions**: Transaction building (placeholder)
+
+### Implementation Priorities (from tasks.md)
+Follow epic order when implementing new features:
+1. ✅ Project Setup (Epic 1)
+2. ✅ Core Infrastructure (Epic 2)
+3. ✅ Cryptographic Foundation (Epic 3)
+4. 🚧 RPC Communication (Epic 4) - In progress
+5. 🚧 WebSocket Subscriptions (Epic 5) - Started
+6. ⏳ Transaction Building (Epic 6)
+7. ⏳ High-Level Features (Epic 7)
+8. ⏳ Integration & Documentation (Epic 8)
 
 ## Common Tasks
 
@@ -163,32 +178,29 @@ When implementing, follow the epic order from tasks.md:
 1. Create directory under `packages/`
 2. Add package.json with:
    - Name: `@photon/[package-name]`
-   - Proper exports map for ESM/CJS
+   - Multiple entry points in exports map for tree-shaking
    - Scripts: build, test, lint, format, typecheck, clean
-   - Main/module/types fields pointing to dist
+   - Main points to .js, module to .mjs
 3. Create `tsconfig.json` extending `../../tsconfig.base.json`
-4. Create `tsup.config.ts` for build configuration
-5. Create `vitest.config.ts` extending shared config:
+4. Create `tsup.config.ts` with multiple entry points:
    ```typescript
-   import { defineConfig } from 'vitest/config';
-   import { sharedConfig } from '../../vitest.shared';
-   
-   export default defineConfig({
-     ...sharedConfig,
-     // Package-specific overrides if needed
-   });
+   entry: {
+     index: 'src/index.ts',
+     // Add specific exports for tree-shaking
+   }
    ```
-6. Add initial `src/index.ts` file
-7. Create `tests/` directory for tests
-8. Update workspace aliases in `vitest.shared.ts` if needed
+5. Create `vitest.config.ts` extending shared config
+6. Add `src/index.ts` and modular exports
+7. Create `tests/` directory with `.test.ts` files
+8. Set `sideEffects: false` for tree-shaking
 
 ### Implementing a Feature
-1. Check tasks.md for requirements
-2. Write types first
-3. Implement with Web Standards only
-4. Add comprehensive tests
-5. Document with JSDoc
-6. Verify bundle size impact
+1. Check `tasks.md` for epic/task requirements
+2. Define types with branded types for safety
+3. Implement using only Web Standards APIs
+4. Write tests achieving 80%+ coverage (100% for crypto)
+5. Add JSDoc comments for public APIs
+6. Verify bundle size with `pnpm build`
 
 ## Performance Guidelines
 - Avoid large dependencies
@@ -233,10 +245,27 @@ Packages can depend on each other using workspace protocol:
 ## Build System
 
 - **Bundler**: tsup (ESBuild-based)
-- **Output formats**: ESM and CJS
+- **Output formats**: ESM (.mjs) and CJS (.js)
 - **TypeScript**: Strict mode with composite projects
-- **Entry points**: Support for multiple entry points per package
-- **Tree-shaking**: Enabled via proper ESM exports
+- **Entry points**: Multiple per package for optimal tree-shaking
+- **Tree-shaking**: ~50-60% size reduction with granular imports
+
+### Tree-Shaking Architecture
+Packages expose multiple entry points for granular imports:
+```typescript
+// Instead of importing everything
+import { createSolanaRpc, base58 } from '@photon/rpc';
+
+// Import only what you need
+import { createSolanaRpc } from '@photon/rpc/client';
+import { base58 } from '@photon/codecs/primitives/base58';
+```
+
+Key packages with multiple entry points:
+- **@photon/rpc**: 18 entry points (client, transport, methods/*, parsers/*)
+- **@photon/codecs**: 16 entry points (primitives/*, composites/*)
+- **@photon/crypto**: 7 entry points (signing, hash, keypair, etc.)
+- **@photon/addresses**: 3 entry points (main, pda, derive)
 
 ## Code Quality Tools
 

@@ -2,19 +2,94 @@
   "name": "@photon/rpc",
   "version": "0.0.0",
   "description": "JSON-RPC client for Photon SDK",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     },
-    "./*": {
-      "types": "./dist/*.d.ts",
-      "import": "./dist/*.js",
-      "require": "./dist/*.cjs"
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.mjs",
+      "require": "./dist/client.js"
+    },
+    "./transport": {
+      "types": "./dist/transport.d.ts",
+      "import": "./dist/transport.mjs",
+      "require": "./dist/transport.js"
+    },
+    "./middleware": {
+      "types": "./dist/middleware.d.ts",
+      "import": "./dist/middleware.mjs",
+      "require": "./dist/middleware.js"
+    },
+    "./convenience": {
+      "types": "./dist/convenience.d.ts",
+      "import": "./dist/convenience.mjs",
+      "require": "./dist/convenience.js"
+    },
+    "./helpers": {
+      "types": "./dist/helpers.d.ts",
+      "import": "./dist/helpers.mjs",
+      "require": "./dist/helpers.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.mjs",
+      "require": "./dist/types.js"
+    },
+    "./api": {
+      "types": "./dist/api.d.ts",
+      "import": "./dist/api.mjs",
+      "require": "./dist/api.js"
+    },
+    "./methods": {
+      "types": "./dist/methods/index.d.ts",
+      "import": "./dist/methods/index.mjs",
+      "require": "./dist/methods/index.js"
+    },
+    "./methods/account": {
+      "types": "./dist/methods/account.d.ts",
+      "import": "./dist/methods/account.mjs",
+      "require": "./dist/methods/account.js"
+    },
+    "./methods/block": {
+      "types": "./dist/methods/block.d.ts",
+      "import": "./dist/methods/block.mjs",
+      "require": "./dist/methods/block.js"
+    },
+    "./methods/transaction": {
+      "types": "./dist/methods/transaction.d.ts",
+      "import": "./dist/methods/transaction.mjs",
+      "require": "./dist/methods/transaction.js"
+    },
+    "./methods/utility": {
+      "types": "./dist/methods/utility.d.ts",
+      "import": "./dist/methods/utility.mjs",
+      "require": "./dist/methods/utility.js"
+    },
+    "./parsers": {
+      "types": "./dist/parsers/index.d.ts",
+      "import": "./dist/parsers/index.mjs",
+      "require": "./dist/parsers/index.js"
+    },
+    "./parsers/base64": {
+      "types": "./dist/parsers/base64.d.ts",
+      "import": "./dist/parsers/base64.mjs",
+      "require": "./dist/parsers/base64.js"
+    },
+    "./parsers/bigint": {
+      "types": "./dist/parsers/bigint.d.ts",
+      "import": "./dist/parsers/bigint.mjs",
+      "require": "./dist/parsers/bigint.js"
+    },
+    "./parsers/types": {
+      "types": "./dist/parsers/types.d.ts",
+      "import": "./dist/parsers/types.mjs",
+      "require": "./dist/parsers/types.js"
     }
   },
   "files": [

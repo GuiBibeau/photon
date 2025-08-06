@@ -2,19 +2,24 @@
   "name": "@photon/addresses",
   "version": "0.0.0",
   "description": "Address utilities for Photon SDK",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     },
-    "./*": {
-      "types": "./dist/*.d.ts",
-      "import": "./dist/*.js",
-      "require": "./dist/*.cjs"
+    "./pda": {
+      "types": "./dist/pda.d.ts",
+      "import": "./dist/pda.mjs",
+      "require": "./dist/pda.js"
+    },
+    "./derive": {
+      "types": "./dist/derive.d.ts",
+      "import": "./dist/derive.mjs",
+      "require": "./dist/derive.js"
     }
   },
   "files": [
