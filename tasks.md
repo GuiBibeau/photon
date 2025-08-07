@@ -1013,7 +1013,7 @@ Comprehensive testing of all RPC functionality including success cases, error ha
 
 **Goal**: Implement real-time data subscriptions using native WebSocket API
 
-### SDK-33: Create WebSocket subscription client 🚧
+### SDK-33: Create WebSocket subscription client ✅
 
 **Priority**: High | **Story Points**: 5 | **Labels**: `feature`, `rpc-subscriptions`  
 **Dependencies**: SDK-26
@@ -1099,7 +1099,7 @@ for await (const update of rpc.accountSubscribe(address)) {
 
 ---
 
-### SDK-35: Build subscription management ⏳
+### SDK-35: Build subscription management ✅
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `rpc-subscriptions`  
 **Dependencies**: SDK-34
