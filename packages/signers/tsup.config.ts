@@ -1,7 +1,12 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/index.ts'],
+  entry: {
+    index: 'src/index.ts',
+    interface: 'src/interface.ts',
+    'multi-signer': 'src/multi-signer.ts',
+    guards: 'src/guards.ts',
+  },
   format: ['esm', 'cjs'],
   dts: false,
   splitting: true,

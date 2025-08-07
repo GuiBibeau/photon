@@ -11,10 +11,20 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
-    "./*": {
-      "types": "./dist/*.d.ts",
-      "import": "./dist/*.js",
-      "require": "./dist/*.cjs"
+    "./interface": {
+      "types": "./dist/interface.d.ts",
+      "import": "./dist/interface.js",
+      "require": "./dist/interface.cjs"
+    },
+    "./multi-signer": {
+      "types": "./dist/multi-signer.d.ts",
+      "import": "./dist/multi-signer.js",
+      "require": "./dist/multi-signer.cjs"
+    },
+    "./guards": {
+      "types": "./dist/guards.d.ts",
+      "import": "./dist/guards.js",
+      "require": "./dist/guards.cjs"
     }
   },
   "files": [
@@ -44,6 +54,11 @@
   },
   "license": "MIT",
   "sideEffects": false,
+  "dependencies": {
+    "@photon/addresses": "workspace:*",
+    "@photon/crypto": "workspace:*",
+    "@photon/errors": "workspace:*"
+  },
   "publishConfig": {
     "access": "public"
   }

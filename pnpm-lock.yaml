@@ -109,7 +109,17 @@ importers:
         specifier: workspace:*
         version: link:../rpc
 
-  packages/signers: {}
+  packages/signers:
+    dependencies:
+      '@photon/addresses':
+        specifier: workspace:*
+        version: link:../addresses
+      '@photon/crypto':
+        specifier: workspace:*
+        version: link:../crypto
+      '@photon/errors':
+        specifier: workspace:*
+        version: link:../errors
 
   packages/sysvars: {}
 
