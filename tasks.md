@@ -1059,7 +1059,7 @@ export class WebSocketSubscriptionClient {
 
 ---
 
-### SDK-34: Implement subscription methods ⏳
+### SDK-34: Implement subscription methods ✅
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `rpc-subscriptions`  
 **Dependencies**: SDK-33
