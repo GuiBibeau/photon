@@ -448,8 +448,11 @@ describe('RPC Middleware', () => {
       const delay1 = (attemptTimes[1] ?? 0) - (attemptTimes[0] ?? 0);
       const delay2 = (attemptTimes[2] ?? 0) - (attemptTimes[1] ?? 0);
 
-      expect(delay1).toBeGreaterThanOrEqual(50);
-      expect(delay2).toBeGreaterThanOrEqual(100);
+      // Allow 2ms tolerance for timer precision
+      expect(delay1).toBeGreaterThanOrEqual(48);
+      expect(delay1).toBeLessThan(60);
+      expect(delay2).toBeGreaterThanOrEqual(98);
+      expect(delay2).toBeLessThan(120);
     });
 
     it('should respect maxDelay', async () => {
