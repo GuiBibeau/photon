@@ -76,7 +76,9 @@ describe('RPC Convenience Utilities', () => {
       const result = await checkRpcHealth(mockClient);
 
       expect(result.healthy).toBe(true);
-      expect(result.responseTime).toBeGreaterThanOrEqual(50);
+      // Allow 1ms tolerance for timing precision
+      expect(result.responseTime).toBeGreaterThanOrEqual(49);
+      expect(result.responseTime).toBeLessThan(100);
     });
   });
 
