@@ -199,13 +199,14 @@ describe('AsyncIterator Behavior', () => {
   describe('Error Propagation', () => {
     it('should propagate errors to iterator', async () => {
       const testAddress = address('11111111111111111111111111111111');
+
+      // Disable auto-response before starting subscription
+      ws.autoRespond = false;
+
       const iterator = accountSubscribe(client, testAddress);
 
-      // Wait for subscription to be established
+      // Wait a moment for the subscription request to be sent
       await new Promise((resolve) => setTimeout(resolve, 20));
-
-      // Disable auto-response
-      ws.autoRespond = false;
 
       // Get the subscription request
       const subRequest = ws.sentMessages.find((msg) => {
@@ -217,6 +218,8 @@ describe('AsyncIterator Behavior', () => {
 
       // Send error response
       ws.simulateError(requestId, -32000, 'Subscription error');
+
+      // Wait for error to propagate
       await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Next call should throw

@@ -2,7 +2,7 @@
  * Tests for subscription methods.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { address } from '@photon/addresses';
 import {
   accountSubscribe,
@@ -487,9 +487,7 @@ describe('Subscription Methods', () => {
       await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Complete consumption
-      vi.useRealTimers();
       await consumePromise;
-      vi.useFakeTimers();
 
       expect(updates).toHaveLength(3);
     });
@@ -537,10 +535,8 @@ describe('Subscription Methods', () => {
       await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Start consuming
-      vi.useRealTimers();
       startConsume = true;
       await consumePromise;
-      vi.useFakeTimers();
 
       expect(updates).toHaveLength(2);
     });
