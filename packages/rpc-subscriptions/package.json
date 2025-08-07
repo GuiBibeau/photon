@@ -25,6 +25,11 @@
       "types": "./dist/types.d.ts",
       "import": "./dist/types.js",
       "require": "./dist/types.cjs"
+    },
+    "./subscription-methods": {
+      "types": "./dist/subscription-methods.d.ts",
+      "import": "./dist/subscription-methods.js",
+      "require": "./dist/subscription-methods.cjs"
     }
   },
   "files": [

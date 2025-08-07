@@ -15,6 +15,18 @@ export {
   createAndConnectWebSocketClient,
 } from './create-subscription-client.js';
 
+// Subscription methods
+export {
+  accountSubscribe,
+  signatureSubscribe,
+  programSubscribe,
+  slotSubscribe,
+  rootSubscribe,
+  logsSubscribe,
+  bufferSubscription,
+  type BufferedSubscriptionOptions,
+} from './subscription-methods.js';
+
 // Types
 export type {
   // Configuration

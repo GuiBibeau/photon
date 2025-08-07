@@ -5,6 +5,7 @@ export default defineConfig({
     index: 'src/index.ts',
     client: 'src/client.ts',
     'create-subscription-client': 'src/create-subscription-client.ts',
+    'subscription-methods': 'src/subscription-methods.ts',
     types: 'src/types.ts',
   },
   format: ['esm', 'cjs'],
