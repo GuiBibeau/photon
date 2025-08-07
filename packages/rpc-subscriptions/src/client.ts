@@ -211,6 +211,7 @@ export class WebSocketSubscriptionClient {
         this.connectionTimer = setTimeout(() => {
           if (!isResolved) {
             isResolved = true;
+            this.connectionTimer = null;
             const error = new Error('Connection timeout');
             if (this.connectionReject) {
               this.connectionReject(error);
@@ -218,6 +219,11 @@ export class WebSocketSubscriptionClient {
               this.connectionResolve = null;
             }
             if (this.ws) {
+              // Remove event handlers before closing to prevent further errors
+              this.ws.onopen = null;
+              this.ws.onerror = null;
+              this.ws.onclose = null;
+              this.ws.onmessage = null;
               this.ws.close();
             }
             reject(error);
@@ -244,12 +250,15 @@ export class WebSocketSubscriptionClient {
 
         this.ws.onerror = (event) => {
           if (!isResolved) {
+            isResolved = true;
+            this.clearConnectionTimer();
             const error = new Error(`WebSocket error: ${event.type}`);
-            if (this.connectionState === 'connecting' && this.connectionReject) {
+            if (this.connectionReject) {
               this.connectionReject(error);
               this.connectionReject = null;
               this.connectionResolve = null;
             }
+            reject(error);
           }
         };
 
