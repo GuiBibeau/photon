@@ -58,7 +58,7 @@ export class MockWebSocket implements WebSocket {
   private sendTimers: NodeJS.Timeout[] = [];
   private subscriptions = new Map<number, unknown>();
   private nextSubscriptionId = 1;
-  
+
   // Test control properties
   shouldFailConnection = false;
   shouldTimeout = false;
@@ -70,9 +70,9 @@ export class MockWebSocket implements WebSocket {
   constructor(url: string, protocols?: string | string[]) {
     this.url = url;
     if (protocols) {
-      this.protocol = Array.isArray(protocols) ? protocols[0] ?? '' : protocols;
+      this.protocol = Array.isArray(protocols) ? (protocols[0] ?? '') : protocols;
     }
-    
+
     MockWebSocket.instances.push(this);
     MockWebSocket.lastInstance = this;
 
@@ -120,7 +120,7 @@ export class MockWebSocket implements WebSocket {
     // Parse and handle the message
     try {
       const request = JSON.parse(message);
-      
+
       // Simulate response after a short delay
       const timer = setTimeout(() => {
         this.handleRequest(request);
@@ -129,7 +129,7 @@ export class MockWebSocket implements WebSocket {
           this.sendTimers.splice(index, 1);
         }
       }, this.responseDelay);
-      
+
       this.sendTimers.push(timer);
     } catch {
       // Invalid JSON - ignore
@@ -142,7 +142,7 @@ export class MockWebSocket implements WebSocket {
     }
 
     this.readyState = MockWebSocket.CLOSING;
-    
+
     // Clear all timers
     this.clearTimers();
 
@@ -175,16 +175,24 @@ export class MockWebSocket implements WebSocket {
   removeEventListener(type: string, listener: EventListener): void {
     switch (type) {
       case 'open':
-        if (this.onopen === listener) {this.onopen = null;}
+        if (this.onopen === listener) {
+          this.onopen = null;
+        }
         break;
       case 'close':
-        if (this.onclose === listener) {this.onclose = null;}
+        if (this.onclose === listener) {
+          this.onclose = null;
+        }
         break;
       case 'error':
-        if (this.onerror === listener) {this.onerror = null;}
+        if (this.onerror === listener) {
+          this.onerror = null;
+        }
         break;
       case 'message':
-        if (this.onmessage === listener) {this.onmessage = null;}
+        if (this.onmessage === listener) {
+          this.onmessage = null;
+        }
         break;
     }
   }
@@ -212,7 +220,7 @@ export class MockWebSocket implements WebSocket {
       // Handle subscription
       const subscriptionId = this.nextSubscriptionId++;
       this.subscriptions.set(subscriptionId, request.params);
-      
+
       const response: SubscriptionResponse = {
         jsonrpc: '2.0',
         result: subscriptionId,
@@ -223,7 +231,7 @@ export class MockWebSocket implements WebSocket {
       // Handle unsubscribe
       const subscriptionId = request.params?.[0];
       const success = this.subscriptions.delete(subscriptionId);
-      
+
       const response: UnsubscribeResponse = {
         jsonrpc: '2.0',
         result: success,
@@ -238,7 +246,11 @@ export class MockWebSocket implements WebSocket {
    */
   private sendResponse(response: unknown): void {
     if (this.onmessage && this.readyState === MockWebSocket.OPEN) {
-      this.onmessage(new MockMessageEvent(JSON.stringify(response)));
+      // Convert BigInt to string for JSON serialization
+      const json = JSON.stringify(response, (_key, value) =>
+        typeof value === 'bigint' ? value.toString() : value,
+      );
+      this.onmessage(new MockMessageEvent(json));
     }
   }
 
@@ -274,7 +286,7 @@ export class MockWebSocket implements WebSocket {
       },
       id: requestId,
     };
-    
+
     this.sendResponse(response);
   }
 
@@ -309,7 +321,7 @@ export class MockWebSocket implements WebSocket {
       clearTimeout(this.closeTimer);
       this.closeTimer = null;
     }
-    this.sendTimers.forEach(timer => clearTimeout(timer));
+    this.sendTimers.forEach((timer) => clearTimeout(timer));
     this.sendTimers = [];
   }
 
@@ -331,7 +343,7 @@ export class MockWebSocket implements WebSocket {
    * Reset all mock instances.
    */
   static reset(): void {
-    MockWebSocket.instances.forEach(ws => ws.cleanup());
+    MockWebSocket.instances.forEach((ws) => ws.cleanup());
     MockWebSocket.instances = [];
     MockWebSocket.lastInstance = null;
   }

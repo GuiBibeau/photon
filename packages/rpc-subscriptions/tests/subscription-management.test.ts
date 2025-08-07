@@ -19,22 +19,18 @@ describe('Subscription Management', () => {
 
   beforeEach(async () => {
     MockWebSocket.reset();
-    vi.useFakeTimers();
-    
+
     client = new WebSocketSubscriptionClient({
       url: 'ws://localhost:8900',
       WebSocketImpl: MockWebSocket as any,
     });
 
-    await vi.runAllTimersAsync();
     await client.connect();
     ws = MockWebSocket.lastInstance as MockWebSocket;
   });
 
   afterEach(async () => {
     await client.disconnect();
-    vi.clearAllTimers();
-    vi.useRealTimers();
     MockWebSocket.reset();
   });
 
@@ -49,74 +45,76 @@ describe('Subscription Management', () => {
       const consumePromise = (async () => {
         for await (const update of iterator) {
           updates.push(update);
-          if (updates.length >= 1) {break;} // Break early
+          if (updates.length >= 1) {
+            break;
+          } // Break early
         }
       })();
 
       // Wait for subscription
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Send update
       const notification: AccountChangeNotification = {
         lamports: 1000000000n,
         data: 'test',
-        owner: '11111111111111111111111111111111',
+        owner: address('11111111111111111111111111111111'),
         executable: false,
         rentEpoch: 123n,
       };
       ws.simulateNotification(1, notification);
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       await consumePromise;
 
       // Check that unsubscribe was called
       ws.autoRespond = false;
       const messagesBefore = ws.sentMessages.length;
-      
+
       // Try to send another notification - should not be received
       ws.simulateNotification(1, notification);
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Check for unsubscribe message
-      const _unsubMessages = ws.sentMessages.slice(messagesBefore).filter(msg => {
+      const _unsubMessages = ws.sentMessages.slice(messagesBefore).filter((msg) => {
         const parsed = JSON.parse(msg);
         return parsed.method === 'accountUnsubscribe';
       });
-      
+
       expect(updates).toHaveLength(1);
     });
 
     it('should cleanup subscription on iterator return', async () => {
       const testAddress = address('11111111111111111111111111111111');
-      
+
       const iterator = accountSubscribe(client, testAddress);
-      
+
       // Wait for subscription
-      await vi.runAllTimersAsync();
-      
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
       // Manually return the iterator
       await iterator.return();
-      
+
       // Check for unsubscribe in sent messages
-      const hasUnsubscribe = ws.sentMessages.some(msg => {
+      const hasUnsubscribe = ws.sentMessages.some((msg) => {
         const parsed = JSON.parse(msg);
         return parsed.method === 'accountUnsubscribe';
       });
-      
+
       expect(hasUnsubscribe).toBe(true);
     });
 
     it('should cleanup subscription on iterator throw', async () => {
       const testAddress = address('11111111111111111111111111111111');
-      
+
       const iterator = accountSubscribe(client, testAddress);
-      
+
       // Wait for subscription
-      await vi.runAllTimersAsync();
-      
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
       // Throw an error
       await iterator.throw(new Error('Test error'));
-      
+
       // Try to get next value - should be done
       const result = await iterator.next();
       expect(result.done).toBe(true);
@@ -124,15 +122,15 @@ describe('Subscription Management', () => {
 
     it('should handle cleanup errors gracefully', async () => {
       const testAddress = address('11111111111111111111111111111111');
-      
+
       const iterator = accountSubscribe(client, testAddress);
-      
+
       // Wait for subscription
-      await vi.runAllTimersAsync();
-      
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
       // Simulate WebSocket closed before cleanup
       ws.readyState = MockWebSocket.CLOSED;
-      
+
       // Should not throw when cleaning up
       await expect(iterator.return()).resolves.toBeDefined();
     });
@@ -141,22 +139,22 @@ describe('Subscription Management', () => {
   describe('Multiple Subscriptions', () => {
     it('should handle multiple concurrent subscriptions', async () => {
       const address1 = address('11111111111111111111111111111111');
-      const address2 = address('22222222222222222222222222222222');
-      const address3 = address('33333333333333333333333333333333');
+      const address2 = address('So11111111111111111111111111111111111111112');
+      const address3 = address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 
       const iterator1 = accountSubscribe(client, address1);
       const iterator2 = accountSubscribe(client, address2);
       const iterator3 = accountSubscribe(client, address3);
 
       // Wait for all subscriptions
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Check that all subscriptions were created
-      const subscribeMessages = ws.sentMessages.filter(msg => {
+      const subscribeMessages = ws.sentMessages.filter((msg) => {
         const parsed = JSON.parse(msg);
         return parsed.method === 'accountSubscribe';
       });
-      
+
       expect(subscribeMessages).toHaveLength(3);
 
       // Clean up
@@ -175,12 +173,12 @@ describe('Subscription Management', () => {
       const signatureIter = signatureSubscribe(client, signature);
 
       // Wait for all subscriptions
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Check different subscription types
-      const messages = ws.sentMessages.map(msg => JSON.parse(msg));
-      const methods = messages.map(m => m.method).filter(Boolean);
-      
+      const messages = ws.sentMessages.map((msg) => JSON.parse(msg));
+      const methods = messages.map((m) => m.method).filter(Boolean);
+
       expect(methods).toContain('accountSubscribe');
       expect(methods).toContain('programSubscribe');
       expect(methods).toContain('signatureSubscribe');
@@ -195,19 +193,19 @@ describe('Subscription Management', () => {
   describe('Subscription Errors', () => {
     it('should handle subscription error response', async () => {
       const testAddress = address('11111111111111111111111111111111');
-      
+
       // Disable auto-response to control the response
       ws.autoRespond = false;
 
       const iterator = accountSubscribe(client, testAddress);
-      
+
       // Capture the request
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
       const lastMessage = JSON.parse(ws.sentMessages[ws.sentMessages.length - 1]);
-      
+
       // Send error response
       ws.simulateError(lastMessage.id, -32602, 'Invalid params');
-      
+
       // Try to consume - should throw
       let errorThrown = false;
       try {
@@ -216,7 +214,7 @@ describe('Subscription Management', () => {
         errorThrown = true;
         expect((error as Error).message).toContain('Invalid params');
       }
-      
+
       expect(errorThrown).toBe(true);
     });
 
@@ -232,20 +230,20 @@ describe('Subscription Management', () => {
         },
         (error) => {
           handlerErrors.push(error);
-        }
+        },
       );
 
       // Send notification
       const notification: AccountChangeNotification = {
         lamports: 1000000000n,
         data: 'test',
-        owner: '11111111111111111111111111111111',
+        owner: address('11111111111111111111111111111111'),
         executable: false,
         rentEpoch: 123n,
       };
-      
+
       ws.simulateNotification(1, notification);
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       expect(handlerErrors).toHaveLength(1);
       expect(handlerErrors[0].message).toBe('Handler error');
@@ -255,12 +253,8 @@ describe('Subscription Management', () => {
   describe('Unsubscribe', () => {
     it('should successfully unsubscribe', async () => {
       const testAddress = address('11111111111111111111111111111111');
-      
-      const subscriptionId = await client.subscribe(
-        'accountSubscribe',
-        [testAddress],
-        () => {}
-      );
+
+      const subscriptionId = await client.subscribe('accountSubscribe', [testAddress], () => {});
 
       expect(subscriptionId).toBe(1);
 
@@ -269,11 +263,11 @@ describe('Subscription Management', () => {
       expect(success).toBe(true);
 
       // Check unsubscribe message was sent
-      const unsubMessage = ws.sentMessages.find(msg => {
+      const unsubMessage = ws.sentMessages.find((msg) => {
         const parsed = JSON.parse(msg);
         return parsed.method === 'accountUnsubscribe';
       });
-      
+
       expect(unsubMessage).toBeDefined();
     });
 
@@ -284,6 +278,14 @@ describe('Subscription Management', () => {
   });
 
   describe('Reconnection', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('should attempt reconnection on unexpected disconnect', async () => {
       const WebSocketReconnect = createMockWebSocketConstructor({
         connectionDelay: 10,
@@ -296,8 +298,9 @@ describe('Subscription Management', () => {
         maxReconnectAttempts: 3,
       });
 
-      await vi.runAllTimersAsync();
-      await reconnectClient.connect();
+      const connectPromise = reconnectClient.connect();
+      await vi.advanceTimersByTimeAsync(20);
+      await connectPromise;
 
       const firstWs = MockWebSocket.lastInstance as MockWebSocket;
       const instanceCount = MockWebSocket.instances.length;
@@ -310,7 +313,7 @@ describe('Subscription Management', () => {
 
       // Should have created a new WebSocket instance
       expect(MockWebSocket.instances.length).toBeGreaterThan(instanceCount);
-      
+
       await reconnectClient.disconnect();
     });
 
@@ -329,7 +332,7 @@ describe('Subscription Management', () => {
 
       // Initial connection will fail
       try {
-        await vi.runAllTimersAsync();
+        await vi.advanceTimersByTimeAsync(20);
         await reconnectClient.connect();
       } catch {
         // Expected to fail
@@ -367,7 +370,7 @@ describe('Subscription Management', () => {
 
       // Initial connection will fail
       try {
-        await vi.runAllTimersAsync();
+        await vi.advanceTimersByTimeAsync(20);
         await reconnectClient.connect();
       } catch {
         // Expected
@@ -386,13 +389,9 @@ describe('Subscription Management', () => {
 
     it('should resubscribe after reconnection', async () => {
       const testAddress = address('11111111111111111111111111111111');
-      
+
       // Subscribe to an account
-      const subscriptionId = await client.subscribe(
-        'accountSubscribe',
-        [testAddress],
-        () => {}
-      );
+      const subscriptionId = await client.subscribe('accountSubscribe', [testAddress], () => {});
 
       expect(subscriptionId).toBe(1);
 
@@ -403,9 +402,9 @@ describe('Subscription Management', () => {
       await client.resubscribeAll();
 
       // Check that subscription was recreated
-      await vi.runAllTimersAsync();
-      
-      const resubMessages = ws.sentMessages.filter(msg => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
+      const resubMessages = ws.sentMessages.filter((msg) => {
         const parsed = JSON.parse(msg);
         return parsed.method === 'accountSubscribe';
       });
@@ -416,13 +415,13 @@ describe('Subscription Management', () => {
     it('should handle resubscription failures', async () => {
       const testAddress = address('11111111111111111111111111111111');
       const errors: Error[] = [];
-      
+
       // Subscribe with error handler
       await client.subscribe(
         'accountSubscribe',
         [testAddress],
         () => {},
-        (error) => errors.push(error)
+        (error) => errors.push(error),
       );
 
       // Make resubscription fail
@@ -430,13 +429,13 @@ describe('Subscription Management', () => {
 
       // Trigger resubscribe
       const resubPromise = client.resubscribeAll();
-      
-      await vi.runAllTimersAsync();
-      
+
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
       // Send error response
       const lastMessage = JSON.parse(ws.sentMessages[ws.sentMessages.length - 1]);
       ws.simulateError(lastMessage.id, -32000, 'Resubscription failed');
-      
+
       await resubPromise;
 
       // Error should be handled by error handler

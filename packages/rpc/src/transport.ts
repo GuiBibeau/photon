@@ -417,8 +417,7 @@ export function createLoggingTransport(
 ): Transport {
   const {
     logger = (level: 'debug' | 'info' | 'warn' | 'error', message: string, data?: unknown) => {
-      const logFn =
-        level === 'error' ? console.error : level === 'warn' ? console.warn : console.info;
+      const logFn = level === 'error' ? console.error : console.warn;
       logFn(`[RPC ${level.toUpperCase()}] ${message}`, data ?? '');
     },
     logParams = true,

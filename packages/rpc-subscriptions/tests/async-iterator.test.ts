@@ -23,22 +23,18 @@ describe('AsyncIterator Behavior', () => {
 
   beforeEach(async () => {
     MockWebSocket.reset();
-    vi.useFakeTimers();
-    
+
     client = new WebSocketSubscriptionClient({
       url: 'ws://localhost:8900',
       WebSocketImpl: MockWebSocket as any,
     });
 
-    await vi.runAllTimersAsync();
     await client.connect();
     ws = MockWebSocket.lastInstance as MockWebSocket;
   });
 
   afterEach(async () => {
     await client.disconnect();
-    vi.clearAllTimers();
-    vi.useRealTimers();
     MockWebSocket.reset();
   });
 
@@ -63,19 +59,19 @@ describe('AsyncIterator Behavior', () => {
       const testAddress = address('11111111111111111111111111111111');
       const iterator = accountSubscribe(client, testAddress);
 
-      // Wait for subscription
-      await vi.runAllTimersAsync();
+      // Wait for subscription to be established
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Send notification
       const notification: AccountChangeNotification = {
         lamports: 1000000000n,
         data: 'test',
-        owner: '11111111111111111111111111111111',
+        owner: address('11111111111111111111111111111111'),
         executable: false,
         rentEpoch: 123n,
       };
       ws.simulateNotification(1, notification);
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Get next value
       const result = await iterator.next();
@@ -89,14 +85,14 @@ describe('AsyncIterator Behavior', () => {
       const testAddress = address('11111111111111111111111111111111');
       const iterator = accountSubscribe(client, testAddress);
 
-      // Wait for subscription
-      await vi.runAllTimersAsync();
+      // Wait for subscription to be established
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Return with value
       const returnValue: AccountChangeNotification = {
         lamports: 999n,
         data: 'return-value',
-        owner: '11111111111111111111111111111111',
+        owner: address('11111111111111111111111111111111'),
         executable: false,
         rentEpoch: 100n,
       };
@@ -114,8 +110,8 @@ describe('AsyncIterator Behavior', () => {
       const testAddress = address('11111111111111111111111111111111');
       const iterator = accountSubscribe(client, testAddress);
 
-      // Wait for subscription
-      await vi.runAllTimersAsync();
+      // Wait for subscription to be established
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Throw error
       const error = new Error('Test error');
@@ -134,21 +130,21 @@ describe('AsyncIterator Behavior', () => {
       const iterator = accountSubscribe(client, testAddress);
       const updates: AccountChangeNotification[] = [];
 
-      // Wait for subscription
-      await vi.runAllTimersAsync();
+      // Wait for subscription to be established
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Send multiple notifications quickly
       for (let i = 0; i < 5; i++) {
         const notification: AccountChangeNotification = {
           lamports: BigInt(i * 1000000000),
           data: `data-${i}`,
-          owner: '11111111111111111111111111111111',
+          owner: address('11111111111111111111111111111111'),
           executable: false,
           rentEpoch: BigInt(100 + i),
         };
         ws.simulateNotification(1, notification);
       }
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Consume all queued values
       for (let i = 0; i < 5; i++) {
@@ -169,33 +165,29 @@ describe('AsyncIterator Behavior', () => {
       const testAddress = address('11111111111111111111111111111111');
       const iterator = accountSubscribe(client, testAddress);
 
-      // Wait for subscription
-      await vi.runAllTimersAsync();
+      // Wait for subscription to be established
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Call next() multiple times before any data arrives
-      const promises = [
-        iterator.next(),
-        iterator.next(),
-        iterator.next(),
-      ];
+      const promises = [iterator.next(), iterator.next(), iterator.next()];
 
       // Send notifications
       for (let i = 0; i < 3; i++) {
         const notification: AccountChangeNotification = {
           lamports: BigInt(i * 1000000000),
           data: `data-${i}`,
-          owner: '11111111111111111111111111111111',
+          owner: address('11111111111111111111111111111111'),
           executable: false,
           rentEpoch: BigInt(100 + i),
         };
         ws.simulateNotification(1, notification);
       }
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // All promises should resolve
       const results = await Promise.all(promises);
       expect(results).toHaveLength(3);
-      expect(results.every(r => !r.done)).toBe(true);
+      expect(results.every((r) => !r.done)).toBe(true);
       expect(results[0].value.data).toBe('data-0');
       expect(results[1].value.data).toBe('data-1');
       expect(results[2].value.data).toBe('data-2');
@@ -209,14 +201,14 @@ describe('AsyncIterator Behavior', () => {
       const testAddress = address('11111111111111111111111111111111');
       const iterator = accountSubscribe(client, testAddress);
 
-      // Wait for subscription
-      await vi.runAllTimersAsync();
+      // Wait for subscription to be established
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Disable auto-response
       ws.autoRespond = false;
 
       // Get the subscription request
-      const subRequest = ws.sentMessages.find(msg => {
+      const subRequest = ws.sentMessages.find((msg) => {
         const parsed = JSON.parse(msg);
         return parsed.method === 'accountSubscribe';
       });
@@ -225,7 +217,7 @@ describe('AsyncIterator Behavior', () => {
 
       // Send error response
       ws.simulateError(requestId, -32000, 'Subscription error');
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Next call should throw
       await expect(iterator.next()).rejects.toThrow('Subscription error');
@@ -244,19 +236,19 @@ describe('AsyncIterator Behavior', () => {
         },
         (error) => {
           errors.push(error);
-        }
+        },
       );
 
       // Send notification
       const notification: AccountChangeNotification = {
         lamports: 1000000000n,
         data: 'test',
-        owner: '11111111111111111111111111111111',
+        owner: address('11111111111111111111111111111111'),
         executable: false,
         rentEpoch: 123n,
       };
       ws.simulateNotification(1, notification);
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       expect(errors).toHaveLength(1);
       expect(errors[0].message).toBe('Handler error');
@@ -273,24 +265,26 @@ describe('AsyncIterator Behavior', () => {
       const consumePromise = (async () => {
         for await (const update of iterator) {
           updates.push(update);
-          if (updates.length >= 3) {break;}
+          if (updates.length >= 3) {
+            break;
+          }
         }
       })();
 
-      // Wait for subscription
-      await vi.runAllTimersAsync();
+      // Wait for subscription to be established
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Send notifications
       for (let i = 0; i < 3; i++) {
         const notification: AccountChangeNotification = {
           lamports: BigInt(i * 1000000000),
           data: `data-${i}`,
-          owner: '11111111111111111111111111111111',
+          owner: address('11111111111111111111111111111111'),
           executable: false,
           rentEpoch: BigInt(100 + i),
         };
         ws.simulateNotification(1, notification);
-        await vi.runAllTimersAsync();
+        await new Promise((resolve) => setTimeout(resolve, 20));
       }
 
       await consumePromise;
@@ -311,28 +305,28 @@ describe('AsyncIterator Behavior', () => {
         }
       })();
 
-      // Wait for subscription
-      await vi.runAllTimersAsync();
+      // Wait for subscription to be established
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Send notification to trigger loop
       const notification: AccountChangeNotification = {
         lamports: 1000000000n,
         data: 'test',
-        owner: '11111111111111111111111111111111',
+        owner: address('11111111111111111111111111111111'),
         executable: false,
         rentEpoch: 123n,
       };
       ws.simulateNotification(1, notification);
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       await consumePromise;
 
       // Check for unsubscribe
-      const hasUnsubscribe = ws.sentMessages.some(msg => {
+      const hasUnsubscribe = ws.sentMessages.some((msg) => {
         const parsed = JSON.parse(msg);
         return parsed.method === 'accountUnsubscribe';
       });
-      
+
       expect(hasUnsubscribe).toBe(true);
     });
 
@@ -351,19 +345,19 @@ describe('AsyncIterator Behavior', () => {
         }
       })();
 
-      // Wait for subscription
-      await vi.runAllTimersAsync();
+      // Wait for subscription to be established
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Send notification to trigger loop
       const notification: AccountChangeNotification = {
         lamports: 1000000000n,
         data: 'test',
-        owner: '11111111111111111111111111111111',
+        owner: address('11111111111111111111111111111111'),
         executable: false,
         rentEpoch: 123n,
       };
       ws.simulateNotification(1, notification);
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       await consumePromise;
 
@@ -383,31 +377,33 @@ describe('AsyncIterator Behavior', () => {
       const consumePromise = (async () => {
         for await (const _ of iterator) {
           consumedCount.value++;
-          if (consumedCount.value >= 100) {break;}
+          if (consumedCount.value >= 100) {
+            break;
+          }
         }
       })();
 
-      // Wait for subscription
-      await vi.runAllTimersAsync();
+      // Wait for subscription to be established
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Send many notifications
       for (let i = 0; i < 100; i++) {
         const notification: AccountChangeNotification = {
           lamports: BigInt(i),
           data: `data-${i}`,
-          owner: '11111111111111111111111111111111',
+          owner: address('11111111111111111111111111111111'),
           executable: false,
           rentEpoch: BigInt(i),
         };
         ws.simulateNotification(1, notification);
-        
+
         // Process in batches
         if (i % 10 === 9) {
-          await vi.runAllTimersAsync();
+          await new Promise((resolve) => setTimeout(resolve, 20));
         }
       }
 
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
       await consumePromise;
 
       expect(consumedCount.value).toBe(100);
@@ -415,19 +411,19 @@ describe('AsyncIterator Behavior', () => {
 
     it('should cleanup resources on rapid subscribe/unsubscribe', async () => {
       const testAddress = address('11111111111111111111111111111111');
-      
+
       for (let i = 0; i < 10; i++) {
         const iterator = accountSubscribe(client, testAddress);
-        
+
         // Wait for subscription
-        await vi.runAllTimersAsync();
-        
+        await new Promise((resolve) => setTimeout(resolve, 20));
+
         // Immediately unsubscribe
         await iterator.return();
       }
 
       // Check that all unsubscribes were sent
-      const unsubscribeCount = ws.sentMessages.filter(msg => {
+      const unsubscribeCount = ws.sentMessages.filter((msg) => {
         const parsed = JSON.parse(msg);
         return parsed.method === 'accountUnsubscribe';
       }).length;
@@ -437,8 +433,8 @@ describe('AsyncIterator Behavior', () => {
 
     it('should handle multiple iterators without interference', async () => {
       const address1 = address('11111111111111111111111111111111');
-      const address2 = address('22222222222222222222222222222222');
-      
+      const address2 = address('So11111111111111111111111111111111111111112');
+
       const updates1: AccountChangeNotification[] = [];
       const updates2: AccountChangeNotification[] = [];
 
@@ -449,25 +445,29 @@ describe('AsyncIterator Behavior', () => {
       const consume1 = (async () => {
         for await (const update of iterator1) {
           updates1.push(update);
-          if (updates1.length >= 2) {break;}
+          if (updates1.length >= 2) {
+            break;
+          }
         }
       })();
 
       const consume2 = (async () => {
         for await (const update of iterator2) {
           updates2.push(update);
-          if (updates2.length >= 2) {break;}
+          if (updates2.length >= 2) {
+            break;
+          }
         }
       })();
 
       // Wait for subscriptions
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Send notifications to different subscriptions
       const notification1: AccountChangeNotification = {
         lamports: 1000n,
         data: 'iter1-data',
-        owner: '11111111111111111111111111111111',
+        owner: address('11111111111111111111111111111111'),
         executable: false,
         rentEpoch: 100n,
       };
@@ -485,8 +485,8 @@ describe('AsyncIterator Behavior', () => {
       ws.simulateNotification(1, notification1);
       ws.simulateNotification(2, notification2);
       ws.simulateNotification(2, notification2);
-      
-      await vi.runAllTimersAsync();
+
+      await new Promise((resolve) => setTimeout(resolve, 20));
       await Promise.all([consume1, consume2]);
 
       expect(updates1).toHaveLength(2);
@@ -501,8 +501,8 @@ describe('AsyncIterator Behavior', () => {
       const testAddress = address('11111111111111111111111111111111');
       const iterator = accountSubscribe(client, testAddress);
 
-      // Wait for subscription
-      await vi.runAllTimersAsync();
+      // Wait for subscription to be established
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Immediately return
       const result = await iterator.return();
@@ -512,12 +512,12 @@ describe('AsyncIterator Behavior', () => {
       const notification: AccountChangeNotification = {
         lamports: 1000n,
         data: 'should-not-receive',
-        owner: '11111111111111111111111111111111',
+        owner: address('11111111111111111111111111111111'),
         executable: false,
         rentEpoch: 100n,
       };
       ws.simulateNotification(1, notification);
-      
+
       const nextResult = await iterator.next();
       expect(nextResult.done).toBe(true);
     });
@@ -531,12 +531,14 @@ describe('AsyncIterator Behavior', () => {
       const consumePromise = (async () => {
         for await (const notification of iterator) {
           notifications.push(notification);
-          if (notifications.length >= 3) {break;}
+          if (notifications.length >= 3) {
+            break;
+          }
         }
       })();
 
-      // Wait for subscription
-      await vi.runAllTimersAsync();
+      // Wait for subscription to be established
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Send only error notifications
       for (let i = 0; i < 3; i++) {
@@ -544,13 +546,13 @@ describe('AsyncIterator Behavior', () => {
           err: { InsufficientFunds: {} },
         };
         ws.simulateNotification(1, errorNotification);
-        await vi.runAllTimersAsync();
+        await new Promise((resolve) => setTimeout(resolve, 20));
       }
 
       await consumePromise;
 
       expect(notifications).toHaveLength(3);
-      expect(notifications.every(n => n.err !== null)).toBe(true);
+      expect(notifications.every((n) => n.err !== null)).toBe(true);
     });
 
     it('should handle very fast producer', async () => {
@@ -561,14 +563,16 @@ describe('AsyncIterator Behavior', () => {
       const consumePromise = (async () => {
         for await (const slot of iterator) {
           // Simulate slow processing
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
           slots.push(slot);
-          if (slots.length >= 5) {break;}
+          if (slots.length >= 5) {
+            break;
+          }
         }
       })();
 
-      // Wait for subscription
-      await vi.runAllTimersAsync();
+      // Wait for subscription to be established
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Send many notifications quickly
       for (let i = 0; i < 20; i++) {
@@ -579,12 +583,12 @@ describe('AsyncIterator Behavior', () => {
         };
         ws.simulateNotification(1, notification);
       }
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Switch to real timers for setTimeout
       vi.useRealTimers();
       await consumePromise;
-      vi.useFakeTimers();
+      // vi.useFakeTimers(); - not using fake timers for this test
 
       // Should have consumed first 5 despite 20 being sent
       expect(slots).toHaveLength(5);

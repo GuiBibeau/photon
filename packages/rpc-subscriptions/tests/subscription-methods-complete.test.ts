@@ -29,23 +29,19 @@ describe('Subscription Methods', () => {
 
   beforeEach(async () => {
     MockWebSocket.reset();
-    vi.useFakeTimers();
-    
+
     client = new WebSocketSubscriptionClient({
       url: 'ws://localhost:8900',
       WebSocketImpl: MockWebSocket as any,
     });
 
     // Connect and get WebSocket instance
-    await vi.runAllTimersAsync();
     await client.connect();
     ws = MockWebSocket.lastInstance as MockWebSocket;
   });
 
   afterEach(async () => {
     await client.disconnect();
-    vi.clearAllTimers();
-    vi.useRealTimers();
     MockWebSocket.reset();
   });
 
@@ -63,18 +59,20 @@ describe('Subscription Methods', () => {
       const consumePromise = (async () => {
         for await (const update of iterator) {
           updates.push(update);
-          if (updates.length >= 2) {break;}
+          if (updates.length >= 2) {
+            break;
+          }
         }
       })();
 
       // Wait for subscription to be established
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Simulate account updates
       const notification1: AccountChangeNotification = {
         lamports: 1000000000n,
         data: 'SGVsbG8gV29ybGQ=',
-        owner: '11111111111111111111111111111111',
+        owner: address('11111111111111111111111111111111'),
         executable: false,
         rentEpoch: 123n,
       };
@@ -82,16 +80,16 @@ describe('Subscription Methods', () => {
       const notification2: AccountChangeNotification = {
         lamports: 2000000000n,
         data: 'VGVzdCBEYXRh',
-        owner: '11111111111111111111111111111111',
+        owner: address('11111111111111111111111111111111'),
         executable: false,
         rentEpoch: 124n,
       };
 
       ws.simulateNotification(1, notification1);
-      await vi.runAllTimersAsync();
-      
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
       ws.simulateNotification(1, notification2);
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       await consumePromise;
 
@@ -102,13 +100,13 @@ describe('Subscription Methods', () => {
 
     it('should handle account subscription with no options', async () => {
       const testAddress = address('11111111111111111111111111111111');
-      
+
       const iterator = accountSubscribe(client, testAddress);
-      
+
       // Check that subscription was created
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
       expect(ws.sentMessages.length).toBeGreaterThan(0);
-      
+
       const lastMessage = JSON.parse(ws.sentMessages[ws.sentMessages.length - 1]);
       expect(lastMessage.method).toBe('accountSubscribe');
       expect(lastMessage.params[0]).toBe(testAddress);
@@ -132,12 +130,14 @@ describe('Subscription Methods', () => {
       const consumePromise = (async () => {
         for await (const notification of iterator) {
           notifications.push(notification);
-          if (notification.err === null) {break;}
+          if (notification.err === null) {
+            break;
+          }
         }
       })();
 
       // Wait for subscription
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Simulate notifications
       const pendingNotification: SignatureNotification = {
@@ -149,10 +149,10 @@ describe('Subscription Methods', () => {
       };
 
       ws.simulateNotification(1, pendingNotification);
-      await vi.runAllTimersAsync();
-      
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
       ws.simulateNotification(1, confirmedNotification);
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       await consumePromise;
 
@@ -177,7 +177,7 @@ describe('Subscription Methods', () => {
       })();
 
       // Wait for subscription
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Simulate finalized notification
       const finalizedNotification: SignatureNotification = {
@@ -185,11 +185,11 @@ describe('Subscription Methods', () => {
       };
 
       ws.simulateNotification(1, finalizedNotification);
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Use queueMicrotask to allow the auto-close to happen
-      await new Promise(resolve => queueMicrotask(resolve));
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => queueMicrotask(resolve));
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       await consumePromise;
 
@@ -216,12 +216,14 @@ describe('Subscription Methods', () => {
       const consumePromise = (async () => {
         for await (const update of iterator) {
           updates.push(update);
-          if (updates.length >= 2) {break;}
+          if (updates.length >= 2) {
+            break;
+          }
         }
       })();
 
       // Wait for subscription
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Simulate updates
       const update1: ProgramAccountChangeNotification = {
@@ -247,10 +249,10 @@ describe('Subscription Methods', () => {
       };
 
       ws.simulateNotification(1, update1);
-      await vi.runAllTimersAsync();
-      
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
       ws.simulateNotification(1, update2);
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       await consumePromise;
 
@@ -262,11 +264,11 @@ describe('Subscription Methods', () => {
 
     it('should handle program subscription without filters', async () => {
       const programId = address('11111111111111111111111111111111');
-      
+
       const iterator = programSubscribe(client, programId);
-      
+
       // Check subscription message
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
       const lastMessage = JSON.parse(ws.sentMessages[ws.sentMessages.length - 1]);
       expect(lastMessage.method).toBe('programSubscribe');
       expect(lastMessage.params[0]).toBe(programId);
@@ -287,12 +289,14 @@ describe('Subscription Methods', () => {
       const consumePromise = (async () => {
         for await (const slot of iterator) {
           slots.push(slot);
-          if (slots.length >= 3) {break;}
+          if (slots.length >= 3) {
+            break;
+          }
         }
       })();
 
       // Wait for subscription
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Simulate slot notifications
       const slot1: SlotNotification = {
@@ -314,13 +318,13 @@ describe('Subscription Methods', () => {
       };
 
       ws.simulateNotification(1, slot1);
-      await vi.runAllTimersAsync();
-      
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
       ws.simulateNotification(1, slot2);
-      await vi.runAllTimersAsync();
-      
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
       ws.simulateNotification(1, slot3);
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       await consumePromise;
 
@@ -341,22 +345,24 @@ describe('Subscription Methods', () => {
       const consumePromise = (async () => {
         for await (const root of iterator) {
           roots.push(root);
-          if (roots.length >= 3) {break;}
+          if (roots.length >= 3) {
+            break;
+          }
         }
       })();
 
       // Wait for subscription
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Simulate root notifications
       ws.simulateNotification(1, 12345600);
-      await vi.runAllTimersAsync();
-      
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
       ws.simulateNotification(1, 12345601);
-      await vi.runAllTimersAsync();
-      
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
       ws.simulateNotification(1, 12345602);
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       await consumePromise;
 
@@ -372,19 +378,21 @@ describe('Subscription Methods', () => {
       const iterator = logsSubscribe(
         client,
         { mentions: [programId] },
-        { commitment: 'confirmed' }
+        { commitment: 'confirmed' },
       );
 
       // Start consuming
       const consumePromise = (async () => {
         for await (const log of iterator) {
           logs.push(log);
-          if (logs.length >= 2) {break;}
+          if (logs.length >= 2) {
+            break;
+          }
         }
       })();
 
       // Wait for subscription
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Check subscription params
       const lastMessage = JSON.parse(ws.sentMessages[ws.sentMessages.length - 1]);
@@ -406,10 +414,10 @@ describe('Subscription Methods', () => {
       };
 
       ws.simulateNotification(1, log1);
-      await vi.runAllTimersAsync();
-      
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
       ws.simulateNotification(1, log2);
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       await consumePromise;
 
@@ -423,14 +431,14 @@ describe('Subscription Methods', () => {
     it('should handle different log filter types', async () => {
       // Test "all" filter
       const iterator1 = logsSubscribe(client, 'all');
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
       let message = JSON.parse(ws.sentMessages[ws.sentMessages.length - 1]);
       expect(message.params[0]).toBe('all');
       await iterator1.return();
 
       // Test "allWithVotes" filter
       const iterator2 = logsSubscribe(client, 'allWithVotes');
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
       message = JSON.parse(ws.sentMessages[ws.sentMessages.length - 1]);
       expect(message.params[0]).toBe('allWithVotes');
       await iterator2.return();
@@ -441,7 +449,7 @@ describe('Subscription Methods', () => {
     it('should buffer subscription data', async () => {
       const testAddress = address('11111111111111111111111111111111');
       const baseIterator = accountSubscribe(client, testAddress);
-      
+
       const bufferedIterator = bufferSubscription(baseIterator, {
         bufferSize: 3,
         overflowStrategy: 'drop-oldest',
@@ -454,28 +462,30 @@ describe('Subscription Methods', () => {
         for await (const update of bufferedIterator) {
           updates.push(update);
           // Simulate slow processing
-          await new Promise(resolve => setTimeout(resolve, 10));
-          if (updates.length >= 3) {break;}
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          if (updates.length >= 3) {
+            break;
+          }
         }
       })();
 
       // Wait for subscription
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Send multiple updates quickly
       for (let i = 0; i < 5; i++) {
         const notification: AccountChangeNotification = {
           lamports: BigInt(i * 1000000000),
           data: `data-${i}`,
-          owner: '11111111111111111111111111111111',
+          owner: address('11111111111111111111111111111111'),
           executable: false,
           rentEpoch: BigInt(100 + i),
         };
         ws.simulateNotification(1, notification);
       }
 
-      await vi.runAllTimersAsync();
-      
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
       // Complete consumption
       vi.useRealTimers();
       await consumePromise;
@@ -487,7 +497,7 @@ describe('Subscription Methods', () => {
     it('should handle drop-newest overflow strategy', async () => {
       const testAddress = address('11111111111111111111111111111111');
       const baseIterator = accountSubscribe(client, testAddress);
-      
+
       const bufferedIterator = bufferSubscription(baseIterator, {
         bufferSize: 2,
         overflowStrategy: 'drop-newest',
@@ -499,30 +509,32 @@ describe('Subscription Methods', () => {
       let startConsume = false;
       const consumePromise = (async () => {
         while (!startConsume) {
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
         }
         for await (const update of bufferedIterator) {
           updates.push(update);
-          if (updates.length >= 2) {break;}
+          if (updates.length >= 2) {
+            break;
+          }
         }
       })();
 
       // Wait for subscription
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Send updates that will overflow
       for (let i = 0; i < 4; i++) {
         const notification: AccountChangeNotification = {
           lamports: BigInt(i * 1000000000),
           data: `data-${i}`,
-          owner: '11111111111111111111111111111111',
+          owner: address('11111111111111111111111111111111'),
           executable: false,
           rentEpoch: BigInt(100 + i),
         };
         ws.simulateNotification(1, notification);
       }
 
-      await vi.runAllTimersAsync();
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       // Start consuming
       vi.useRealTimers();
