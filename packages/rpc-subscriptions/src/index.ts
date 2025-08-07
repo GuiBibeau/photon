@@ -27,6 +27,14 @@ export {
   type BufferedSubscriptionOptions,
 } from './subscription-methods.js';
 
+// Subscription management
+export {
+  SubscriptionManager,
+  RateLimiter,
+  type SubscriptionManagerConfig,
+  type SubscriptionGap,
+} from './subscription-manager.js';
+
 // Types
 export type {
   // Configuration
