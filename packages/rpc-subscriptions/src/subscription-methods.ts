@@ -65,8 +65,18 @@ class SubscriptionIterator<T> implements AsyncIterableIterator<T> {
   /**
    * Throw method for AsyncIterator interface.
    */
-  async throw(e?: unknown): Promise<IteratorResult<T>> {
-    this.throwError(e instanceof Error ? e : new Error(String(e)));
+  async throw(_e?: unknown): Promise<IteratorResult<T>> {
+    // Just close the iterator without storing the error
+    // The throw() method should not cause future next() calls to throw
+    this.closed = true;
+    this.cleanup();
+
+    // Reject all pending resolvers
+    while (this.resolvers.length > 0) {
+      const resolver = this.resolvers.shift();
+      resolver?.({ value: undefined as T, done: true });
+    }
+
     return { value: undefined as T, done: true };
   }
 

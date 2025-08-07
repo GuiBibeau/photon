@@ -298,11 +298,39 @@ export class WebSocketSubscriptionClient {
   }
 
   /**
+   * Parse JSON with bigint support for numeric fields.
+   */
+  private parseJsonWithBigInt(data: string): unknown {
+    // Parse with a reviver that converts specific numeric string fields to bigint
+    return JSON.parse(data, (key, value) => {
+      // Convert lamports and rentEpoch fields to bigint
+      if ((key === 'lamports' || key === 'rentEpoch') && typeof value === 'string') {
+        try {
+          return BigInt(value);
+        } catch {
+          return value;
+        }
+      }
+      // Convert slot fields to bigint
+      if ((key === 'slot' || key === 'parent' || key === 'root') && typeof value === 'string') {
+        try {
+          return BigInt(value);
+        } catch {
+          return value;
+        }
+      }
+      return value;
+    });
+  }
+
+  /**
    * Handle incoming WebSocket messages.
    */
   private handleMessage(data: string): void {
     try {
-      const message = JSON.parse(data) as SubscriptionResponse | SubscriptionNotification;
+      const message = this.parseJsonWithBigInt(data) as
+        | SubscriptionResponse
+        | SubscriptionNotification;
 
       // Handle subscription notifications
       if ('method' in message && message.method === 'subscription') {

@@ -120,9 +120,9 @@ export interface SignatureNotification {
  * Slot notification data.
  */
 export interface SlotNotification {
-  slot: number;
-  parent?: number;
-  root?: number;
+  slot: bigint;
+  parent?: bigint;
+  root?: bigint;
 }
 
 /**

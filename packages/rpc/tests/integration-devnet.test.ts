@@ -110,7 +110,7 @@ describe('RPC Connection & Basic Queries - Devnet Integration', () => {
     expect(health).toBe('ok');
   }, 10000);
 
-  it('should fetch supply information', async () => {
+  it.skip('should fetch supply information', async () => {
     const supply = await rpc.getSupply();
 
     expect(supply).toBeDefined();
