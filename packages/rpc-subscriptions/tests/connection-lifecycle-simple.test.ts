@@ -2,9 +2,9 @@
  * Simplified tests for WebSocket connection lifecycle.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { WebSocketSubscriptionClient } from '../src/client.js';
-import { MockWebSocket, createMockWebSocketConstructor } from './mocks/websocket.js';
+import { MockWebSocket, MockEvent, MockCloseEvent } from './mocks/websocket.js';
 
 describe('WebSocket Connection Lifecycle (Simplified)', () => {
   beforeEach(() => {
@@ -36,17 +36,71 @@ describe('WebSocket Connection Lifecycle (Simplified)', () => {
     });
 
     it('should handle connection failure', async () => {
-      const WebSocketFail = createMockWebSocketConstructor({
-        shouldFailConnection: true,
-        connectionDelay: 10,
-      });
+      // Create a custom WebSocket class that fails immediately
+      class WebSocketFail {
+        static CONNECTING = 0;
+        static OPEN = 1;
+        static CLOSING = 2;
+        static CLOSED = 3;
+
+        readyState = WebSocketFail.CONNECTING;
+        url: string;
+        protocol = '';
+        bufferedAmount = 0;
+        extensions = '';
+        binaryType: BinaryType = 'blob';
+
+        onopen: ((event: Event) => void) | null = null;
+        onclose: ((event: CloseEvent) => void) | null = null;
+        onerror: ((event: Event) => void) | null = null;
+        onmessage: ((event: MessageEvent) => void) | null = null;
+
+        private timer: NodeJS.Timeout;
+
+        constructor(url: string, _protocols?: string | string[]) {
+          this.url = url;
+          // Trigger error immediately after construction
+          this.timer = setTimeout(() => {
+            if (this.readyState !== WebSocketFail.CLOSED) {
+              this.readyState = WebSocketFail.CLOSED;
+              if (this.onerror) {
+                this.onerror(new MockEvent('error'));
+              }
+              if (this.onclose) {
+                this.onclose(new MockCloseEvent(1006, 'Connection failed'));
+              }
+            }
+          }, 0);
+        }
+
+        close() {
+          clearTimeout(this.timer);
+          this.readyState = WebSocketFail.CLOSED;
+        }
+
+        send() {
+          // no-op
+        }
+
+        addEventListener() {
+          // no-op
+        }
+
+        removeEventListener() {
+          // no-op
+        }
+
+        dispatchEvent() {
+          return true;
+        }
+      }
 
       const client = new WebSocketSubscriptionClient({
         url: 'ws://localhost:8900',
         WebSocketImpl: WebSocketFail as any,
       });
 
-      await expect(client.connect()).rejects.toThrow('WebSocket error');
+      await expect(client.connect()).rejects.toThrow('WebSocket error: error');
       expect(client.getConnectionState()).toBe('disconnected');
     });
 
@@ -81,10 +135,10 @@ describe('WebSocket Connection Lifecycle (Simplified)', () => {
 
       await client.disconnect();
       expect(client.getConnectionState()).toBe('disconnected');
-      
+
       const ws = MockWebSocket.lastInstance;
       // Wait a bit for close to complete
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(ws?.readyState).toBe(MockWebSocket.CLOSED);
     });
 
@@ -114,7 +168,7 @@ describe('WebSocket Connection Lifecycle (Simplified)', () => {
       await client.connect();
 
       const ws = MockWebSocket.lastInstance as MockWebSocket;
-      
+
       // Simulate unexpected close
       ws.simulateClose(1006, 'Connection lost');
 
@@ -132,16 +186,16 @@ describe('WebSocket Connection Lifecycle (Simplified)', () => {
 
       const ws = MockWebSocket.lastInstance as MockWebSocket;
       const instanceCount = MockWebSocket.instances.length;
-      
+
       // Simulate clean close (code 1000)
       ws.simulateClose(1000, 'Normal closure');
 
       // Wait a bit - should not reconnect
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
       expect(client.getConnectionState()).toBe('disconnected');
       expect(MockWebSocket.instances.length).toBe(instanceCount); // No new connection
-      
+
       await client.disconnect();
     });
   });
@@ -156,10 +210,8 @@ describe('WebSocket Connection Lifecycle (Simplified)', () => {
       await client.connect();
 
       const received: any[] = [];
-      const subscriptionId = await client.subscribe(
-        'accountSubscribe',
-        ['test-address'],
-        (data) => received.push(data),
+      const subscriptionId = await client.subscribe('accountSubscribe', ['test-address'], (data) =>
+        received.push(data),
       );
 
       expect(subscriptionId).toBe(1);
@@ -169,7 +221,7 @@ describe('WebSocket Connection Lifecycle (Simplified)', () => {
       ws.simulateNotification(subscriptionId, { test: 'data' });
 
       // Wait a bit for async processing
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(received).toHaveLength(1);
       expect(received[0]).toEqual({ test: 'data' });
@@ -185,11 +237,7 @@ describe('WebSocket Connection Lifecycle (Simplified)', () => {
 
       await client.connect();
 
-      const subscriptionId = await client.subscribe(
-        'accountSubscribe',
-        ['test-address'],
-        () => {},
-      );
+      const subscriptionId = await client.subscribe('accountSubscribe', ['test-address'], () => {});
 
       const success = await client.unsubscribe(subscriptionId, 'accountUnsubscribe');
       expect(success).toBe(true);
@@ -200,12 +248,10 @@ describe('WebSocket Connection Lifecycle (Simplified)', () => {
 
   describe('Reconnection', () => {
     it('should attempt reconnection on unexpected disconnect', async () => {
-      vi.useFakeTimers();
-      
       const client = new WebSocketSubscriptionClient({
         url: 'ws://localhost:8900',
         WebSocketImpl: MockWebSocket as any,
-        reconnectDelay: 100,
+        reconnectDelay: 50,
         maxReconnectAttempts: 3,
       });
 
@@ -218,14 +264,12 @@ describe('WebSocket Connection Lifecycle (Simplified)', () => {
       firstWs.simulateClose(1006, 'Connection lost');
 
       // Wait for reconnection attempt
-      await vi.advanceTimersByTimeAsync(150);
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Should have created a new WebSocket instance
       expect(MockWebSocket.instances.length).toBeGreaterThan(instanceCount);
-      
+
       await client.disconnect();
-      
-      vi.useRealTimers();
     });
   });
 });
