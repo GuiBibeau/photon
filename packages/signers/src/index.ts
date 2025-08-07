@@ -2,3 +2,4 @@
 export * from './interface.js';
 export * from './multi-signer.js';
 export * from './guards.js';
+export * from './webcrypto-signer.js';

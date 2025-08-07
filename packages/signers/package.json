@@ -25,6 +25,11 @@
       "types": "./dist/guards.d.ts",
       "import": "./dist/guards.js",
       "require": "./dist/guards.cjs"
+    },
+    "./webcrypto-signer": {
+      "types": "./dist/webcrypto-signer.d.ts",
+      "import": "./dist/webcrypto-signer.js",
+      "require": "./dist/webcrypto-signer.cjs"
     }
   },
   "files": [

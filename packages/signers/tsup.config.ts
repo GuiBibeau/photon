@@ -6,6 +6,7 @@ export default defineConfig({
     interface: 'src/interface.ts',
     'multi-signer': 'src/multi-signer.ts',
     guards: 'src/guards.ts',
+    'webcrypto-signer': 'src/webcrypto-signer.ts',
   },
   format: ['esm', 'cjs'],
   dts: false,
