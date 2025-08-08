@@ -269,13 +269,17 @@ export interface ImportCryptoKeySignerOptions extends CryptoKeySignerOptions {
 }
 
 /**
- * Import a CryptoKeySigner from raw private key bytes
+ * Import a CryptoKeySigner from raw private and public key bytes
+ *
+ * Note: WebCrypto API cannot derive Ed25519 public keys from private keys,
+ * so both keys must be provided.
  */
 export async function importCryptoKeySigner(
   privateKeyBytes: Uint8Array,
+  publicKeyBytes: Uint8Array,
   options: ImportCryptoKeySignerOptions = {},
 ): Promise<CryptoKeySigner> {
-  const { extractable = false } = options;
+  const { extractable = false, ...signerOptions } = options;
 
   if (!privateKeyBytes || privateKeyBytes.length !== 32) {
     throw new SolanaError('INVALID_KEY_OPTIONS', {
@@ -283,9 +287,15 @@ export async function importCryptoKeySigner(
     });
   }
 
+  if (!publicKeyBytes || publicKeyBytes.length !== 32) {
+    throw new SolanaError('INVALID_KEY_OPTIONS', {
+      details: 'Public key must be exactly 32 bytes',
+    });
+  }
+
   try {
     // Import the private key
-    await crypto.subtle.importKey(
+    const privateKey = await crypto.subtle.importKey(
       'raw',
       privateKeyBytes as BufferSource,
       {
@@ -295,15 +305,29 @@ export async function importCryptoKeySigner(
       ['sign'],
     );
 
-    // Derive the public key from the private key
-    // Note: WebCrypto doesn't directly support deriving public from private for Ed25519
-    // We would need to use the crypto module's utilities or implement the derivation
-    // For now, we'll require both keys to be provided or use a KeyPair wrapper
+    // Import the public key
+    const publicKey = await crypto.subtle.importKey(
+      'raw',
+      publicKeyBytes as BufferSource,
+      {
+        name: 'Ed25519',
+      },
+      false, // Public keys are never extractable
+      ['verify'],
+    );
 
-    // This is a limitation - we'd need to enhance the crypto module to support this
-    throw new SolanaError('INVALID_KEY_OPTIONS', {
-      details: 'Importing from raw private key bytes requires public key derivation support',
-    });
+    // Create the CryptoKeyPair
+    const keyPair: CryptoKeyPair = {
+      privateKey,
+      publicKey,
+    };
+
+    const signer = new CryptoKeySigner(keyPair, signerOptions);
+
+    // Pre-cache the public key
+    await signer.getPublicKey();
+
+    return signer;
   } catch (error) {
     if (error instanceof SolanaError) {
       throw error;
@@ -312,7 +336,7 @@ export async function importCryptoKeySigner(
     throw new SolanaError(
       'KEY_GENERATION_FAILED',
       {
-        reason: error instanceof Error ? error.message : 'Failed to import private key',
+        reason: error instanceof Error ? error.message : 'Failed to import key pair',
       },
       error instanceof Error ? error : undefined,
     );
