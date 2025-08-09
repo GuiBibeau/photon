@@ -63,7 +63,20 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@20.19.9)(@vitest/ui@3.2.4)(happy-dom@18.0.1)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(yaml@2.8.0)
 
-  packages/accounts: {}
+  packages/accounts:
+    dependencies:
+      '@photon/addresses':
+        specifier: workspace:*
+        version: link:../addresses
+      '@photon/codecs':
+        specifier: workspace:*
+        version: link:../codecs
+      '@photon/errors':
+        specifier: workspace:*
+        version: link:../errors
+      '@photon/rpc':
+        specifier: workspace:*
+        version: link:../rpc
 
   packages/addresses:
     dependencies:

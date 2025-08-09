@@ -149,6 +149,8 @@ describe('RPC Middleware', () => {
       const transport = middleware(baseTransport);
 
       await transport({ jsonrpc: '2.0', id: 0, method: 'test' as any });
+      // Add small delay to ensure different timestamps
+      await new Promise((resolve) => setTimeout(resolve, 1));
       await transport({ jsonrpc: '2.0', id: 0, method: 'test' as any });
 
       expect(capturedIds[0]).not.toBe(capturedIds[1]);
