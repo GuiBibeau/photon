@@ -1660,7 +1660,7 @@ Implement flexible account data decoding with codec support and fallback options
 
 ---
 
-### SDK-53: Write account tests
+### SDK-53: Write account tests ✅
 
 **Priority**: Medium | **Story Points**: 2 | **Labels**: `test`, `accounts`  
 **Dependencies**: SDK-52
