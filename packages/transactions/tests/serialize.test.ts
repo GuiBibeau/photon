@@ -57,15 +57,15 @@ describe('Transaction Serialization', () => {
         };
 
         const serialized = serializeMessage(message);
-        
+
         // Check that it returns a Uint8Array
         expect(serialized).toBeInstanceOf(Uint8Array);
-        
+
         // Check header bytes
         expect(serialized[0]).toBe(1); // numSigners (fee payer)
         expect(serialized[1]).toBe(0); // numReadonlySigners
         expect(serialized[2]).toBe(1); // numWritableSigners
-        
+
         // Check that it contains the expected account keys
         expect(serialized.length).toBeGreaterThan(100); // At least header + accounts + blockhash + instructions
       });
@@ -89,7 +89,7 @@ describe('Transaction Serialization', () => {
         };
 
         const serialized = serializeMessage(message);
-        
+
         // Should have 2 signers (fee payer + account1)
         expect(serialized[0]).toBe(2);
         // Should have 1 readonly signer (account1)
@@ -106,9 +106,9 @@ describe('Transaction Serialization', () => {
             {
               programId,
               accounts: [
-                { pubkey: feePayer, isSigner: true, isWritable: false },  // Signer, readonly
-                { pubkey: account1, isSigner: false, isWritable: true },  // Non-signer, writable
-                { pubkey: account2, isSigner: true, isWritable: true },   // Fee payer (signer, writable)
+                { pubkey: feePayer, isSigner: true, isWritable: false }, // Signer, readonly
+                { pubkey: account1, isSigner: false, isWritable: true }, // Non-signer, writable
+                { pubkey: account2, isSigner: true, isWritable: true }, // Fee payer (signer, writable)
               ],
               data: new Uint8Array(),
             },
@@ -116,7 +116,7 @@ describe('Transaction Serialization', () => {
         };
 
         const serialized = serializeMessage(message);
-        
+
         // Should have 2 signers (fee payer account2 + feePayer address as signer)
         expect(serialized[0]).toBe(2);
         // Should have 1 readonly signer
@@ -133,7 +133,7 @@ describe('Transaction Serialization', () => {
         };
 
         const serialized = serializeMessage(message);
-        
+
         // Should still serialize with just fee payer
         expect(serialized).toBeInstanceOf(Uint8Array);
         expect(serialized[0]).toBe(1); // Just fee payer as signer
@@ -142,7 +142,7 @@ describe('Transaction Serialization', () => {
       it('should handle large instruction data', () => {
         const largeData = new Uint8Array(500);
         largeData.fill(42);
-        
+
         const message: CompileableTransactionMessage = {
           version: 'legacy',
           feePayer,
@@ -158,7 +158,7 @@ describe('Transaction Serialization', () => {
         };
 
         const serialized = serializeMessage(message);
-        
+
         // Should handle large data correctly
         expect(serialized).toBeInstanceOf(Uint8Array);
         expect(serialized.length).toBeGreaterThan(500);
@@ -175,19 +175,17 @@ describe('Transaction Serialization', () => {
           instructions: [
             {
               programId,
-              accounts: [
-                { pubkey: account1, isSigner: false, isWritable: true },
-              ],
+              accounts: [{ pubkey: account1, isSigner: false, isWritable: true }],
               data: new Uint8Array([1, 2, 3]),
             },
           ],
         };
 
         const serialized = serializeMessage(message);
-        
+
         // Check version byte (0x80 | 0 = 0x80)
         expect(serialized[0]).toBe(0x80);
-        
+
         // Check that it returns a Uint8Array
         expect(serialized).toBeInstanceOf(Uint8Array);
       });
@@ -215,10 +213,10 @@ describe('Transaction Serialization', () => {
         };
 
         const serialized = serializeMessage(message);
-        
+
         // Check version byte
         expect(serialized[0]).toBe(0x80);
-        
+
         // Should be longer due to lookup table data
         expect(serialized.length).toBeGreaterThan(100);
       });
@@ -247,7 +245,7 @@ describe('Transaction Serialization', () => {
         };
 
         const serialized = serializeMessage(message);
-        
+
         expect(serialized[0]).toBe(0x80);
         expect(serialized).toBeInstanceOf(Uint8Array);
       });
@@ -276,9 +274,7 @@ describe('Transaction Serialization', () => {
         instructions: [
           {
             programId,
-            accounts: [
-              { pubkey: account1, isSigner: true, isWritable: false },
-            ],
+            accounts: [{ pubkey: account1, isSigner: true, isWritable: false }],
             data: new Uint8Array(),
           },
         ],
@@ -293,20 +289,20 @@ describe('Transaction Serialization', () => {
       };
 
       const serialized = serializeTransaction(transaction);
-      
+
       expect(serialized).toBeInstanceOf(Uint8Array);
-      
+
       // Should contain signatures followed by message
       // First byte(s) should be compact-u16 encoding of signature count (2)
       expect(serialized[0]).toBe(2);
-      
+
       // Next 64 bytes should be first signature
       const firstSig = serialized.slice(1, 65);
-      expect(firstSig.every(b => b === 1)).toBe(true);
-      
+      expect(firstSig.every((b) => b === 1)).toBe(true);
+
       // Next 64 bytes should be second signature
       const secondSig = serialized.slice(65, 129);
-      expect(secondSig.every(b => b === 2)).toBe(true);
+      expect(secondSig.every((b) => b === 2)).toBe(true);
     });
 
     it('should handle missing signatures with zeros', () => {
@@ -318,9 +314,7 @@ describe('Transaction Serialization', () => {
         instructions: [
           {
             programId,
-            accounts: [
-              { pubkey: account1, isSigner: true, isWritable: false },
-            ],
+            accounts: [{ pubkey: account1, isSigner: true, isWritable: false }],
             data: new Uint8Array(),
           },
         ],
@@ -335,17 +329,17 @@ describe('Transaction Serialization', () => {
       };
 
       const serialized = serializeTransaction(transaction);
-      
+
       // Should have 2 signature slots
       expect(serialized[0]).toBe(2);
-      
+
       // First signature should be present
       const firstSig = serialized.slice(1, 65);
-      expect(firstSig.every(b => b === 1)).toBe(true);
-      
+      expect(firstSig.every((b) => b === 1)).toBe(true);
+
       // Second signature should be zeros
       const secondSig = serialized.slice(65, 129);
-      expect(secondSig.every(b => b === 0)).toBe(true);
+      expect(secondSig.every((b) => b === 0)).toBe(true);
     });
   });
 
@@ -359,16 +353,14 @@ describe('Transaction Serialization', () => {
         instructions: [
           {
             programId,
-            accounts: [
-              { pubkey: account1, isSigner: true, isWritable: false },
-            ],
+            accounts: [{ pubkey: account1, isSigner: true, isWritable: false }],
             data: new Uint8Array(100),
           },
         ],
       };
 
       const size = estimateTransactionSize(message);
-      
+
       expect(size).toBeGreaterThan(0);
       expect(size).toBeLessThan(MAX_TRANSACTION_SIZE);
     });
@@ -398,7 +390,7 @@ describe('Transaction Serialization', () => {
 
       const baseSize = estimateTransactionSize(baseMessage);
       const largerSize = estimateTransactionSize(messageWithSigners);
-      
+
       // Each additional signature adds 64 bytes
       expect(largerSize).toBeGreaterThan(baseSize + 128);
     });
@@ -436,7 +428,7 @@ describe('Transaction Serialization', () => {
 
       const isValid = isTransactionSizeValid(message);
       const size = estimateTransactionSize(message);
-      
+
       if (size > MAX_TRANSACTION_SIZE) {
         expect(isValid).toBe(false);
       } else {
@@ -461,10 +453,10 @@ describe('Transaction Serialization', () => {
       };
 
       const encoded = encodeTransactionBase64(transaction);
-      
+
       expect(typeof encoded).toBe('string');
       expect(encoded.length).toBeGreaterThan(0);
-      
+
       // Should be valid base64
       expect(() => {
         if (typeof btoa !== 'undefined') {
@@ -492,10 +484,10 @@ describe('Transaction Serialization', () => {
       };
 
       const encoded = encodeTransactionBase58(transaction);
-      
+
       expect(typeof encoded).toBe('string');
       expect(encoded.length).toBeGreaterThan(0);
-      
+
       // Should only contain base58 characters
       const base58Regex = /^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$/;
       expect(base58Regex.test(encoded)).toBe(true);
@@ -506,26 +498,26 @@ describe('Transaction Serialization', () => {
 describe('compact-u16 encoding', () => {
   it('should handle all value ranges correctly', async () => {
     const { compactU16 } = await import('@photon/codecs/primitives/compact-u16.js');
-    
+
     // Test 1-byte encoding (0-127)
     expect(compactU16.encode(0)).toEqual(new Uint8Array([0]));
     expect(compactU16.encode(127)).toEqual(new Uint8Array([127]));
-    
+
     // Test 2-byte encoding (128-16383)
-    expect(compactU16.encode(128)).toEqual(new Uint8Array([0x80, 2]));  // 10000000 00000010
+    expect(compactU16.encode(128)).toEqual(new Uint8Array([0x80, 2])); // 10000000 00000010
     expect(compactU16.encode(16383)).toEqual(new Uint8Array([0xbf, 0xff])); // 10111111 11111111
-    
-    // Test 3-byte encoding (16384-65535)  
-    expect(compactU16.encode(16384)).toEqual(new Uint8Array([0xc0, 0, 2]));  // 11000000 00000000 00000010
+
+    // Test 3-byte encoding (16384-65535)
+    expect(compactU16.encode(16384)).toEqual(new Uint8Array([0xc0, 0, 2])); // 11000000 00000000 00000010
     expect(compactU16.encode(65535)).toEqual(new Uint8Array([0xdf, 0xff, 0x07])); // 11011111 11111111 00000111
   });
 
   it('should decode correctly', async () => {
     const { compactU16 } = await import('@photon/codecs/primitives/compact-u16.js');
-    
+
     // Test round-trip for various values
     const testValues = [0, 1, 127, 128, 255, 256, 16383, 16384, 32767, 65535];
-    
+
     for (const value of testValues) {
       const encoded = compactU16.encode(value);
       const [decoded, bytesRead] = compactU16.decode(encoded);
