@@ -212,16 +212,18 @@ describe('Transaction Send Helpers', () => {
           });
           expect(mockRpc.getSignatureStatuses).toHaveBeenCalledTimes(1);
         } else {
-          // Should continue polling
+          // Should continue polling and timeout
           const promise = confirmTransaction(mockSignature, mockRpc, {
             commitment: testCase.commitment,
             timeout: 200,
             pollInterval: 50,
           });
 
-          await vi.advanceTimersByTimeAsync(250);
-
-          await expect(promise).rejects.toThrow(/timeout/);
+          // Advance timers and wait for the promise to reject
+          await Promise.all([
+            vi.advanceTimersByTimeAsync(250),
+            expect(promise).rejects.toThrow(/timeout/),
+          ]);
         }
       }
     });
@@ -253,9 +255,11 @@ describe('Transaction Send Helpers', () => {
         pollInterval: 100,
       });
 
-      await vi.advanceTimersByTimeAsync(1100);
-
-      await expect(promise).rejects.toThrow(/timeout/);
+      // Advance timers and wait for the promise to reject
+      await Promise.all([
+        vi.advanceTimersByTimeAsync(1100),
+        expect(promise).rejects.toThrow(/timeout/),
+      ]);
     });
 
     it('should handle network errors and continue polling', async () => {
