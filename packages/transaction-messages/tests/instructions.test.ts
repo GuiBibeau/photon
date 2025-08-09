@@ -354,6 +354,28 @@ describe('Transaction Message Instructions', () => {
       );
     });
 
+    it('should throw for missing pubkey in account', () => {
+      const instruction = {
+        programId,
+        accounts: [{ isSigner: true, isWritable: false }],
+        data: new Uint8Array(),
+      } as any;
+      expect(() => validateInstruction(instruction)).toThrow(
+        'Account at index 0 must have a pubkey',
+      );
+    });
+
+    it('should throw for missing isWritable in account', () => {
+      const instruction = {
+        programId,
+        accounts: [{ pubkey: account1, isSigner: true }],
+        data: new Uint8Array(),
+      } as any;
+      expect(() => validateInstruction(instruction)).toThrow(
+        'Account at index 0 must have isWritable as a boolean',
+      );
+    });
+
     it('should throw for missing data', () => {
       const instruction = { programId, accounts: [] } as any;
       expect(() => validateInstruction(instruction)).toThrow('Instruction must have data');

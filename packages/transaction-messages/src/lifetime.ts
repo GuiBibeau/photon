@@ -54,14 +54,19 @@ export function setTransactionMessageLifetimeUsingNonce(
   nonceInfo: NonceInfo,
   message: TransactionMessageWithFeePayer,
 ): TransactionMessageWithLifetime {
+  // Remove slot and any previous nonce info
+  const { slot: _slot, ...restMessage } = message as TransactionMessageWithFeePayer & {
+    slot?: unknown;
+  };
+
   // For durable nonce transactions:
   // - The nonce value is used as the blockhash
   // - lastValidBlockHeight is set to MAX_SAFE_INTEGER to indicate it doesn't expire
   // - The nonceInfo is stored for later use when building instructions
   return Object.freeze({
-    ...message,
+    ...restMessage,
     blockhash: nonceInfo.nonce,
     lastValidBlockHeight: BigInt('18446744073709551615'), // u64::MAX - indicates durable
-    nonceInfo,
+    nonceInfo: Object.freeze({ ...nonceInfo }),
   });
 }
