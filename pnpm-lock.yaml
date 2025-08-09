@@ -129,7 +129,20 @@ importers:
         specifier: workspace:*
         version: link:../addresses
 
-  packages/transactions: {}
+  packages/transactions:
+    dependencies:
+      '@photon/addresses':
+        specifier: workspace:*
+        version: link:../addresses
+      '@photon/crypto':
+        specifier: workspace:*
+        version: link:../crypto
+      '@photon/signers':
+        specifier: workspace:*
+        version: link:../signers
+      '@photon/transaction-messages':
+        specifier: workspace:*
+        version: link:../transaction-messages
 
 packages:
 

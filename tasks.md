@@ -1367,7 +1367,7 @@ Add the ability to set transaction lifetime using a recent blockhash and last va
 
 ---
 
-### SDK-44: Build instruction management
+### SDK-44: Build instruction management ✅
 
 **Priority**: Highest | **Story Points**: 3 | **Labels**: `feature`, `transaction-messages`  
 **Dependencies**: SDK-43
@@ -1414,7 +1414,7 @@ export interface Instruction {
 
 ---
 
-### SDK-45: Write message builder tests
+### SDK-45: Write message builder tests ✅
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `test`, `transaction-messages`  
 **Dependencies**: SDK-44
@@ -1446,7 +1446,7 @@ Test the transaction message builder for correctness, immutability, and type saf
 
 ---
 
-### SDK-46: Implement transaction signing
+### SDK-46: Implement transaction signing 
 
 **Priority**: Highest | **Story Points**: 5 | **Labels**: `feature`, `transactions`  
 **Dependencies**: SDK-44
