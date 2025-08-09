@@ -37,6 +37,9 @@
     "clean": "rm -rf dist",
     "size": "echo \"Size analysis not yet configured\""
   },
+  "dependencies": {
+    "@photon/addresses": "workspace:*"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/GuiBibeau/photon.git",

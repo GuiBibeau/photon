@@ -123,7 +123,11 @@ importers:
 
   packages/sysvars: {}
 
-  packages/transaction-messages: {}
+  packages/transaction-messages:
+    dependencies:
+      '@photon/addresses':
+        specifier: workspace:*
+        version: link:../addresses
 
   packages/transactions: {}
 
