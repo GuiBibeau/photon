@@ -1,14 +1,20 @@
 import { describe, it, expect } from 'vitest';
 import { address } from '@photon/addresses';
 import { createTransactionMessage } from '../src/create';
+import { setTransactionMessageFeePayer } from '../src/fee-payer';
 import {
   appendTransactionMessageInstruction,
   prependTransactionMessageInstruction,
   insertTransactionMessageInstruction,
   appendTransactionMessageInstructions,
   estimateTransactionMessageSize,
+  validateInstruction,
+  deduplicateAccounts,
+  getOrderedAccounts,
+  createInstructionData,
+  createInstruction,
 } from '../src/instructions';
-import type { Instruction } from '../src/types';
+import type { Instruction, AccountMeta } from '../src/types';
 
 describe('Transaction Message Instructions', () => {
   const programId = address('11111111111111111111111111111112');
@@ -309,6 +315,183 @@ describe('Transaction Message Instructions', () => {
       const updated = appendTransactionMessageInstruction(instruction, message);
 
       expect(Object.isFrozen(updated.instructions[0].accounts)).toBe(true);
+    });
+  });
+
+  describe('validateInstruction', () => {
+    it('should validate a valid instruction', () => {
+      const instruction = createTestInstruction(1);
+      expect(() => validateInstruction(instruction)).not.toThrow();
+    });
+
+    it('should throw for missing program ID', () => {
+      const instruction = { accounts: [], data: new Uint8Array() } as any;
+      expect(() => validateInstruction(instruction)).toThrow('Instruction must have a program ID');
+    });
+
+    it('should throw for missing accounts array', () => {
+      const instruction = { programId, data: new Uint8Array() } as any;
+      expect(() => validateInstruction(instruction)).toThrow(
+        'Instruction must have an accounts array',
+      );
+    });
+
+    it('should throw for non-array accounts', () => {
+      const instruction = { programId, accounts: 'not-an-array', data: new Uint8Array() } as any;
+      expect(() => validateInstruction(instruction)).toThrow(
+        'Instruction accounts must be an array',
+      );
+    });
+
+    it('should throw for invalid account metadata', () => {
+      const instruction = {
+        programId,
+        accounts: [{ pubkey: account1 }],
+        data: new Uint8Array(),
+      } as any;
+      expect(() => validateInstruction(instruction)).toThrow(
+        'Account at index 0 must have isSigner as a boolean',
+      );
+    });
+
+    it('should throw for missing data', () => {
+      const instruction = { programId, accounts: [] } as any;
+      expect(() => validateInstruction(instruction)).toThrow('Instruction must have data');
+    });
+
+    it('should throw for non-Uint8Array data', () => {
+      const instruction = { programId, accounts: [], data: [1, 2, 3] } as any;
+      expect(() => validateInstruction(instruction)).toThrow(
+        'Instruction data must be a Uint8Array',
+      );
+    });
+  });
+
+  describe('deduplicateAccounts', () => {
+    it('should deduplicate accounts with combined flags', () => {
+      const message = createTransactionMessage('legacy');
+      const instruction1: Instruction = {
+        programId,
+        accounts: [
+          { pubkey: account1, isSigner: true, isWritable: false },
+          { pubkey: account2, isSigner: false, isWritable: true },
+        ],
+        data: new Uint8Array(),
+      };
+      const instruction2: Instruction = {
+        programId: address('11111111111111111111111111111118'),
+        accounts: [
+          { pubkey: account1, isSigner: false, isWritable: true }, // account1 becomes writable
+          { pubkey: account2, isSigner: true, isWritable: false }, // account2 becomes signer
+        ],
+        data: new Uint8Array(),
+      };
+
+      const updated = appendTransactionMessageInstructions([instruction1, instruction2], message);
+      const accounts = deduplicateAccounts(updated);
+
+      // Check combined flags
+      expect(accounts.get(account1)).toEqual({ isSigner: true, isWritable: true });
+      expect(accounts.get(account2)).toEqual({ isSigner: true, isWritable: true });
+      expect(accounts.get(programId)).toEqual({ isSigner: false, isWritable: false });
+    });
+
+    it('should include fee payer as writable signer', () => {
+      const feePayer = address('11111111111111111111111111111119');
+      const message = setTransactionMessageFeePayer(feePayer, createTransactionMessage('legacy'));
+      const accounts = deduplicateAccounts(message);
+
+      expect(accounts.get(feePayer)).toEqual({ isSigner: true, isWritable: true });
+    });
+  });
+
+  describe('getOrderedAccounts', () => {
+    it('should order accounts correctly', () => {
+      const feePayer = address('So11111111111111111111111111111111111111112');
+      const writableSigner = address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+      const readonlySigner = address('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
+      const writableNonSigner = address('Stake11111111111111111111111111111111111111');
+      const readonlyNonSigner = address('Vote111111111111111111111111111111111111111');
+
+      const message = setTransactionMessageFeePayer(feePayer, createTransactionMessage('legacy'));
+      const instruction: Instruction = {
+        programId: readonlyNonSigner,
+        accounts: [
+          { pubkey: writableSigner, isSigner: true, isWritable: true },
+          { pubkey: readonlySigner, isSigner: true, isWritable: false },
+          { pubkey: writableNonSigner, isSigner: false, isWritable: true },
+        ],
+        data: new Uint8Array(),
+      };
+
+      const updated = appendTransactionMessageInstruction(instruction, message);
+      const ordered = getOrderedAccounts(updated);
+
+      expect(ordered).toHaveLength(5);
+      expect(ordered[0]).toEqual({ address: feePayer, isSigner: true, isWritable: true });
+      expect(ordered[1]).toEqual({ address: writableSigner, isSigner: true, isWritable: true });
+      expect(ordered[2]).toEqual({ address: readonlySigner, isSigner: true, isWritable: false });
+      expect(ordered[3]).toEqual({
+        address: writableNonSigner,
+        isSigner: false,
+        isWritable: true,
+      });
+      expect(ordered[4]).toEqual({
+        address: readonlyNonSigner,
+        isSigner: false,
+        isWritable: false,
+      });
+    });
+  });
+
+  describe('createInstructionData', () => {
+    it('should create data with discriminator only', () => {
+      const discriminator = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]);
+      const data = createInstructionData(discriminator);
+
+      expect(data).toHaveLength(8);
+      expect(data).toEqual(discriminator);
+    });
+
+    it('should combine discriminator and args', () => {
+      const discriminator = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]);
+      const args = new Uint8Array([9, 10, 11, 12]);
+      const data = createInstructionData(discriminator, args);
+
+      expect(data).toHaveLength(12);
+      expect(data.slice(0, 8)).toEqual(discriminator);
+      expect(data.slice(8)).toEqual(args);
+    });
+  });
+
+  describe('createInstruction', () => {
+    it('should create a valid instruction', () => {
+      const accounts: AccountMeta[] = [
+        { pubkey: account1, isSigner: true, isWritable: true },
+        { pubkey: account2, isSigner: false, isWritable: false },
+      ];
+      const data = new Uint8Array([1, 2, 3]);
+      const instruction = createInstruction(programId, accounts, data);
+
+      expect(instruction.programId).toBe(programId);
+      expect(instruction.accounts).toEqual(accounts);
+      expect(instruction.data).toEqual(data);
+      expect(Object.isFrozen(instruction)).toBe(true);
+    });
+
+    it('should validate the created instruction', () => {
+      const accounts = [{ pubkey: account1 }] as any;
+      expect(() => createInstruction(programId, accounts)).toThrow(
+        'Account at index 0 must have isSigner as a boolean',
+      );
+    });
+
+    it('should use default empty data if not provided', () => {
+      const accounts: AccountMeta[] = [{ pubkey: account1, isSigner: true, isWritable: true }];
+      const instruction = createInstruction(programId, accounts);
+
+      expect(instruction.data).toEqual(new Uint8Array(0));
+      expect(instruction.data).toHaveLength(0);
     });
   });
 });
