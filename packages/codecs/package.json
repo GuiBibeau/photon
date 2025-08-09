@@ -56,6 +56,11 @@
       "import": "./dist/primitives/string.mjs",
       "require": "./dist/primitives/string.js"
     },
+    "./primitives/compact-u16": {
+      "types": "./dist/primitives/compact-u16.d.ts",
+      "import": "./dist/primitives/compact-u16.mjs",
+      "require": "./dist/primitives/compact-u16.js"
+    },
     "./composites": {
       "types": "./dist/composites/index.d.ts",
       "import": "./dist/composites/index.mjs",

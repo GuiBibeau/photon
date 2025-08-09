@@ -13,6 +13,7 @@ export default defineConfig({
     'primitives/bytes': 'src/primitives/bytes.ts',
     'primitives/numeric': 'src/primitives/numeric.ts',
     'primitives/string': 'src/primitives/string.ts',
+    'primitives/compact-u16': 'src/primitives/compact-u16.ts',
     // Composites as separate entries
     'composites/index': 'src/composites/index.ts',
     'composites/array': 'src/composites/array.ts',

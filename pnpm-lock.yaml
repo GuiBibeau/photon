@@ -134,6 +134,9 @@ importers:
       '@photon/addresses':
         specifier: workspace:*
         version: link:../addresses
+      '@photon/codecs':
+        specifier: workspace:*
+        version: link:../codecs
       '@photon/crypto':
         specifier: workspace:*
         version: link:../crypto

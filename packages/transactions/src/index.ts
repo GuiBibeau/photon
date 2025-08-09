@@ -13,3 +13,14 @@ export {
 } from './sign.js';
 
 export { compileTransaction } from './compile.js';
+
+// Serialization exports
+export {
+  serializeMessage,
+  serializeTransaction,
+  estimateTransactionSize,
+  isTransactionSizeValid,
+  encodeTransactionBase64,
+  encodeTransactionBase58,
+  MAX_TRANSACTION_SIZE,
+} from './serialize.js';
