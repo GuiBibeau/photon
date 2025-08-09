@@ -1308,7 +1308,7 @@ type TransactionMessageWithLifetime = TransactionMessageWithFeePayer & {
 
 ---
 
-### SDK-42: Add fee payer setter
+### SDK-42: Add fee payer setter ✅
 
 **Priority**: Highest | **Story Points**: 2 | **Labels**: `feature`, `transaction-messages`  
 **Dependencies**: SDK-41
@@ -1338,7 +1338,7 @@ Implement the function to set the fee payer on a transaction message, with prope
 
 ---
 
-### SDK-43: Implement lifetime setter
+### SDK-43: Implement lifetime setter ✅
 
 **Priority**: Highest | **Story Points**: 3 | **Labels**: `feature`, `transaction-messages`  
 **Dependencies**: SDK-42
