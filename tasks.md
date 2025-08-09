@@ -1168,7 +1168,7 @@ Test WebSocket subscriptions including connection management, event delivery, an
 
 **Goal**: Create an immutable, type-safe transaction builder with full signing support
 
-### SDK-38: Define Signer interface
+### SDK-38: Define Signer interface ✅
 
 **Priority**: Highest | **Story Points**: 2 | **Labels**: `feature`, `signers`  
 **Dependencies**: SDK-3
@@ -1206,7 +1206,7 @@ export interface Signer {
 
 ---
 
-### SDK-39: Implement WebCrypto signer
+### SDK-39: Implement WebCrypto signer ✅
 
 **Priority**: Highest | **Story Points**: 3 | **Labels**: `feature`, `signers`  
 **Dependencies**: SDK-38
@@ -1236,7 +1236,7 @@ Create the default signer implementation that wraps WebCrypto keys for transacti
 
 ---
 
-### SDK-40: Write signer tests
+### SDK-40: Write signer tests ✅
 
 **Priority**: High | **Story Points**: 2 | **Labels**: `test`, `signers`  
 **Dependencies**: SDK-39
