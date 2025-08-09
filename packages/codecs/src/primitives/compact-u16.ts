@@ -1,6 +1,6 @@
 /**
  * Compact-u16 encoding as used in Solana transactions.
- * 
+ *
  * This encoding uses a variable-length format:
  * - Values 0-127: 1 byte
  * - Values 128-16383: 2 bytes
@@ -25,27 +25,27 @@ export const compactU16: Codec<number> = {
     } else if (value < 0x4000) {
       // 2 bytes: 10xxxxxx xxxxxxxx (6 + 8 = 14 bits of data)
       return new Uint8Array([
-        0x80 | (value & 0x3f),  // Lower 6 bits with 10 prefix
-        (value >> 6) & 0xff      // Next 8 bits
+        0x80 | (value & 0x3f), // Lower 6 bits with 10 prefix
+        (value >> 6) & 0xff, // Next 8 bits
       ]);
     } else {
       // 3 bytes: 110xxxxx xxxxxxxx xxxxxxxx (5 + 8 + 8 = 21 bits, but we only need 16)
       return new Uint8Array([
-        0xc0 | (value & 0x1f),   // Lower 5 bits with 110 prefix
-        (value >> 5) & 0xff,      // Next 8 bits  
-        (value >> 13) & 0xff      // Final bits
+        0xc0 | (value & 0x1f), // Lower 5 bits with 110 prefix
+        (value >> 5) & 0xff, // Next 8 bits
+        (value >> 13) & 0xff, // Final bits
       ]);
     }
   },
 
   decode(bytes: Uint8Array, offset = 0): readonly [number, number] {
     assertSufficientBytes(bytes, offset, 1);
-    
+
     const firstByte = bytes[offset];
     if (firstByte === undefined) {
       throw new CodecError('Unexpected end of buffer while reading compact-u16');
     }
-    
+
     if ((firstByte & 0x80) === 0) {
       // 1 byte encoding: 0xxxxxxx
       return [firstByte, 1] as const;
@@ -74,8 +74,12 @@ export const compactU16: Codec<number> = {
   },
 
   size(value: number): number {
-    if (value < 0x80) return 1;
-    if (value < 0x4000) return 2;
+    if (value < 0x80) {
+      return 1;
+    }
+    if (value < 0x4000) {
+      return 2;
+    }
     return 3;
   },
 };
