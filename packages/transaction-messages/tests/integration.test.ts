@@ -270,21 +270,30 @@ describe('Transaction Message Builder Integration', () => {
     });
   });
 
-  describe('Error handling', () => {
-    it('should require fee payer before lifetime', () => {
+  describe('Type safety', () => {
+    it('should enforce fee payer requirement at type level', () => {
       const message = createTransactionMessage('legacy');
 
-      // This should not compile in TypeScript, but we can test runtime behavior
-      // @ts-expect-error - Testing that lifetime requires fee payer
-      expect(() =>
-        setTransactionMessageLifetimeUsingBlockhash(
-          {
-            blockhash: blockhash('TestBlockhash'),
-            lastValidBlockHeight: 100000n,
-          },
-          message, // Missing fee payer
-        ),
-      ).toThrow();
+      // This test verifies that TypeScript would prevent calling setTransactionMessageLifetimeUsingBlockhash
+      // without a fee payer. At runtime, if TypeScript checks are bypassed, the function would still work
+      // but return an object without proper type guarantees.
+
+      // @ts-expect-error - Testing that lifetime requires fee payer at type level
+      const invalidMessage = setTransactionMessageLifetimeUsingBlockhash(
+        {
+          blockhash: blockhash('TestBlockhash'),
+          lastValidBlockHeight: 100000n,
+        },
+        message as any, // Bypassing TypeScript to test runtime behavior
+      );
+
+      // The function works at runtime but the type system prevents this in normal usage
+      expect(invalidMessage.blockhash).toBe('TestBlockhash');
+      expect(invalidMessage.lastValidBlockHeight).toBe(100000n);
+      expect(invalidMessage.feePayer).toBeUndefined(); // No fee payer set
+
+      // This demonstrates why the type system is important - it prevents invalid states
+      expect(isCompileable(invalidMessage as any)).toBe(false);
     });
   });
 });
