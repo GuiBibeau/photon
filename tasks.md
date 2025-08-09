@@ -1591,7 +1591,7 @@ Comprehensive testing of transaction building, signing, and serialization.
 
 **Goal**: Implement user-friendly APIs for common operations
 
-### SDK-51: Create account fetching
+### SDK-51: Create account fetching ✅
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `accounts`  
 **Dependencies**: SDK-30
@@ -1630,7 +1630,7 @@ const account = await getAccount(address, tokenAccountCodec, rpc);
 
 ---
 
-### SDK-52: Add account data decoding
+### SDK-52: Add account data decoding ✅
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `accounts`  
 **Dependencies**: SDK-51

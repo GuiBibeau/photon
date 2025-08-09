@@ -143,6 +143,48 @@ describe('getAccount', () => {
       'Unsupported account data encoding',
     );
   });
+
+  it('should handle direct string base64 data format', async () => {
+    const testData = new Uint8Array(165);
+    testData.fill(0);
+    testData[64] = 50; // amount
+    const base64Data = btoa(String.fromCharCode(...testData));
+
+    // Mock RPC response with direct string format (not array)
+    (mockRpc.getAccountInfo as any).mockResolvedValue({
+      value: {
+        data: base64Data, // Direct string format
+        owner: address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
+        lamports: 3039280n,
+        executable: false,
+        rentEpoch: 362n,
+      },
+      context: { slot: 100 },
+    });
+
+    const account = await getAccount(mockRpc, testAddress, tokenAccountCodec);
+
+    expect(account).not.toBeNull();
+    expect(account?.info.size).toBe(165);
+  });
+
+  it('should throw error for unexpected data format', async () => {
+    // Mock RPC response with invalid data format
+    (mockRpc.getAccountInfo as any).mockResolvedValue({
+      value: {
+        data: 12345, // Invalid format - number
+        owner: address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
+        lamports: 4039280n,
+        executable: false,
+        rentEpoch: 363n,
+      },
+      context: { slot: 100 },
+    });
+
+    await expect(getAccount(mockRpc, testAddress, tokenAccountCodec)).rejects.toThrow(
+      'Unexpected account data format',
+    );
+  });
 });
 
 describe('getAccountRaw', () => {
@@ -185,6 +227,63 @@ describe('getAccountRaw', () => {
     const account = await getAccountRaw(mockRpc, testAddress);
 
     expect(account).toBeNull();
+  });
+
+  it('should handle string data format', async () => {
+    const testData = new Uint8Array([15, 16, 17, 18, 19]);
+    const base64Data = btoa(String.fromCharCode(...testData));
+
+    (mockRpc.getAccountInfo as any).mockResolvedValue({
+      value: {
+        data: base64Data, // Direct string format
+        owner: address('11111111111111111111111111111111'),
+        lamports: 1500n,
+        executable: true,
+        rentEpoch: 362n,
+      },
+      context: { slot: 100 },
+    });
+
+    const account = await getAccountRaw(mockRpc, testAddress);
+
+    expect(account).not.toBeNull();
+    expect(account?.info.data).toBeInstanceOf(Uint8Array);
+    expect(Array.from(account?.info.data ?? [])).toEqual([15, 16, 17, 18, 19]);
+    expect(account?.info.executable).toBe(true);
+  });
+
+  it('should throw error for unsupported encoding in array format', async () => {
+    (mockRpc.getAccountInfo as any).mockResolvedValue({
+      value: {
+        data: ['some-data', 'jsonParsed'],
+        owner: address('11111111111111111111111111111111'),
+        lamports: 2000n,
+        executable: false,
+        rentEpoch: 363n,
+      },
+      context: { slot: 100 },
+    });
+
+    await expect(getAccountRaw(mockRpc, testAddress)).rejects.toThrow(
+      'Unsupported account data encoding: jsonParsed',
+    );
+  });
+
+  it('should throw error for unexpected data format', async () => {
+    (mockRpc.getAccountInfo as any).mockResolvedValue({
+      value: {
+        data: 12345, // Invalid format - number
+        owner: address('11111111111111111111111111111111'),
+        lamports: 2500n,
+        executable: false,
+        rentEpoch: 364n,
+      },
+      context: { slot: 100 },
+    });
+
+    await expect(getAccountRaw(mockRpc, testAddress)).rejects.toThrow(
+      'Unexpected account data format',
+    );
   });
 });
 
@@ -284,6 +383,80 @@ describe('getMultipleAccounts', () => {
       minContextSlot: 75,
     });
   });
+
+  it('should handle direct string base64 data format', async () => {
+    const testData = new Uint8Array(165);
+    testData.fill(3);
+    const base64Data = btoa(String.fromCharCode(...testData));
+
+    (mockRpc.getMultipleAccounts as any).mockResolvedValue({
+      value: [
+        {
+          data: base64Data, // Direct string format
+          owner: address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
+          lamports: 3000n,
+          executable: false,
+          rentEpoch: 362n,
+        },
+        null,
+        {
+          data: base64Data,
+          owner: address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
+          lamports: 4000n,
+          executable: false,
+          rentEpoch: 363n,
+        },
+      ],
+      context: { slot: 100 },
+    });
+
+    const accounts = await getMultipleAccounts(mockRpc, testAddresses, tokenAccountCodec);
+
+    expect(accounts).toHaveLength(3);
+    expect(accounts[0]).not.toBeNull();
+    expect(accounts[0]?.info.size).toBe(165);
+    expect(accounts[1]).toBeNull();
+    expect(accounts[2]).not.toBeNull();
+    expect(accounts[2]?.info.size).toBe(165);
+  });
+
+  it('should throw error for unexpected data format', async () => {
+    (mockRpc.getMultipleAccounts as any).mockResolvedValue({
+      value: [
+        {
+          data: { invalid: 'object' }, // Invalid format
+          owner: address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
+          lamports: 5000n,
+          executable: false,
+          rentEpoch: 364n,
+        },
+      ],
+      context: { slot: 100 },
+    });
+
+    await expect(
+      getMultipleAccounts(mockRpc, [testAddresses[0]], tokenAccountCodec),
+    ).rejects.toThrow('Unexpected account data format');
+  });
+
+  it('should throw error for unsupported encoding in array format', async () => {
+    (mockRpc.getMultipleAccounts as any).mockResolvedValue({
+      value: [
+        {
+          data: ['some-data', 'hex'], // Unsupported encoding
+          owner: address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
+          lamports: 6000n,
+          executable: false,
+          rentEpoch: 365n,
+        },
+      ],
+      context: { slot: 100 },
+    });
+
+    await expect(
+      getMultipleAccounts(mockRpc, [testAddresses[0]], tokenAccountCodec),
+    ).rejects.toThrow('Unsupported account data encoding: hex');
+  });
 });
 
 describe('getMultipleAccountsRaw', () => {
@@ -360,5 +533,157 @@ describe('getMultipleAccountsRaw', () => {
     expect(accounts[0]).toBeNull();
     expect(accounts[1]).not.toBeNull();
     expect(Array.from(accounts[1]?.info.data ?? [])).toEqual([7, 8, 9]);
+  });
+
+  it('should handle base64 string data format', async () => {
+    const testData = new Uint8Array([10, 11, 12, 13]);
+    const base64Data = btoa(String.fromCharCode(...testData));
+
+    (mockRpc.getMultipleAccounts as any).mockResolvedValue({
+      value: [
+        {
+          data: base64Data, // String format instead of array
+          owner: address('11111111111111111111111111111111'),
+          lamports: 4000n,
+          executable: false,
+          rentEpoch: 364n,
+        },
+        null,
+      ],
+      context: { slot: 100 },
+    });
+
+    const accounts = await getMultipleAccountsRaw(mockRpc, testAddresses);
+
+    expect(accounts).toHaveLength(2);
+    expect(accounts[0]).not.toBeNull();
+    expect(Array.from(accounts[0]?.info.data ?? [])).toEqual([10, 11, 12, 13]);
+    expect(accounts[1]).toBeNull();
+  });
+
+  it('should throw error for unsupported encoding in array format', async () => {
+    (mockRpc.getMultipleAccounts as any).mockResolvedValue({
+      value: [
+        {
+          data: ['some-data', 'unsupported-encoding'],
+          owner: address('11111111111111111111111111111111'),
+          lamports: 5000n,
+          executable: false,
+          rentEpoch: 365n,
+        },
+      ],
+      context: { slot: 100 },
+    });
+
+    await expect(getMultipleAccountsRaw(mockRpc, [testAddresses[0]])).rejects.toThrow(
+      'Unsupported account data encoding: unsupported-encoding',
+    );
+  });
+
+  it('should throw error for unexpected data format', async () => {
+    (mockRpc.getMultipleAccounts as any).mockResolvedValue({
+      value: [
+        {
+          data: { unexpected: 'object' }, // Invalid format
+          owner: address('11111111111111111111111111111111'),
+          lamports: 6000n,
+          executable: false,
+          rentEpoch: 366n,
+        },
+      ],
+      context: { slot: 100 },
+    });
+
+    await expect(getMultipleAccountsRaw(mockRpc, [testAddresses[0]])).rejects.toThrow(
+      'Unexpected account data format',
+    );
+  });
+
+  it('should handle options with only commitment set', async () => {
+    const testData = new Uint8Array([20, 21, 22]);
+    const base64Data = btoa(String.fromCharCode(...testData));
+
+    (mockRpc.getMultipleAccounts as any).mockResolvedValue({
+      value: [
+        {
+          data: base64Data,
+          owner: address('11111111111111111111111111111111'),
+          lamports: 7000n,
+          executable: false,
+          rentEpoch: 367n,
+        },
+      ],
+      context: { slot: 100 },
+    });
+
+    const accounts = await getMultipleAccountsRaw(mockRpc, [testAddresses[0]], {
+      commitment: 'finalized',
+      // Note: minContextSlot is intentionally not set to test the undefined branch
+    });
+
+    expect(accounts).toHaveLength(1);
+    expect(accounts[0]).not.toBeNull();
+    expect(mockRpc.getMultipleAccounts).toHaveBeenCalledWith([testAddresses[0]], {
+      encoding: 'base64',
+      commitment: 'finalized',
+    });
+  });
+
+  it('should handle options with only minContextSlot set', async () => {
+    const testData = new Uint8Array([23, 24, 25]);
+    const base64Data = btoa(String.fromCharCode(...testData));
+
+    (mockRpc.getMultipleAccounts as any).mockResolvedValue({
+      value: [
+        {
+          data: base64Data,
+          owner: address('11111111111111111111111111111111'),
+          lamports: 8000n,
+          executable: false,
+          rentEpoch: 368n,
+        },
+      ],
+      context: { slot: 100 },
+    });
+
+    const accounts = await getMultipleAccountsRaw(mockRpc, [testAddresses[0]], {
+      minContextSlot: 99,
+      // Note: commitment is intentionally not set
+    });
+
+    expect(accounts).toHaveLength(1);
+    expect(accounts[0]).not.toBeNull();
+    expect(mockRpc.getMultipleAccounts).toHaveBeenCalledWith([testAddresses[0]], {
+      encoding: 'base64',
+      minContextSlot: 99,
+    });
+  });
+
+  it('should handle options with no commitment or minContextSlot', async () => {
+    const testData = new Uint8Array([26, 27, 28]);
+    const base64Data = btoa(String.fromCharCode(...testData));
+
+    (mockRpc.getMultipleAccounts as any).mockResolvedValue({
+      value: [
+        {
+          data: base64Data,
+          owner: address('11111111111111111111111111111111'),
+          lamports: 9000n,
+          executable: false,
+          rentEpoch: 369n,
+        },
+      ],
+      context: { slot: 100 },
+    });
+
+    const accounts = await getMultipleAccountsRaw(mockRpc, [testAddresses[0]], {
+      batchSize: 50, // Only set batchSize
+    });
+
+    expect(accounts).toHaveLength(1);
+    expect(accounts[0]).not.toBeNull();
+    expect(mockRpc.getMultipleAccounts).toHaveBeenCalledWith([testAddresses[0]], {
+      encoding: 'base64',
+    });
   });
 });
