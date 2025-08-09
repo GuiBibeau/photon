@@ -31,7 +31,7 @@ export function setTransactionMessageFeePayer<T extends TransactionMessage>(
   });
 
   // TypeScript will infer the correct return type based on the input type
-  return newMessage as T extends TransactionMessageWithLifetime
+  return newMessage as unknown as T extends TransactionMessageWithLifetime
     ? TransactionMessageWithLifetime
     : T extends TransactionMessageWithFeePayer
       ? TransactionMessageWithFeePayer
