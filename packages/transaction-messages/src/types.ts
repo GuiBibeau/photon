@@ -56,6 +56,8 @@ export interface BaseTransactionMessage {
   readonly feePayer?: Address;
   readonly blockhash?: Blockhash;
   readonly lastValidBlockHeight?: bigint;
+  readonly slot?: bigint;
+  readonly nonceInfo?: NonceInfo;
   readonly instructions: ReadonlyArray<Instruction>;
   readonly addressLookupTables?: ReadonlyArray<AddressLookupTable>;
 }
@@ -91,6 +93,20 @@ export type CompileableTransactionMessage = TransactionMessageWithLifetime;
 export interface BlockhashInfo {
   blockhash: Blockhash;
   lastValidBlockHeight: bigint;
+  /** Optional slot at which the blockhash was fetched */
+  slot?: bigint;
+}
+
+/**
+ * Durable nonce info for offline/delayed transactions.
+ */
+export interface NonceInfo {
+  /** The nonce value (used as blockhash) */
+  nonce: Blockhash;
+  /** The nonce account that stores the nonce */
+  nonceAccount: Address;
+  /** The authority that can advance the nonce */
+  nonceAuthority: Address;
 }
 
 /**

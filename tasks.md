@@ -1265,7 +1265,7 @@ Test signer implementations for correctness, security, and integration with the 
 
 ---
 
-### SDK-41: Create transaction message builder
+### SDK-41: Create transaction message builder ✅
 
 **Priority**: Highest | **Story Points**: 3 | **Labels**: `feature`, `transaction-messages`  
 **Dependencies**: SDK-12

@@ -18,6 +18,7 @@ export type {
   TransactionMessageWithLifetime,
   CompileableTransactionMessage,
   BlockhashInfo,
+  NonceInfo,
 } from './types.js';
 
 // Type utilities
@@ -30,7 +31,10 @@ export { createTransactionMessage } from './create.js';
 export { setTransactionMessageFeePayer } from './fee-payer.js';
 
 // Lifetime
-export { setTransactionMessageLifetimeUsingBlockhash } from './lifetime.js';
+export {
+  setTransactionMessageLifetimeUsingBlockhash,
+  setTransactionMessageLifetimeUsingNonce,
+} from './lifetime.js';
 
 // Instructions
 export {
