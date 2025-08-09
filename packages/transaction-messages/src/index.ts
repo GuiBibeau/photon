@@ -43,4 +43,9 @@ export {
   insertTransactionMessageInstruction,
   appendTransactionMessageInstructions,
   estimateTransactionMessageSize,
+  validateInstruction,
+  deduplicateAccounts,
+  getOrderedAccounts,
+  createInstructionData,
+  createInstruction,
 } from './instructions.js';
