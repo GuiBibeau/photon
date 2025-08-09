@@ -1525,7 +1525,7 @@ Implement transaction serialization to the wire format for both legacy and versi
 
 ---
 
-### SDK-48: Add send transaction helper
+### SDK-48: Add send transaction helper ✅
 
 **Priority**: Medium | **Story Points**: 2 | **Labels**: `feature`, `transactions`  
 **Dependencies**: SDK-47

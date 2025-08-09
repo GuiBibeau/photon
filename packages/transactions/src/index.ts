@@ -24,3 +24,7 @@ export {
   encodeTransactionBase58,
   MAX_TRANSACTION_SIZE,
 } from './serialize.js';
+
+// Send exports
+export type { SendOptions, ConfirmTransactionOptions } from './send.js';
+export { sendTransaction, sendAndConfirmTransaction, confirmTransaction } from './send.js';
