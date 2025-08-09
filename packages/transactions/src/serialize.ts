@@ -4,7 +4,7 @@
 
 import type { Address } from '@photon/addresses';
 import { getAddressBytes } from '@photon/addresses';
-import type { 
+import type {
   CompileableTransactionMessage,
   AccountMeta,
   Instruction,
@@ -153,17 +153,17 @@ function compileAccountKeys(message: CompileableTransactionMessage): CompiledAcc
  */
 function compileInstructions(
   instructions: readonly Instruction[],
-  accountKeys: Address[]
+  accountKeys: Address[],
 ): CompiledInstruction[] {
   const accountKeyMap = new Map(accountKeys.map((key, index) => [key, index]));
 
-  return instructions.map(instruction => {
+  return instructions.map((instruction) => {
     const programIdIndex = accountKeyMap.get(instruction.programId);
     if (programIdIndex === undefined) {
       throw new Error(`Program ID ${instruction.programId} not found in account keys`);
     }
 
-    const accountIndices = instruction.accounts.map(account => {
+    const accountIndices = instruction.accounts.map((account) => {
       const index = accountKeyMap.get(account.pubkey);
       if (index === undefined) {
         throw new Error(`Account ${account.pubkey} not found in account keys`);
@@ -183,7 +183,7 @@ function compileInstructions(
  * Serializes a legacy transaction message
  */
 function serializeLegacyMessage(message: CompileableTransactionMessage): Uint8Array {
-  const { accountKeys, numSigners, numReadonlySigners, numReadonlyNonSigners } = 
+  const { accountKeys, numSigners, numReadonlySigners, numReadonlyNonSigners } =
     compileAccountKeys(message);
   const compiledInstructions = compileInstructions(message.instructions, accountKeys);
 
@@ -263,7 +263,7 @@ function serializeLegacyMessage(message: CompileableTransactionMessage): Uint8Ar
  * Serializes a versioned (v0) transaction message
  */
 function serializeVersionedMessage(message: CompileableTransactionMessage): Uint8Array {
-  const { accountKeys, numSigners, numReadonlySigners, numReadonlyNonSigners } = 
+  const { accountKeys, numSigners, numReadonlySigners, numReadonlyNonSigners } =
     compileAccountKeys(message);
   const compiledInstructions = compileInstructions(message.instructions, accountKeys);
 
@@ -403,12 +403,12 @@ export function serializeMessage(message: CompileableTransactionMessage): Uint8A
 export function serializeTransaction(transaction: Transaction): Uint8Array {
   const messageBytes = serializeMessage(transaction.message);
   const { accountKeys, numSigners } = compileAccountKeys(transaction.message);
-  
+
   // Calculate total size
   const signatureSize = 64;
-  const signaturesSize = compactU16.size(numSigners) + (numSigners * signatureSize);
+  const signaturesSize = compactU16.size(numSigners) + numSigners * signatureSize;
   const totalSize = signaturesSize + messageBytes.length;
-  
+
   // Allocate buffer
   const buffer = new Uint8Array(totalSize);
   let offset = 0;
@@ -425,7 +425,7 @@ export function serializeTransaction(transaction: Transaction): Uint8Array {
       throw new Error(`Account key not found at index ${i}`);
     }
     const signature = transaction.signatures.get(accountKey) ?? null;
-    
+
     if (signature) {
       // Signature is already a Uint8Array with branded type
       buffer.set(signature, offset);
@@ -448,11 +448,11 @@ export function serializeTransaction(transaction: Transaction): Uint8Array {
 export function estimateTransactionSize(message: CompileableTransactionMessage): number {
   const { numSigners } = compileAccountKeys(message);
   const messageBytes = serializeMessage(message);
-  
+
   // Signatures section size
   const signatureSize = 64;
-  const signaturesSize = compactU16.size(numSigners) + (numSigners * signatureSize);
-  
+  const signaturesSize = compactU16.size(numSigners) + numSigners * signatureSize;
+
   return signaturesSize + messageBytes.length;
 }
 
@@ -477,7 +477,10 @@ export function encodeTransactionBase64(transaction: Transaction): string {
   if (typeof btoa !== 'undefined') {
     // Browser environment
     return btoa(String.fromCharCode(...bytes));
-  } else if (typeof globalThis !== 'undefined' && typeof (globalThis as Record<string, unknown>).Buffer !== 'undefined') {
+  } else if (
+    typeof globalThis !== 'undefined' &&
+    typeof (globalThis as Record<string, unknown>).Buffer !== 'undefined'
+  ) {
     // Node.js environment
     const BufferClass = (globalThis as Record<string, unknown>).Buffer as {
       from(data: Uint8Array): { toString(encoding: string): string };
@@ -488,20 +491,20 @@ export function encodeTransactionBase64(transaction: Transaction): string {
     const base64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
     let result = '';
     let i = 0;
-    
+
     while (i < bytes.length) {
       const a = bytes[i++] ?? 0;
       const b = i < bytes.length ? (bytes[i++] ?? 0) : 0;
       const c = i < bytes.length ? (bytes[i++] ?? 0) : 0;
-      
+
       const bitmap = (a << 16) | (b << 8) | c;
-      
+
       result += base64chars.charAt((bitmap >> 18) & 63);
       result += base64chars.charAt((bitmap >> 12) & 63);
       result += i - 2 < bytes.length ? base64chars.charAt((bitmap >> 6) & 63) : '=';
       result += i - 1 < bytes.length ? base64chars.charAt(bitmap & 63) : '=';
     }
-    
+
     return result;
   }
 }
