@@ -27,3 +27,6 @@ export {
   isBase58,
   BASE58_ALPHABET,
 } from './base58.js';
+
+// Compact-u16 codec
+export { compactU16 } from './compact-u16.js';

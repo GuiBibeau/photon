@@ -1446,7 +1446,7 @@ Test the transaction message builder for correctness, immutability, and type saf
 
 ---
 
-### SDK-46: Implement transaction signing 
+### SDK-46: Implement transaction signing ✅
 
 **Priority**: Highest | **Story Points**: 5 | **Labels**: `feature`, `transactions`  
 **Dependencies**: SDK-44
@@ -1491,7 +1491,7 @@ export async function signTransaction(
 
 ---
 
-### SDK-47: Create transaction serialization
+### SDK-47: Create transaction serialization ✅
 
 **Priority**: Highest | **Story Points**: 5 | **Labels**: `feature`, `transactions`  
 **Dependencies**: SDK-46
