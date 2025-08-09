@@ -208,9 +208,9 @@ describe('Multi-Signer Utilities', () => {
     });
 
     it('should sign with multiple signers sequentially', async () => {
-      const signer1 = createMockSigner('111', 10);
-      const signer2 = createMockSigner('222', 10);
-      const signer3 = createMockSigner('333', 10);
+      const signer1 = createMockSigner('111', 50);
+      const signer2 = createMockSigner('222', 50);
+      const signer3 = createMockSigner('333', 50);
 
       const message = new Uint8Array([1, 2, 3]);
       const startTime = Date.now();
@@ -223,8 +223,9 @@ describe('Multi-Signer Utilities', () => {
 
       expect(result.success).toBe(true);
       expect(result.signatures).toHaveLength(3);
-      // Allow for minor timing variations (accept 25ms or more instead of strict 30ms)
-      expect(duration).toBeGreaterThanOrEqual(25);
+      // Sequential execution should take at least 150ms (3 * 50ms)
+      // Allow some variance for timing inaccuracies (accept 140ms or more)
+      expect(duration).toBeGreaterThanOrEqual(140);
     });
 
     it('should handle signing failures', async () => {

@@ -269,10 +269,51 @@ export interface ImportCryptoKeySignerOptions extends CryptoKeySignerOptions {
 }
 
 /**
+ * Convert a raw Ed25519 private key (32 bytes) to PKCS8 format for WebCrypto import
+ */
+function ed25519RawToPKCS8(rawPrivateKey: Uint8Array): Uint8Array {
+  if (rawPrivateKey.length !== 32) {
+    throw new SolanaError('INVALID_KEY_OPTIONS', {
+      details: 'Raw private key must be exactly 32 bytes',
+    });
+  }
+
+  // PKCS8 prefix for Ed25519
+  // This is the DER encoding of the PKCS8 structure for Ed25519
+  const pkcs8Prefix = new Uint8Array([
+    0x30,
+    0x2e, // SEQUENCE (46 bytes)
+    0x02,
+    0x01,
+    0x00, // INTEGER version (0)
+    0x30,
+    0x05, // SEQUENCE (5 bytes) - AlgorithmIdentifier
+    0x06,
+    0x03,
+    0x2b,
+    0x65,
+    0x70, // OID for Ed25519 (1.3.101.112)
+    0x04,
+    0x22, // OCTET STRING (34 bytes)
+    0x04,
+    0x20, // OCTET STRING (32 bytes) - the actual key
+  ]);
+
+  // Combine prefix with the raw private key
+  return new Uint8Array([...pkcs8Prefix, ...rawPrivateKey]);
+}
+
+/**
  * Import a CryptoKeySigner from raw private and public key bytes
  *
- * Note: WebCrypto API cannot derive Ed25519 public keys from private keys,
- * so both keys must be provided.
+ * This function automatically converts raw Ed25519 private keys to PKCS8 format
+ * for WebCrypto compatibility. This ensures it works across all environments
+ * that support Ed25519.
+ *
+ * @param privateKeyBytes - 32-byte raw Ed25519 private key (seed)
+ * @param publicKeyBytes - 32-byte raw Ed25519 public key
+ * @param options - Import options
+ * @returns A CryptoKeySigner instance
  */
 export async function importCryptoKeySigner(
   privateKeyBytes: Uint8Array,
@@ -294,10 +335,14 @@ export async function importCryptoKeySigner(
   }
 
   try {
-    // Import the private key
+    // Convert raw private key to PKCS8 format for WebCrypto compatibility
+    // WebCrypto doesn't support raw Ed25519 private key import, only PKCS8
+    const pkcs8PrivateKey = ed25519RawToPKCS8(privateKeyBytes);
+
+    // Import the private key using PKCS8 format
     const privateKey = await crypto.subtle.importKey(
-      'raw',
-      privateKeyBytes as BufferSource,
+      'pkcs8',
+      pkcs8PrivateKey as BufferSource,
       {
         name: 'Ed25519',
       },
@@ -305,7 +350,7 @@ export async function importCryptoKeySigner(
       ['sign'],
     );
 
-    // Import the public key
+    // Import the public key (raw format is supported for public keys)
     const publicKey = await crypto.subtle.importKey(
       'raw',
       publicKeyBytes as BufferSource,
@@ -324,8 +369,11 @@ export async function importCryptoKeySigner(
 
     const signer = new CryptoKeySigner(keyPair, signerOptions);
 
-    // Pre-cache the public key
-    await signer.getPublicKey();
+    // Pre-cache the public key and bytes since we already have them
+    // This avoids trying to export a non-extractable key
+    signer['cachedPublicKeyBytes'] = publicKeyBytes;
+    const address = addressFromBytes(publicKeyBytes);
+    signer['cachedPublicKey'] = address;
 
     return signer;
   } catch (error) {
@@ -333,10 +381,29 @@ export async function importCryptoKeySigner(
       throw error;
     }
 
+    // Provide more helpful error message for common issues
+    const errorMessage = error instanceof Error ? error.message : 'Failed to import key pair';
+    const isUnsupportedError =
+      errorMessage.includes('Unsupported key usage') ||
+      errorMessage.includes('raw') ||
+      errorMessage.includes('Ed25519');
+
+    if (isUnsupportedError) {
+      throw new SolanaError(
+        'CRYPTO_NOT_SUPPORTED',
+        {
+          operation: 'Ed25519 raw key import',
+          details:
+            'Raw Ed25519 key import is not supported in this environment. Consider using a PKCS8-formatted key instead.',
+        },
+        error instanceof Error ? error : undefined,
+      );
+    }
+
     throw new SolanaError(
       'KEY_GENERATION_FAILED',
       {
-        reason: error instanceof Error ? error.message : 'Failed to import key pair',
+        reason: errorMessage,
       },
       error instanceof Error ? error : undefined,
     );
@@ -385,6 +452,43 @@ export async function fromCryptoKeyPair(
   await signer.getPublicKey();
 
   return signer;
+}
+
+/**
+ * Import a CryptoKeySigner from a Solana wallet private key
+ *
+ * Solana wallets typically export private keys as 64-byte arrays:
+ * - First 32 bytes: The Ed25519 seed (actual private key)
+ * - Last 32 bytes: The public key
+ *
+ * @param solanaPrivateKey - 64-byte Solana format private key
+ * @param options - Import options
+ * @returns A CryptoKeySigner instance
+ *
+ * @example
+ * ```typescript
+ * // Import from a Phantom wallet export
+ * const privateKeyBase58 = "5J3mV..."; // From wallet export
+ * const privateKeyBytes = base58.decode(privateKeyBase58);
+ * const signer = await importSolanaKeySigner(privateKeyBytes);
+ * ```
+ */
+export async function importSolanaKeySigner(
+  solanaPrivateKey: Uint8Array,
+  options: ImportCryptoKeySignerOptions = {},
+): Promise<CryptoKeySigner> {
+  if (!solanaPrivateKey || solanaPrivateKey.length !== 64) {
+    throw new SolanaError('INVALID_KEY_OPTIONS', {
+      details: 'Solana private key must be exactly 64 bytes (32-byte seed + 32-byte public key)',
+    });
+  }
+
+  // Extract the seed (first 32 bytes) and public key (last 32 bytes)
+  const seed = solanaPrivateKey.slice(0, 32);
+  const publicKeyBytes = solanaPrivateKey.slice(32, 64);
+
+  // Use the standard import function with the extracted components
+  return importCryptoKeySigner(seed, publicKeyBytes, options);
 }
 
 /**
