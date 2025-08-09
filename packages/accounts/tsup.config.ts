@@ -5,6 +5,8 @@ export default defineConfig({
     index: 'src/index.ts',
     fetch: 'src/fetch.ts',
     types: 'src/types.ts',
+    decode: 'src/decode.ts',
+    'common-accounts': 'src/common-accounts.ts',
   },
   format: ['esm', 'cjs'],
   dts: false,

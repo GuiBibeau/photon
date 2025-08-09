@@ -20,6 +20,16 @@
       "types": "./dist/types.d.ts",
       "import": "./dist/types.js",
       "require": "./dist/types.cjs"
+    },
+    "./decode": {
+      "types": "./dist/decode.d.ts",
+      "import": "./dist/decode.js",
+      "require": "./dist/decode.cjs"
+    },
+    "./common-accounts": {
+      "types": "./dist/common-accounts.d.ts",
+      "import": "./dist/common-accounts.js",
+      "require": "./dist/common-accounts.cjs"
     }
   },
   "files": [
@@ -28,7 +38,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup && tsc --emitDeclarationOnly",
+    "build": "tsup",
     "build:watch": "tsup --watch",
     "dev": "tsup --watch",
     "test": "vitest run",
