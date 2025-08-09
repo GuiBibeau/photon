@@ -1687,7 +1687,7 @@ Test account fetching and decoding functionality.
 
 ---
 
-### SDK-54: Define sysvar constants
+### SDK-54: Define sysvar constants ✅
 
 **Priority**: Medium | **Story Points**: 2 | **Labels**: `feature`, `sysvars`  
 **Dependencies**: SDK-22

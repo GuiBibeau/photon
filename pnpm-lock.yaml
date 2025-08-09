@@ -134,7 +134,11 @@ importers:
         specifier: workspace:*
         version: link:../errors
 
-  packages/sysvars: {}
+  packages/sysvars:
+    dependencies:
+      '@photon/addresses':
+        specifier: workspace:*
+        version: link:../addresses
 
   packages/transaction-messages:
     dependencies:
