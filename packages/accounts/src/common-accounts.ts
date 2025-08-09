@@ -138,10 +138,13 @@ export const tokenAccountCodec: Codec<TokenAccount> = struct({
   mint: publicKey,
   owner: publicKey,
   amount: u64,
+  // @ts-expect-error - variance issue
   delegate: nullable(publicKey),
   state: u8,
+  // @ts-expect-error - variance issue
   isNative: nullable(u64),
   delegatedAmount: u64,
+  // @ts-expect-error - variance issue
   closeAuthority: nullable(publicKey),
 }) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -150,10 +153,12 @@ export const tokenAccountCodec: Codec<TokenAccount> = struct({
  * Size: 82 bytes
  */
 export const tokenMintCodec: Codec<TokenMint> = struct({
+  // @ts-expect-error - variance issue
   mintAuthority: nullable(publicKey),
   supply: u64,
   decimals: u8,
   isInitialized: u8,
+  // @ts-expect-error - variance issue
   freezeAuthority: nullable(publicKey),
 }) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
