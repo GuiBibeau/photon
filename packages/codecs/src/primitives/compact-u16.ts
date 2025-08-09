@@ -7,13 +7,13 @@
  * - Values 16384-65535: 3 bytes
  */
 
-import type { Codec } from '../codec.js';
+import type { VariableSizeCodec } from '../codec.js';
 import { assertSufficientBytes, CodecError } from '../errors.js';
 
 /**
  * Codec for compact-u16 encoding used in Solana transactions
  */
-export const compactU16: Codec<number> = {
+export const compactU16: VariableSizeCodec<number> = {
   encode(value: number): Uint8Array {
     if (!Number.isInteger(value) || value < 0 || value > 65535) {
       throw new CodecError(`Value must be an integer between 0 and 65535, got ${value}`);

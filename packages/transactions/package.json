@@ -49,6 +49,7 @@
   },
   "dependencies": {
     "@photon/addresses": "workspace:*",
+    "@photon/codecs": "workspace:*",
     "@photon/crypto": "workspace:*",
     "@photon/signers": "workspace:*",
     "@photon/transaction-messages": "workspace:*"
