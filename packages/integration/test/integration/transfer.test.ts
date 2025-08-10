@@ -2,7 +2,7 @@
  * Integration tests for SOL transfers
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { address } from '@photon/addresses';
+import { address, type Address } from '@photon/addresses';
 import { u32, u64 } from '@photon/codecs/primitives/numeric';
 import {
   appendTransactionMessageInstruction,
@@ -80,18 +80,15 @@ describe.skipIf(process.env.CI === 'true')('SOL Transfer Integration Tests', () 
     const { value: blockInfo } = await rpc.getLatestBlockhash();
 
     // Build transaction message
-    let message = createTransactionMessage('legacy');
-    message = setTransactionMessageFeePayer(alice.publicKey, message);
-    message = setTransactionMessageLifetimeUsingBlockhash(
-      {
-        blockhash: brandBlockhash(blockInfo.blockhash),
-        lastValidBlockHeight: blockInfo.lastValidBlockHeight,
-      },
-      message,
-    );
-    message = appendTransactionMessageInstruction(
+    const message = appendTransactionMessageInstruction(
       createInstruction(SYSTEM_PROGRAM_ID, accounts, instructionData),
-      message,
+      setTransactionMessageLifetimeUsingBlockhash(
+        {
+          blockhash: brandBlockhash(blockInfo.blockhash),
+          lastValidBlockHeight: blockInfo.lastValidBlockHeight,
+        },
+        setTransactionMessageFeePayer(alice.publicKey, createTransactionMessage('legacy')),
+      ),
     );
 
     // Sign and send transaction
@@ -174,18 +171,15 @@ describe.skipIf(process.env.CI === 'true')('SOL Transfer Integration Tests', () 
 
     const { value: blockInfo } = await rpc.getLatestBlockhash();
 
-    let message = createTransactionMessage('legacy');
-    message = setTransactionMessageFeePayer(from.publicKey, message);
-    message = setTransactionMessageLifetimeUsingBlockhash(
-      {
-        blockhash: brandBlockhash(blockInfo.blockhash),
-        lastValidBlockHeight: blockInfo.lastValidBlockHeight,
-      },
-      message,
-    );
-    message = appendTransactionMessageInstruction(
+    const message = appendTransactionMessageInstruction(
       createInstruction(SYSTEM_PROGRAM_ID, accounts, instructionData),
-      message,
+      setTransactionMessageLifetimeUsingBlockhash(
+        {
+          blockhash: brandBlockhash(blockInfo.blockhash),
+          lastValidBlockHeight: blockInfo.lastValidBlockHeight,
+        },
+        setTransactionMessageFeePayer(from.publicKey, createTransactionMessage('legacy')),
+      ),
     );
 
     const transaction = await signTransaction([from], message);
