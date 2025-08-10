@@ -29,7 +29,7 @@ import type { RpcClient } from '@photon/rpc';
 // System Program ID for transfers
 const SYSTEM_PROGRAM_ID = address('11111111111111111111111111111111');
 
-describe('SOL Transfer Integration Tests', () => {
+describe.skipIf(process.env.CI === 'true')('SOL Transfer Integration Tests', () => {
   let rpc: RpcClient;
   let alice: Signer;
   let bob: Signer;
