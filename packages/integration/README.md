@@ -2,6 +2,9 @@
 
 Integration tests and examples for the Photon SDK packages.
 
+> **Note**: Integration tests in this package are excluded from CI runs as they require a local Solana test validator.
+> To run integration tests locally, use `pnpm test` in this directory after starting a test validator.
+
 ## Quick Start
 
 ```bash
