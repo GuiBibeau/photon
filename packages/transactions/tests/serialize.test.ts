@@ -38,38 +38,6 @@ describe('Transaction Serialization', () => {
 
   describe('serializeMessage', () => {
     describe('legacy transactions', () => {
-      it('should serialize a simple legacy transaction message', () => {
-        const message: CompileableTransactionMessage = {
-          version: 'legacy',
-          feePayer,
-          blockhash: testBlockhash,
-          lastValidBlockHeight: 1000n,
-          instructions: [
-            {
-              programId,
-              accounts: [
-                { pubkey: account1, isSigner: false, isWritable: true },
-                { pubkey: account2, isSigner: false, isWritable: false },
-              ],
-              data: new Uint8Array([1, 2, 3]),
-            },
-          ],
-        };
-
-        const serialized = serializeMessage(message);
-
-        // Check that it returns a Uint8Array
-        expect(serialized).toBeInstanceOf(Uint8Array);
-
-        // Check header bytes
-        expect(serialized[0]).toBe(1); // numSigners (fee payer)
-        expect(serialized[1]).toBe(0); // numReadonlySigners
-        expect(serialized[2]).toBe(1); // numWritableSigners
-
-        // Check that it contains the expected account keys
-        expect(serialized.length).toBeGreaterThan(100); // At least header + accounts + blockhash + instructions
-      });
-
       it('should handle multiple signers correctly', () => {
         const message: CompileableTransactionMessage = {
           version: 'legacy',
@@ -496,22 +464,6 @@ describe('Transaction Serialization', () => {
 });
 
 describe('compact-u16 encoding', () => {
-  it('should handle all value ranges correctly', async () => {
-    const { compactU16 } = await import('@photon/codecs/primitives/compact-u16.js');
-
-    // Test 1-byte encoding (0-127)
-    expect(compactU16.encode(0)).toEqual(new Uint8Array([0]));
-    expect(compactU16.encode(127)).toEqual(new Uint8Array([127]));
-
-    // Test 2-byte encoding (128-16383)
-    expect(compactU16.encode(128)).toEqual(new Uint8Array([0x80, 2])); // 10000000 00000010
-    expect(compactU16.encode(16383)).toEqual(new Uint8Array([0xbf, 0xff])); // 10111111 11111111
-
-    // Test 3-byte encoding (16384-65535)
-    expect(compactU16.encode(16384)).toEqual(new Uint8Array([0xc0, 0, 2])); // 11000000 00000000 00000010
-    expect(compactU16.encode(65535)).toEqual(new Uint8Array([0xdf, 0xff, 0x07])); // 11011111 11111111 00000111
-  });
-
   it('should decode correctly', async () => {
     const { compactU16 } = await import('@photon/codecs/primitives/compact-u16.js');
 

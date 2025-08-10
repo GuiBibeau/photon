@@ -189,7 +189,7 @@ function serializeLegacyMessage(message: CompileableTransactionMessage): Uint8Ar
 
   // Calculate message size
   let messageSize = 0;
-  messageSize += 1 + 1 + 1 + 1; // Header (4 bytes)
+  messageSize += 1 + 1 + 1; // Header (3 bytes)
   messageSize += compactU16.size(accountKeys.length);
   messageSize += accountKeys.length * 32; // Each pubkey is 32 bytes
   messageSize += 32; // Blockhash
@@ -207,10 +207,12 @@ function serializeLegacyMessage(message: CompileableTransactionMessage): Uint8Ar
   const buffer = new Uint8Array(messageSize);
   let offset = 0;
 
-  // Write header
+  // Write header (legacy transaction format)
+  // Byte 0: Number of signatures required (always same as numSigners for legacy)
   buffer[offset++] = numSigners;
+  // Byte 1: Number of readonly signed accounts
   buffer[offset++] = numReadonlySigners;
-  buffer[offset++] = numSigners - numReadonlySigners; // numWritableSigners
+  // Byte 2: Number of readonly unsigned accounts
   buffer[offset++] = numReadonlyNonSigners;
 
   // Write account keys

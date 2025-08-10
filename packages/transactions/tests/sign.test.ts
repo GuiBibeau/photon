@@ -12,7 +12,14 @@ import {
 } from '../src/sign.js';
 
 // Mock types
-const mockAddress = (id: string): Address => id as Address;
+// Mock addresses - use valid base58 addresses
+const mockAddresses = {
+  alice: '11111111111111111111111111111111' as Address,
+  bob: '22222222222222222222222222222222' as Address,
+  charlie: '33333333333333333333333333333333' as Address,
+  program1: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address,
+};
+const mockAddress = (id: keyof typeof mockAddresses): Address => mockAddresses[id];
 const mockSignature = (data: string): Signature => new TextEncoder().encode(data) as Signature;
 
 // Helper to create a mock signer
@@ -36,7 +43,7 @@ function createMockMessage(
   return {
     version: 'legacy',
     feePayer: mockAddress(feePayer),
-    blockhash: 'mock-blockhash',
+    blockhash: '4NCYB3kRT8sCNodPNuCZo8VUh4xqpBQxsxed2wd9xaD4',
     lastValidBlockHeight: 1000n,
     instructions: [
       {
@@ -124,14 +131,14 @@ describe('signTransaction', () => {
     const signer = createMockSigner('bob');
 
     await expect(signTransaction([signer], message)).rejects.toThrow(
-      'Fee payer alice must be among the provided signers',
+      `Fee payer ${mockAddress('alice')} must be among the provided signers`,
     );
   });
 
   it('should throw if message has no fee payer', async () => {
     const message = {
       version: 'legacy',
-      blockhash: 'mock-blockhash',
+      blockhash: '4NCYB3kRT8sCNodPNuCZo8VUh4xqpBQxsxed2wd9xaD4',
       lastValidBlockHeight: 1000n,
       instructions: [],
     } as any;

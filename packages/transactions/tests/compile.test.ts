@@ -3,15 +3,24 @@ import type { Address } from '@photon/addresses';
 import type { CompileableTransactionMessage } from '@photon/transaction-messages';
 import { compileTransaction } from '../src/compile.js';
 
-// Mock helpers
-const mockAddress = (id: string): Address => id as Address;
+// Mock helpers - use valid base58 addresses
+const mockAddresses = {
+  alice: '11111111111111111111111111111111' as Address,
+  bob: '22222222222222222222222222222222' as Address,
+  charlie: '33333333333333333333333333333333' as Address,
+  dave: '44444444444444444444444444444444' as Address,
+  program1: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address,
+  program2: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address,
+  'token-program': 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address,
+};
+const mockAddress = (id: keyof typeof mockAddresses): Address => mockAddresses[id];
 
 describe('compileTransaction', () => {
   it('should compile a simple transaction message', () => {
     const message: CompileableTransactionMessage = {
       version: 'legacy',
       feePayer: mockAddress('alice'),
-      blockhash: 'mock-blockhash',
+      blockhash: '4NCYB3kRT8sCNodPNuCZo8VUh4xqpBQxsxed2wd9xaD4',
       lastValidBlockHeight: 1000n,
       instructions: [
         {
@@ -41,7 +50,7 @@ describe('compileTransaction', () => {
     const message: CompileableTransactionMessage = {
       version: 'legacy',
       feePayer: mockAddress('alice'),
-      blockhash: 'mock-blockhash',
+      blockhash: '4NCYB3kRT8sCNodPNuCZo8VUh4xqpBQxsxed2wd9xaD4',
       lastValidBlockHeight: 1000n,
       instructions: [],
     } as CompileableTransactionMessage;
@@ -55,7 +64,7 @@ describe('compileTransaction', () => {
     const message: CompileableTransactionMessage = {
       version: 'legacy',
       feePayer: mockAddress('alice'),
-      blockhash: 'mock-blockhash',
+      blockhash: '4NCYB3kRT8sCNodPNuCZo8VUh4xqpBQxsxed2wd9xaD4',
       lastValidBlockHeight: 1000n,
       instructions: [
         {
@@ -106,7 +115,7 @@ describe('compileTransaction', () => {
     const message: CompileableTransactionMessage = {
       version: 'legacy',
       feePayer: mockAddress('alice'),
-      blockhash: 'mock-blockhash',
+      blockhash: '4NCYB3kRT8sCNodPNuCZo8VUh4xqpBQxsxed2wd9xaD4',
       lastValidBlockHeight: 1000n,
       instructions: [
         {
@@ -144,7 +153,7 @@ describe('compileTransaction', () => {
     const message: CompileableTransactionMessage = {
       version: 'legacy',
       feePayer: mockAddress('alice'),
-      blockhash: 'mock-blockhash',
+      blockhash: '4NCYB3kRT8sCNodPNuCZo8VUh4xqpBQxsxed2wd9xaD4',
       lastValidBlockHeight: 1000n,
       instructions: [
         {
@@ -171,7 +180,7 @@ describe('compileTransaction', () => {
     const message: CompileableTransactionMessage = {
       version: 0,
       feePayer: mockAddress('alice'),
-      blockhash: 'mock-blockhash',
+      blockhash: '4NCYB3kRT8sCNodPNuCZo8VUh4xqpBQxsxed2wd9xaD4',
       lastValidBlockHeight: 1000n,
       instructions: [],
       addressLookupTables: [], // V0 transactions can have lookup tables
@@ -187,7 +196,7 @@ describe('compileTransaction', () => {
     const message: CompileableTransactionMessage = {
       version: 'legacy',
       feePayer: mockAddress('alice'),
-      blockhash: 'mock-blockhash',
+      blockhash: '4NCYB3kRT8sCNodPNuCZo8VUh4xqpBQxsxed2wd9xaD4',
       lastValidBlockHeight: 1000n,
       instructions: [
         {
@@ -215,7 +224,7 @@ describe('compileTransaction', () => {
     const message: CompileableTransactionMessage = {
       version: 'legacy',
       feePayer: mockAddress('alice'),
-      blockhash: 'mock-blockhash',
+      blockhash: '4NCYB3kRT8sCNodPNuCZo8VUh4xqpBQxsxed2wd9xaD4',
       lastValidBlockHeight: 1000n,
       instructions: [],
     } as CompileableTransactionMessage;
@@ -230,7 +239,7 @@ describe('compileTransaction', () => {
     const message: CompileableTransactionMessage = {
       version: 'legacy',
       feePayer: mockAddress('alice'),
-      blockhash: 'mock-blockhash',
+      blockhash: '4NCYB3kRT8sCNodPNuCZo8VUh4xqpBQxsxed2wd9xaD4',
       lastValidBlockHeight: 1000n,
       instructions: [
         {

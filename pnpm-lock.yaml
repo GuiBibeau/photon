@@ -107,22 +107,7 @@ importers:
 
   packages/errors: {}
 
-  packages/rpc:
-    dependencies:
-      '@photon/addresses':
-        specifier: workspace:*
-        version: link:../addresses
-
-  packages/rpc-subscriptions:
-    dependencies:
-      '@photon/addresses':
-        specifier: workspace:*
-        version: link:../addresses
-      '@photon/rpc':
-        specifier: workspace:*
-        version: link:../rpc
-
-  packages/sandbox:
+  packages/integration:
     dependencies:
       '@photon/accounts':
         specifier: workspace:*
@@ -191,6 +176,21 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@22.17.1)(@vitest/ui@3.2.4)(happy-dom@18.0.1)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(tsx@4.20.3)(yaml@2.8.0)
+
+  packages/rpc:
+    dependencies:
+      '@photon/addresses':
+        specifier: workspace:*
+        version: link:../addresses
+
+  packages/rpc-subscriptions:
+    dependencies:
+      '@photon/addresses':
+        specifier: workspace:*
+        version: link:../addresses
+      '@photon/rpc':
+        specifier: workspace:*
+        version: link:../rpc
 
   packages/signers:
     dependencies:

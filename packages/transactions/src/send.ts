@@ -1,5 +1,5 @@
 import type { Transaction } from './types.js';
-import { serializeTransaction } from './serialize.js';
+import { encodeTransactionBase58 } from './serialize.js';
 
 // RPC types - we'll define minimal interfaces to avoid circular dependencies
 export type TransactionSignature = string;
@@ -68,11 +68,8 @@ export async function sendTransaction(
   rpc: RpcClient,
   options?: SendOptions,
 ): Promise<TransactionSignature> {
-  // Serialize the transaction
-  const serialized = serializeTransaction(transaction);
-
-  // Encode as base64 (required format for RPC)
-  const encoded = encodeBase64(serialized);
+  // Encode the transaction as base58 (required format for RPC)
+  const encoded = encodeTransactionBase58(transaction);
 
   // Extract RPC-specific options
   const rpcOptions: SendTransactionConfig = {};
@@ -232,45 +229,4 @@ export async function confirmTransaction(
  */
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * Helper function to encode bytes as base64
- */
-function encodeBase64(bytes: Uint8Array): string {
-  // Browser environment
-  if (typeof btoa !== 'undefined') {
-    return btoa(String.fromCharCode(...bytes));
-  }
-
-  // Node.js environment
-  if (
-    typeof globalThis !== 'undefined' &&
-    typeof (globalThis as Record<string, unknown>).Buffer !== 'undefined'
-  ) {
-    const BufferClass = (globalThis as Record<string, unknown>).Buffer as {
-      from(data: Uint8Array): { toString(encoding: string): string };
-    };
-    return BufferClass.from(bytes).toString('base64');
-  }
-
-  // Fallback: manual base64 encoding
-  const base64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-  let result = '';
-  let i = 0;
-
-  while (i < bytes.length) {
-    const a = bytes[i++] ?? 0;
-    const b = i < bytes.length ? (bytes[i++] ?? 0) : 0;
-    const c = i < bytes.length ? (bytes[i++] ?? 0) : 0;
-
-    const bitmap = (a << 16) | (b << 8) | c;
-
-    result += base64chars.charAt((bitmap >> 18) & 63);
-    result += base64chars.charAt((bitmap >> 12) & 63);
-    result += i - 2 < bytes.length ? base64chars.charAt((bitmap >> 6) & 63) : '=';
-    result += i - 1 < bytes.length ? base64chars.charAt(bitmap & 63) : '=';
-  }
-
-  return result;
 }

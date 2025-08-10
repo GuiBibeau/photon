@@ -13,16 +13,17 @@ import {
   type TransactionSignature,
   type SendTransactionConfig,
 } from '../src/send.js';
-import { serializeTransaction } from '../src/serialize.js';
+import { serializeTransaction, encodeTransactionBase58 } from '../src/serialize.js';
 
 // Mock the serialize module
 vi.mock('../src/serialize.js', () => ({
   serializeTransaction: vi.fn(),
+  encodeTransactionBase58: vi.fn(),
 }));
 
 describe('Transaction Send Helpers', () => {
   const mockSignature = 'mock-signature-123' as TransactionSignature;
-  const mockAddress = 'mock-address' as Address;
+  const mockAddress = '11111111111111111111111111111111' as Address;
   const mockSig = new Uint8Array(64) as Signature;
 
   const mockTransaction: Transaction = {
@@ -57,20 +58,22 @@ describe('Transaction Send Helpers', () => {
   describe('sendTransaction', () => {
     it('should serialize and send a transaction', async () => {
       const serialized = new Uint8Array([1, 2, 3]);
+      const encodedBase58 = 'mockEncodedTransaction';
 
       vi.mocked(serializeTransaction).mockReturnValue(serialized);
-      // Base64 encoding is now done internally in sendTransaction
+      vi.mocked(encodeTransactionBase58).mockReturnValue(encodedBase58);
       vi.mocked(mockRpc.sendTransaction).mockResolvedValue(mockSignature);
 
       const result = await sendTransaction(mockTransaction, mockRpc);
 
-      expect(serializeTransaction).toHaveBeenCalledWith(mockTransaction);
+      expect(encodeTransactionBase58).toHaveBeenCalledWith(mockTransaction);
       expect(mockRpc.sendTransaction).toHaveBeenCalled();
       expect(result).toBe(mockSignature);
     });
 
     it('should pass send options to RPC', async () => {
       const serialized = new Uint8Array([1, 2, 3]);
+      const encodedBase58 = 'mockEncodedTransaction';
       const options: SendOptions = {
         skipPreflight: true,
         preflightCommitment: 'confirmed',
@@ -79,7 +82,7 @@ describe('Transaction Send Helpers', () => {
       };
 
       vi.mocked(serializeTransaction).mockReturnValue(serialized);
-      // Base64 encoding is now done internally in sendTransaction
+      vi.mocked(encodeTransactionBase58).mockReturnValue(encodedBase58);
       vi.mocked(mockRpc.sendTransaction).mockResolvedValue(mockSignature);
 
       await sendTransaction(mockTransaction, mockRpc, options);
@@ -96,10 +99,11 @@ describe('Transaction Send Helpers', () => {
 
     it('should propagate errors from RPC', async () => {
       const serialized = new Uint8Array([1, 2, 3]);
+      const encodedBase58 = 'mockEncodedTransaction';
       const error = new Error('RPC error');
 
       vi.mocked(serializeTransaction).mockReturnValue(serialized);
-      // Base64 encoding is now done internally in sendTransaction
+      vi.mocked(encodeTransactionBase58).mockReturnValue(encodedBase58);
       vi.mocked(mockRpc.sendTransaction).mockRejectedValue(error);
 
       await expect(sendTransaction(mockTransaction, mockRpc)).rejects.toThrow('RPC error');
@@ -312,9 +316,10 @@ describe('Transaction Send Helpers', () => {
   describe('sendAndConfirmTransaction', () => {
     it('should send and confirm a transaction', async () => {
       const serialized = new Uint8Array([1, 2, 3]);
+      const encodedBase58 = 'mockEncodedTransaction';
 
       vi.mocked(serializeTransaction).mockReturnValue(serialized);
-      // Base64 encoding is now done internally in sendTransaction
+      vi.mocked(encodeTransactionBase58).mockReturnValue(encodedBase58);
       vi.mocked(mockRpc.sendTransaction).mockResolvedValue(mockSignature);
       vi.mocked(mockRpc.getSignatureStatuses).mockResolvedValue({
         value: [
@@ -329,7 +334,7 @@ describe('Transaction Send Helpers', () => {
 
       const result = await sendAndConfirmTransaction(mockTransaction, mockRpc);
 
-      expect(serializeTransaction).toHaveBeenCalledWith(mockTransaction);
+      expect(encodeTransactionBase58).toHaveBeenCalledWith(mockTransaction);
       expect(mockRpc.sendTransaction).toHaveBeenCalled();
       expect(mockRpc.getSignatureStatuses).toHaveBeenCalled();
       expect(result).toBe(mockSignature);
@@ -337,6 +342,7 @@ describe('Transaction Send Helpers', () => {
 
     it('should pass separate options for send and confirm', async () => {
       const serialized = new Uint8Array([1, 2, 3]);
+      const encodedBase58 = 'mockEncodedTransaction';
       const sendOptions: SendOptions = {
         skipPreflight: true,
         preflightCommitment: 'processed',
@@ -347,7 +353,7 @@ describe('Transaction Send Helpers', () => {
       };
 
       vi.mocked(serializeTransaction).mockReturnValue(serialized);
-      // Base64 encoding is now done internally in sendTransaction
+      vi.mocked(encodeTransactionBase58).mockReturnValue(encodedBase58);
       vi.mocked(mockRpc.sendTransaction).mockResolvedValue(mockSignature);
       vi.mocked(mockRpc.getSignatureStatuses).mockResolvedValue({
         value: [
@@ -370,8 +376,10 @@ describe('Transaction Send Helpers', () => {
 
     it('should propagate send errors', async () => {
       const error = new Error('Send failed');
+      const encodedBase58 = 'mockEncodedTransaction';
 
       vi.mocked(serializeTransaction).mockReturnValue(new Uint8Array([1, 2, 3]));
+      vi.mocked(encodeTransactionBase58).mockReturnValue(encodedBase58);
       vi.mocked(mockRpc.sendTransaction).mockRejectedValue(error);
 
       await expect(sendAndConfirmTransaction(mockTransaction, mockRpc)).rejects.toThrow(
@@ -380,7 +388,10 @@ describe('Transaction Send Helpers', () => {
     });
 
     it('should propagate confirmation errors', async () => {
+      const encodedBase58 = 'mockEncodedTransaction';
+
       vi.mocked(serializeTransaction).mockReturnValue(new Uint8Array([1, 2, 3]));
+      vi.mocked(encodeTransactionBase58).mockReturnValue(encodedBase58);
       vi.mocked(mockRpc.sendTransaction).mockResolvedValue(mockSignature);
       vi.mocked(mockRpc.getSignatureStatuses).mockResolvedValue({
         value: [

@@ -55,3 +55,6 @@ yarn.lock
 
 # Serena AI assistant
 .serena/
+
+# Solana test ledger
+packages/integration/test-ledger/

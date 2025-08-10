@@ -12,7 +12,22 @@ import {
 } from '../src/index.js';
 
 // Mock helpers
-const mockAddress = (id: string): Address => id as Address;
+// Mock addresses - use valid base58 addresses
+const mockAddresses = {
+  alice: '11111111111111111111111111111111' as Address,
+  bob: '22222222222222222222222222222222' as Address,
+  charlie: '33333333333333333333333333333333' as Address,
+  dave: '44444444444444444444444444444444' as Address,
+  'hot-wallet': '55555555555555555555555555555555' as Address,
+  'hardware-wallet': '66666666666666666666666666666666' as Address,
+  'multi-sig-program': '77777777777777777777777777777777' as Address,
+  'token-program': 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address,
+  'defi-program': '88888888888888888888888888888888' as Address,
+  program: '99999999999999999999999999999999' as Address,
+  program1: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address,
+  program2: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address,
+};
+const mockAddress = (id: keyof typeof mockAddresses): Address => mockAddresses[id];
 const mockSignature = (data: string): Signature => new TextEncoder().encode(data) as Signature;
 
 describe('Transaction signing integration', () => {
@@ -21,7 +36,7 @@ describe('Transaction signing integration', () => {
     const message: CompileableTransactionMessage = {
       version: 'legacy',
       feePayer: mockAddress('alice'),
-      blockhash: 'mock-blockhash',
+      blockhash: '4NCYB3kRT8sCNodPNuCZo8VUh4xqpBQxsxed2wd9xaD4',
       lastValidBlockHeight: 1000n,
       instructions: [
         {
@@ -98,7 +113,7 @@ describe('Transaction signing integration', () => {
     const message: CompileableTransactionMessage = {
       version: 'legacy',
       feePayer: mockAddress('alice'),
-      blockhash: 'mock-blockhash',
+      blockhash: '4NCYB3kRT8sCNodPNuCZo8VUh4xqpBQxsxed2wd9xaD4',
       lastValidBlockHeight: 1000n,
       instructions: [
         {
@@ -157,7 +172,7 @@ describe('Transaction signing integration', () => {
     const message: CompileableTransactionMessage = {
       version: 'legacy',
       feePayer: mockAddress('hot-wallet'),
-      blockhash: 'mock-blockhash',
+      blockhash: '4NCYB3kRT8sCNodPNuCZo8VUh4xqpBQxsxed2wd9xaD4',
       lastValidBlockHeight: 1000n,
       instructions: [
         {
@@ -207,7 +222,7 @@ describe('Transaction signing integration', () => {
     const message: CompileableTransactionMessage = {
       version: 'legacy',
       feePayer: mockAddress('alice'),
-      blockhash: 'mock-blockhash',
+      blockhash: '4NCYB3kRT8sCNodPNuCZo8VUh4xqpBQxsxed2wd9xaD4',
       lastValidBlockHeight: 1000n,
       instructions: [
         {

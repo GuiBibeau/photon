@@ -1,6 +1,6 @@
-# @photon/sandbox
+# @photon/integration
 
-A development sandbox for testing and experimenting with Photon SDK packages.
+Integration tests and examples for the Photon SDK packages.
 
 ## Quick Start
 

@@ -1,15 +1,18 @@
 {
-  "name": "@photon/sandbox",
+  "name": "@photon/integration",
   "version": "0.0.0",
-  "description": "Sandbox environment for testing Photon SDK packages",
+  "description": "Integration tests and examples for Photon SDK packages",
   "type": "module",
   "private": true,
   "sideEffects": false,
   "scripts": {
     "dev:addresses": "tsx watch src/examples/addresses.ts",
     "dev:rpc": "tsx watch src/examples/rpc.ts",
+    "dev:send-sol": "tsx watch src/examples/send-sol.ts",
     "run:addresses": "tsx src/examples/addresses.ts",
     "run:rpc": "tsx src/examples/rpc.ts",
+    "run:send-sol": "tsx src/examples/send-sol.ts",
+    "run:send-sol:node": "pnpm build && node dist/examples/send-sol.cjs",
     "validator": "solana-test-validator",
     "validator:reset": "solana-test-validator --reset",
     "validator:logs": "solana logs",
@@ -72,8 +75,9 @@
   "license": "MIT",
   "keywords": [
     "solana",
-    "sandbox",
+    "integration",
     "testing",
-    "development"
+    "development",
+    "examples"
   ]
 }
