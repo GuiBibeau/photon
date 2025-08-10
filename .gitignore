@@ -8,6 +8,12 @@ build/
 *.tsbuildinfo
 .turbo/
 
+# TypeScript declaration files (except in dist/)
+**/*.d.ts
+**/*.d.ts.map
+!packages/*/dist/**/*.d.ts
+!packages/*/dist/**/*.d.ts.map
+
 # IDE
 .vscode/
 .idea/

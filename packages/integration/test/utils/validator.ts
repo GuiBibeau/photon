@@ -46,8 +46,6 @@ export async function startValidator(options: ValidatorOptions = {}): Promise<vo
     args.push('--account', account.pubkey, String(account.lamports));
   }
 
-  console.log('Starting test validator...');
-
   validatorProcess = spawn('solana-test-validator', args, {
     stdio: quiet ? 'ignore' : 'inherit',
     detached: false,
@@ -55,7 +53,6 @@ export async function startValidator(options: ValidatorOptions = {}): Promise<vo
 
   // Wait for validator to be ready
   await waitForValidator(rpcPort);
-  console.log('Test validator ready on port', rpcPort);
 }
 
 /**
@@ -63,7 +60,6 @@ export async function startValidator(options: ValidatorOptions = {}): Promise<vo
  */
 export async function stopValidator(): Promise<void> {
   if (validatorProcess) {
-    console.log('Stopping test validator...');
     validatorProcess.kill('SIGTERM');
 
     // Wait for process to exit

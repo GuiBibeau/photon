@@ -20,7 +20,6 @@ import {
   createTestSigner,
   getBalance,
   fundAccount,
-  lamportsToSol,
   solToLamports,
 } from '../utils/helpers.js';
 import type { Signer } from '@photon/signers';
@@ -48,7 +47,6 @@ describe.skipIf(process.env.CI === 'true')('SOL Transfer Integration Tests', () 
     charlie = await createTestSigner('charlie');
 
     // Fund alice with 10 SOL for testing
-    console.log('Funding test accounts...');
     await fundAccount(rpc, alice.publicKey, solToLamports(10));
   }, 30000);
 
@@ -60,9 +58,6 @@ describe.skipIf(process.env.CI === 'true')('SOL Transfer Integration Tests', () 
     // Get initial balances
     const aliceBalanceBefore = await getBalance(rpc, alice.publicKey);
     const bobBalanceBefore = await getBalance(rpc, bob.publicKey);
-
-    console.log(`Alice balance before: ${lamportsToSol(aliceBalanceBefore)}`);
-    console.log(`Bob balance before: ${lamportsToSol(bobBalanceBefore)}`);
 
     // Build transfer instruction (1 SOL)
     const transferAmount = solToLamports(1);
@@ -93,7 +88,7 @@ describe.skipIf(process.env.CI === 'true')('SOL Transfer Integration Tests', () 
 
     // Sign and send transaction
     const transaction = await signTransaction([alice], message);
-    const signature = await sendAndConfirmTransaction(transaction, {
+    await sendAndConfirmTransaction(transaction, {
       sendTransaction: (encoded: string) => {
         return rpc.sendTransaction(encoded, {
           encoding: 'base58',
@@ -104,17 +99,12 @@ describe.skipIf(process.env.CI === 'true')('SOL Transfer Integration Tests', () 
       getSignatureStatuses: (sigs: string[]) => rpc.getSignatureStatuses(sigs),
     });
 
-    console.log(`Transfer transaction: ${signature}`);
-
     // Wait a bit for balances to update
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Check final balances
     const aliceBalanceAfter = await getBalance(rpc, alice.publicKey);
     const bobBalanceAfter = await getBalance(rpc, bob.publicKey);
-
-    console.log(`Alice balance after: ${lamportsToSol(aliceBalanceAfter)}`);
-    console.log(`Bob balance after: ${lamportsToSol(bobBalanceAfter)}`);
 
     // Verify transfer
     expect(Number(bobBalanceAfter - bobBalanceBefore)).toBe(Number(transferAmount));
