@@ -139,6 +139,12 @@ importers:
       '@photon/addresses':
         specifier: workspace:*
         version: link:../addresses
+      '@photon/codecs':
+        specifier: workspace:*
+        version: link:../codecs
+      '@photon/rpc':
+        specifier: workspace:*
+        version: link:../rpc
 
   packages/transaction-messages:
     dependencies:
