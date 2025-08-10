@@ -94,21 +94,10 @@ async function generateAccounts(): Promise<Record<string, TestAccount>> {
  * Main function to generate and save accounts
  */
 async function main() {
-  console.log('Generating test accounts...');
   const accounts = await generateAccounts();
 
   const outputPath = join(__dirname, 'accounts.json');
   await writeFile(outputPath, JSON.stringify(accounts, null, 2));
-
-  console.log(`Generated ${Object.keys(accounts).length} test accounts`);
-  console.log(`Saved to ${outputPath}`);
-
-  // Print account summary
-  console.log('\nAccount Summary:');
-  for (const [name, account] of Object.entries(accounts)) {
-    const sol = account.lamports / 1_000_000_000;
-    console.log(`  ${name.padEnd(10)} ${account.publicKey} (${sol} SOL)`);
-  }
 }
 
 // Run if executed directly
