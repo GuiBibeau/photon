@@ -1745,7 +1745,7 @@ Create typed functions to fetch and decode system variables.
 
 ---
 
-### SDK-57: Define SPL Token constants and types 
+### SDK-57: Define SPL Token constants and types
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `tokens`  
 **Dependencies**: SDK-22
