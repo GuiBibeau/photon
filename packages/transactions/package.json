@@ -3,18 +3,38 @@
   "version": "0.0.0",
   "description": "Transaction utilities for Photon SDK",
   "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     },
-    "./*": {
-      "types": "./dist/*.d.ts",
-      "import": "./dist/*.js",
-      "require": "./dist/*.cjs"
+    "./compile": {
+      "types": "./dist/compile.d.ts",
+      "import": "./dist/compile.mjs",
+      "require": "./dist/compile.js"
+    },
+    "./send": {
+      "types": "./dist/send.d.ts",
+      "import": "./dist/send.mjs",
+      "require": "./dist/send.js"
+    },
+    "./serialize": {
+      "types": "./dist/serialize.d.ts",
+      "import": "./dist/serialize.mjs",
+      "require": "./dist/serialize.js"
+    },
+    "./sign": {
+      "types": "./dist/sign.d.ts",
+      "import": "./dist/sign.mjs",
+      "require": "./dist/sign.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.mjs",
+      "require": "./dist/types.js"
     }
   },
   "files": [

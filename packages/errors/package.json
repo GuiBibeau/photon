@@ -3,48 +3,48 @@
   "version": "0.0.0",
   "description": "Error handling utilities for Photon SDK",
   "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     },
     "./codes": {
       "types": "./dist/codes.d.ts",
-      "import": "./dist/codes.js",
-      "require": "./dist/codes.cjs"
+      "import": "./dist/codes.mjs",
+      "require": "./dist/codes.js"
     },
     "./error": {
       "types": "./dist/error.d.ts",
-      "import": "./dist/error.js",
-      "require": "./dist/error.cjs"
+      "import": "./dist/error.mjs",
+      "require": "./dist/error.js"
     },
     "./factories": {
       "types": "./dist/factories.d.ts",
-      "import": "./dist/factories.js",
-      "require": "./dist/factories.cjs"
+      "import": "./dist/factories.mjs",
+      "require": "./dist/factories.js"
     },
     "./rpc-mapper": {
       "types": "./dist/rpc-mapper.d.ts",
-      "import": "./dist/rpc-mapper.js",
-      "require": "./dist/rpc-mapper.cjs"
+      "import": "./dist/rpc-mapper.mjs",
+      "require": "./dist/rpc-mapper.js"
     },
     "./validation-mapper": {
       "types": "./dist/validation-mapper.d.ts",
-      "import": "./dist/validation-mapper.js",
-      "require": "./dist/validation-mapper.cjs"
+      "import": "./dist/validation-mapper.mjs",
+      "require": "./dist/validation-mapper.js"
     },
     "./enhancer": {
       "types": "./dist/enhancer.d.ts",
-      "import": "./dist/enhancer.js",
-      "require": "./dist/enhancer.cjs"
+      "import": "./dist/enhancer.mjs",
+      "require": "./dist/enhancer.js"
     },
     "./recovery": {
       "types": "./dist/recovery.d.ts",
-      "import": "./dist/recovery.js",
-      "require": "./dist/recovery.cjs"
+      "import": "./dist/recovery.mjs",
+      "require": "./dist/recovery.js"
     }
   },
   "files": [

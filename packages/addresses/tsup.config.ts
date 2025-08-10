@@ -18,7 +18,7 @@ export default defineConfig({
   shims: false, // No polyfills - we use Web Standards
   bundle: true,
   skipNodeModulesBundle: true,
-  external: ['@photon/errors'],
+  external: ['@photon/errors', '@photon/codecs'],
   esbuildOptions(options) {
     options.conditions = ['import', 'module', 'require'];
     options.mainFields = ['module', 'main'];
