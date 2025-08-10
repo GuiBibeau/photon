@@ -9,6 +9,9 @@
  */
 
 import { type Address, address } from '@photon/addresses';
+import { type Codec, struct, u8, u64, boolean } from '@photon/codecs';
+import type { RpcClient, Commitment, RpcResponse, AccountInfo } from '@photon/rpc';
+import { decodeBase64 } from '@photon/rpc/parsers/base64';
 
 /**
  * Clock sysvar contains data on cluster time including the current slot,
@@ -214,4 +217,349 @@ export function getSysvarName(addr: Address): keyof typeof SYSVAR_ADDRESSES | un
     }
   }
   return undefined;
+}
+
+// ============================================================================
+// Sysvar Data Structures
+// ============================================================================
+
+/**
+ * Clock sysvar data structure containing cluster time information
+ */
+export interface ClockSysvar {
+  /** Current slot */
+  slot: bigint;
+  /** Current epoch */
+  epoch: bigint;
+  /** Leader schedule epoch */
+  leaderScheduleEpoch: bigint;
+  /** Estimated current Unix timestamp */
+  unixTimestamp: bigint;
+  /** Unix timestamp at start of current epoch */
+  epochStartTimestamp: bigint;
+}
+
+/**
+ * Rent sysvar data structure containing rent configuration
+ */
+export interface RentSysvar {
+  /** Lamports per byte-year */
+  lamportsPerByteYear: bigint;
+  /** Exemption threshold in years */
+  exemptionThreshold: number;
+  /** Burn percentage */
+  burnPercent: number;
+}
+
+/**
+ * Epoch schedule sysvar data structure
+ */
+export interface EpochScheduleSysvar {
+  /** Number of slots per epoch */
+  slotsPerEpoch: bigint;
+  /** Number of slots before epoch start to calculate leader schedule */
+  leaderScheduleSlotOffset: bigint;
+  /** Whether epochs are in warmup period */
+  warmup: boolean;
+  /** First normal epoch after warmup */
+  firstNormalEpoch: bigint;
+  /** First normal slot after warmup */
+  firstNormalSlot: bigint;
+}
+
+/**
+ * Recent blockhashes entry
+ */
+export interface RecentBlockhashEntry {
+  /** The blockhash */
+  blockhash: string;
+  /** Fee calculator (deprecated, will be 0) */
+  lamportsPerSignature: bigint;
+}
+
+/**
+ * Recent blockhashes sysvar data structure
+ */
+export interface RecentBlockhashesSysvar {
+  /** Array of recent blockhash entries */
+  entries: RecentBlockhashEntry[];
+}
+
+/**
+ * Stake history entry for a single epoch
+ */
+export interface StakeHistoryEntry {
+  /** Effective stake for the epoch */
+  effective: bigint;
+  /** Activating stake for the epoch */
+  activating: bigint;
+  /** Deactivating stake for the epoch */
+  deactivating: bigint;
+}
+
+/**
+ * Stake history sysvar data structure
+ */
+export interface StakeHistorySysvar {
+  /** Map of epoch to stake history entry */
+  entries: Map<bigint, StakeHistoryEntry>;
+}
+
+/**
+ * Fees sysvar data structure (deprecated)
+ */
+export interface FeesSysvar {
+  /** Fee calculator */
+  lamportsPerSignature: bigint;
+}
+
+/**
+ * Epoch rewards sysvar data structure
+ */
+export interface EpochRewardsSysvar {
+  /** Distribution starting block height */
+  distributionStartingBlockHeight: bigint;
+  /** Number of partitions */
+  numPartitions: bigint;
+  /** Parent blockhash */
+  parentBlockhash: string;
+  /** Total points */
+  totalPoints: bigint;
+  /** Total rewards in lamports */
+  totalRewards: bigint;
+  /** Distributed rewards in lamports */
+  distributedRewards: bigint;
+  /** Whether distribution is active */
+  active: boolean;
+}
+
+/**
+ * Last restart slot sysvar data structure
+ */
+export interface LastRestartSlotSysvar {
+  /** The last restart slot */
+  lastRestartSlot: bigint;
+}
+
+// ============================================================================
+// Sysvar Codecs
+// ============================================================================
+
+/**
+ * Float64 codec for exemption threshold
+ * @internal
+ */
+const f64: Codec<number> = {
+  encode(value: number): Uint8Array {
+    const buffer = new ArrayBuffer(8);
+    const view = new DataView(buffer);
+    view.setFloat64(0, value, true); // little-endian
+    return new Uint8Array(buffer);
+  },
+  decode(bytes: Uint8Array, offset = 0): readonly [number, number] {
+    const view = new DataView(bytes.buffer, bytes.byteOffset + offset, 8);
+    const value = view.getFloat64(0, true); // little-endian
+    return [value, 8] as const;
+  },
+  size: 8,
+};
+
+/**
+ * Codec for Clock sysvar
+ */
+export const clockSysvarCodec: Codec<ClockSysvar> = struct({
+  slot: u64,
+  epoch: u64,
+  leaderScheduleEpoch: u64,
+  unixTimestamp: u64,
+  epochStartTimestamp: u64,
+});
+
+/**
+ * Codec for Rent sysvar
+ */
+export const rentSysvarCodec: Codec<RentSysvar> = struct({
+  lamportsPerByteYear: u64,
+  exemptionThreshold: f64 as unknown as Codec<unknown>,
+  burnPercent: u8,
+}) as unknown as Codec<RentSysvar>;
+
+/**
+ * Codec for Epoch Schedule sysvar
+ */
+export const epochScheduleSysvarCodec: Codec<EpochScheduleSysvar> = struct({
+  slotsPerEpoch: u64,
+  leaderScheduleSlotOffset: u64,
+  warmup: boolean,
+  firstNormalEpoch: u64,
+  firstNormalSlot: u64,
+});
+
+// Note: Recent blockhashes uses a complex structure with a circular buffer
+// For simplicity, we'll handle the raw decoding in the fetcher
+
+/**
+ * Codec for Fees sysvar (deprecated)
+ */
+export const feesSysvarCodec: Codec<FeesSysvar> = struct({
+  lamportsPerSignature: u64,
+});
+
+/**
+ * Codec for Last Restart Slot sysvar
+ */
+export const lastRestartSlotSysvarCodec: Codec<LastRestartSlotSysvar> = struct({
+  lastRestartSlot: u64,
+});
+
+// ============================================================================
+// Sysvar Fetchers
+// ============================================================================
+
+/**
+ * Fetch and decode the Clock sysvar
+ *
+ * @param rpc - The Solana RPC client
+ * @param commitment - Optional commitment level
+ * @returns The decoded Clock sysvar data
+ *
+ * @example
+ * ```typescript
+ * const clock = await getClockSysvar(rpc);
+ * console.log(`Current slot: ${clock.slot}`);
+ * console.log(`Current epoch: ${clock.epoch}`);
+ * ```
+ */
+export async function getClockSysvar(
+  rpc: RpcClient,
+  commitment?: Commitment,
+): Promise<ClockSysvar> {
+  const response = (await rpc.getAccountInfo(SYSVAR_CLOCK_ADDRESS, {
+    encoding: 'base64',
+    ...(commitment && { commitment }),
+  })) as RpcResponse<AccountInfo<[string, 'base64']> | null>;
+
+  if (!response.value) {
+    throw new Error('Clock sysvar account not found');
+  }
+
+  const data = decodeBase64(response.value.data[0]);
+  const [clock] = clockSysvarCodec.decode(data);
+  return clock;
+}
+
+/**
+ * Fetch and decode the Rent sysvar
+ *
+ * @param rpc - The Solana RPC client
+ * @param commitment - Optional commitment level
+ * @returns The decoded Rent sysvar data
+ *
+ * @example
+ * ```typescript
+ * const rent = await getRentSysvar(rpc);
+ * console.log(`Lamports per byte-year: ${rent.lamportsPerByteYear}`);
+ * ```
+ */
+export async function getRentSysvar(rpc: RpcClient, commitment?: Commitment): Promise<RentSysvar> {
+  const response = (await rpc.getAccountInfo(SYSVAR_RENT_ADDRESS, {
+    encoding: 'base64',
+    ...(commitment && { commitment }),
+  })) as RpcResponse<AccountInfo<[string, 'base64']> | null>;
+
+  if (!response.value) {
+    throw new Error('Rent sysvar account not found');
+  }
+
+  const data = decodeBase64(response.value.data[0]);
+  const [rent] = rentSysvarCodec.decode(data);
+  return rent;
+}
+
+/**
+ * Fetch and decode the Epoch Schedule sysvar
+ *
+ * @param rpc - The Solana RPC client
+ * @param commitment - Optional commitment level
+ * @returns The decoded Epoch Schedule sysvar data
+ *
+ * @example
+ * ```typescript
+ * const epochSchedule = await getEpochScheduleSysvar(rpc);
+ * console.log(`Slots per epoch: ${epochSchedule.slotsPerEpoch}`);
+ * ```
+ */
+export async function getEpochScheduleSysvar(
+  rpc: RpcClient,
+  commitment?: Commitment,
+): Promise<EpochScheduleSysvar> {
+  const response = (await rpc.getAccountInfo(SYSVAR_EPOCH_SCHEDULE_ADDRESS, {
+    encoding: 'base64',
+    ...(commitment && { commitment }),
+  })) as RpcResponse<AccountInfo<[string, 'base64']> | null>;
+
+  if (!response.value) {
+    throw new Error('Epoch Schedule sysvar account not found');
+  }
+
+  const data = decodeBase64(response.value.data[0]);
+  const [epochSchedule] = epochScheduleSysvarCodec.decode(data);
+  return epochSchedule;
+}
+
+/**
+ * Fetch and decode the Fees sysvar (deprecated)
+ *
+ * Note: The fees sysvar is deprecated. Use getFeeForMessage instead.
+ *
+ * @param rpc - The Solana RPC client
+ * @param commitment - Optional commitment level
+ * @returns The decoded Fees sysvar data
+ *
+ * @deprecated Use getFeeForMessage instead
+ */
+export async function getFeesSysvar(rpc: RpcClient, commitment?: Commitment): Promise<FeesSysvar> {
+  const response = (await rpc.getAccountInfo(SYSVAR_FEES_ADDRESS, {
+    encoding: 'base64',
+    ...(commitment && { commitment }),
+  })) as RpcResponse<AccountInfo<[string, 'base64']> | null>;
+
+  if (!response.value) {
+    throw new Error('Fees sysvar account not found');
+  }
+
+  const data = decodeBase64(response.value.data[0]);
+  const [fees] = feesSysvarCodec.decode(data);
+  return fees;
+}
+
+/**
+ * Fetch and decode the Last Restart Slot sysvar
+ *
+ * @param rpc - The Solana RPC client
+ * @param commitment - Optional commitment level
+ * @returns The decoded Last Restart Slot sysvar data
+ *
+ * @example
+ * ```typescript
+ * const lastRestartSlot = await getLastRestartSlotSysvar(rpc);
+ * console.log(`Last restart slot: ${lastRestartSlot.lastRestartSlot}`);
+ * ```
+ */
+export async function getLastRestartSlotSysvar(
+  rpc: RpcClient,
+  commitment?: Commitment,
+): Promise<LastRestartSlotSysvar> {
+  const response = (await rpc.getAccountInfo(SYSVAR_LAST_RESTART_SLOT_ADDRESS, {
+    encoding: 'base64',
+    ...(commitment && { commitment }),
+  })) as RpcResponse<AccountInfo<[string, 'base64']> | null>;
+
+  if (!response.value) {
+    throw new Error('Last Restart Slot sysvar account not found');
+  }
+
+  const data = decodeBase64(response.value.data[0]);
+  const [lastRestartSlot] = lastRestartSlotSysvarCodec.decode(data);
+  return lastRestartSlot;
 }

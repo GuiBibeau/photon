@@ -48,6 +48,8 @@
     "access": "public"
   },
   "dependencies": {
-    "@photon/addresses": "workspace:*"
+    "@photon/addresses": "workspace:*",
+    "@photon/codecs": "workspace:*",
+    "@photon/rpc": "workspace:*"
   }
 }
