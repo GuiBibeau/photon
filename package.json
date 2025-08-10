@@ -14,7 +14,9 @@
   "scripts": {
     "build": "pnpm -r build",
     "test": "vitest run",
-    "test:ci": "CI=true vitest run",
+    "test:ci": "vitest run",
+    "test:integration": "INCLUDE_INTEGRATION=true vitest run --project @photon/integration",
+    "test:integration:watch": "INCLUDE_INTEGRATION=true vitest watch --project @photon/integration",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
