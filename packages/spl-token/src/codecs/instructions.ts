@@ -41,7 +41,7 @@ export const initializeMintCodec = mapCodec(
     decimals: value.decimals,
     mintAuthority: value.mintAuthority,
     freezeAuthorityOption: value.freezeAuthority ? 1 : 0,
-    freezeAuthority: value.freezeAuthority || new Uint8Array(32),
+    freezeAuthority: value.freezeAuthority ?? new Uint8Array(32),
   }),
   (value) => ({
     decimals: value.decimals,
@@ -154,7 +154,7 @@ export const setAuthorityCodec = mapCodec(
     instruction: TokenInstruction.SetAuthority,
     authorityType: value.authorityType,
     newAuthorityOption: value.newAuthority ? 1 : 0,
-    newAuthority: value.newAuthority || new Uint8Array(32),
+    newAuthority: value.newAuthority ?? new Uint8Array(32),
   }),
   (value) => ({
     authorityType: value.authorityType as AuthorityType,
@@ -433,7 +433,7 @@ export const initializeMint2Codec = mapCodec(
     decimals: value.decimals,
     mintAuthority: value.mintAuthority,
     freezeAuthorityOption: value.freezeAuthority ? 1 : 0,
-    freezeAuthority: value.freezeAuthority || new Uint8Array(32),
+    freezeAuthority: value.freezeAuthority ?? new Uint8Array(32),
   }),
   (value) => ({
     decimals: value.decimals,
@@ -579,7 +579,7 @@ export function decodeTokenInstruction(bytes: Uint8Array, offset = 0): TokenInst
 export function encodeTokenInstruction(instruction: TokenInstructionData): Uint8Array {
   switch (instruction.type) {
     case 'InitializeMint':
-      return initializeMintCodec.encode(instruction.data);
+      return initializeMintCodec.encode({ ...instruction.data, freezeAuthority: instruction.data.freezeAuthority });
     case 'InitializeAccount':
       return initializeAccountCodec.encode();
     case 'InitializeMultisig':
@@ -591,7 +591,7 @@ export function encodeTokenInstruction(instruction: TokenInstructionData): Uint8
     case 'Revoke':
       return revokeCodec.encode();
     case 'SetAuthority':
-      return setAuthorityCodec.encode(instruction.data);
+      return setAuthorityCodec.encode({ ...instruction.data, newAuthority: instruction.data.newAuthority });
     case 'MintTo':
       return mintToCodec.encode(instruction.data);
     case 'Burn':
@@ -619,7 +619,7 @@ export function encodeTokenInstruction(instruction: TokenInstructionData): Uint8
     case 'InitializeMultisig2':
       return initializeMultisig2Codec.encode(instruction.data);
     case 'InitializeMint2':
-      return initializeMint2Codec.encode(instruction.data);
+      return initializeMint2Codec.encode({ ...instruction.data, freezeAuthority: instruction.data.freezeAuthority });
     default:
       throw new CodecError(`Unknown token instruction type`);
   }

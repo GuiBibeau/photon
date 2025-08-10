@@ -5,25 +5,35 @@
  * accounts, with support for both legacy Token and Token-2022 formats.
  */
 
-// import type { Address } from '@photon/addresses';
+import { addressFromBytes, getAddressBytes } from '@photon/addresses';
+import type { Address } from '@photon/addresses';
 import type { Codec, FixedSizeCodec, VariableSizeCodec } from '@photon/codecs';
 import { struct } from '@photon/codecs/composites';
 import { u8, u32, u64 } from '@photon/codecs/primitives/numeric';
 import { publicKey } from '@photon/codecs/primitives/bytes';
 import { boolean } from '@photon/codecs/primitives/boolean';
-// import { mapCodec } from '@photon/codecs/composition';
+import { mapCodec } from '@photon/codecs/composition';
 import { CodecError } from '@photon/codecs';
 import {
   type AccountState,
-  type TokenAccount,
-  type MintAccount,
-  type Multisig,
+  type TokenAccount as TokenAccountType,
+  type MintAccount as MintAccountType,
+  type Multisig as MultisigType,
   type TokenExtension,
   type ExtensionType,
 } from '../types.js';
 // import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '../constants.js';
 import { parseTlv, LazyTlvParser } from './tlv.js';
 import { getExtensionCodec } from './extensions.js';
+
+/**
+ * Address codec to convert between Address strings and Uint8Array bytes.
+ */
+const addressCodec = mapCodec(
+  publicKey,
+  (address: Address) => getAddressBytes(address),
+  (bytes: Uint8Array) => addressFromBytes(bytes),
+) as FixedSizeCodec<Address>;
 
 /**
  * Size constants for account types.
@@ -52,20 +62,20 @@ export enum AccountTypeDiscriminator {
 /**
  * Token account codec (165 bytes for legacy, variable for Token-2022).
  */
-export const tokenAccountCodec: Codec<TokenAccount> = {
-  encode(value: TokenAccount): Uint8Array {
+export const tokenAccountCodec: Codec<TokenAccountType> = {
+  encode(value: TokenAccountType): Uint8Array {
     const baseStruct = struct({
-      mint: publicKey,
-      owner: publicKey,
+      mint: addressCodec,
+      owner: addressCodec,
       amount: u64,
       delegateOption: u32,
-      delegate: publicKey,
+      delegate: addressCodec,
       state: u8,
       isNativeOption: u32,
       isNative: u64,
       delegatedAmount: u64,
       closeAuthorityOption: u32,
-      closeAuthority: publicKey,
+      closeAuthority: addressCodec,
     });
 
     const baseData = {
@@ -73,13 +83,13 @@ export const tokenAccountCodec: Codec<TokenAccount> = {
       owner: value.owner,
       amount: value.amount,
       delegateOption: value.delegate ? 1 : 0,
-      delegate: value.delegate || new Uint8Array(32),
+      delegate: value.delegate || addressFromBytes(new Uint8Array(32)),
       state: value.state,
       isNativeOption: value.isNative ? 1 : 0,
       isNative: value.isNative ? 1n : 0n,
       delegatedAmount: value.delegatedAmount || 0n,
       closeAuthorityOption: value.closeAuthority ? 1 : 0,
-      closeAuthority: value.closeAuthority || new Uint8Array(32),
+      closeAuthority: value.closeAuthority || addressFromBytes(new Uint8Array(32)),
     };
 
     const baseBytes = baseStruct.encode(baseData);
@@ -88,36 +98,36 @@ export const tokenAccountCodec: Codec<TokenAccount> = {
     return baseBytes;
   },
 
-  decode(bytes: Uint8Array, offset = 0): readonly [TokenAccount, number] {
+  decode(bytes: Uint8Array, offset = 0): readonly [TokenAccountType, number] {
     if (bytes.length - offset < ACCOUNT_SIZE.TOKEN) {
       throw new CodecError(`Token account requires at least ${ACCOUNT_SIZE.TOKEN} bytes`);
     }
 
     const baseStruct = struct({
-      mint: publicKey,
-      owner: publicKey,
+      mint: addressCodec,
+      owner: addressCodec,
       amount: u64,
       delegateOption: u32,
-      delegate: publicKey,
+      delegate: addressCodec,
       state: u8,
       isNativeOption: u32,
       isNative: u64,
       delegatedAmount: u64,
       closeAuthorityOption: u32,
-      closeAuthority: publicKey,
+      closeAuthority: addressCodec,
     });
 
     const [baseData, baseSize] = baseStruct.decode(bytes, offset);
 
-    const account: TokenAccount = {
-      mint: baseData.mint,
+    const account: TokenAccountType = {
+      mint: baseData.mint as any, // MintAddress is a branded Address
       owner: baseData.owner,
       amount: baseData.amount,
-      delegate: baseData.delegateOption === 1 ? baseData.delegate : undefined,
       state: baseData.state as AccountState,
-      isNative: baseData.isNativeOption === 1,
-      delegatedAmount: baseData.delegatedAmount > 0n ? baseData.delegatedAmount : undefined,
-      closeAuthority: baseData.closeAuthorityOption === 1 ? baseData.closeAuthority : undefined,
+      ...(baseData.delegateOption === 1 && { delegate: baseData.delegate }),
+      ...(baseData.isNativeOption === 1 && { isNative: true }),
+      ...(baseData.delegatedAmount > 0n && { delegatedAmount: baseData.delegatedAmount }),
+      ...(baseData.closeAuthorityOption === 1 && { closeAuthority: baseData.closeAuthority }),
     };
 
     // Check for Token-2022 extensions
@@ -142,7 +152,7 @@ export const tokenAccountCodec: Codec<TokenAccount> = {
     return [account, baseSize] as const;
   },
 
-  size: (value: TokenAccount): number => {
+  size: (value: TokenAccountType): number => {
     let size = ACCOUNT_SIZE.TOKEN;
 
     if (value.extensions && value.extensions.length > 0) {
@@ -151,9 +161,9 @@ export const tokenAccountCodec: Codec<TokenAccount> = {
         if (codec) {
           size += 4; // TLV header
           if ('size' in codec) {
-            size += typeof codec.size === 'function' ? codec.size(extension) : codec.size;
+            size += typeof codec.size === 'function' ? codec.size(extension as any) : codec.size;
           } else {
-            size += codec.encode(extension).length;
+            size += codec.encode(extension as any).length;
           }
         }
       }
@@ -161,31 +171,31 @@ export const tokenAccountCodec: Codec<TokenAccount> = {
 
     return size;
   },
-} as VariableSizeCodec<TokenAccount>;
+} as VariableSizeCodec<TokenAccountType>;
 
 /**
  * Mint account codec (82 bytes for legacy, variable for Token-2022).
  */
-export const mintAccountCodec: Codec<MintAccount> = {
-  encode(value: MintAccount): Uint8Array {
+export const mintAccountCodec: Codec<MintAccountType> = {
+  encode(value: MintAccountType): Uint8Array {
     const baseStruct = struct({
       mintAuthorityOption: u32,
-      mintAuthority: publicKey,
+      mintAuthority: addressCodec,
       supply: u64,
       decimals: u8,
       isInitialized: boolean,
       freezeAuthorityOption: u32,
-      freezeAuthority: publicKey,
+      freezeAuthority: addressCodec,
     });
 
     const baseData = {
       mintAuthorityOption: value.mintAuthority ? 1 : 0,
-      mintAuthority: value.mintAuthority || new Uint8Array(32),
+      mintAuthority: value.mintAuthority || addressFromBytes(new Uint8Array(32)),
       supply: value.supply,
       decimals: value.decimals,
       isInitialized: value.isInitialized,
       freezeAuthorityOption: value.freezeAuthority ? 1 : 0,
-      freezeAuthority: value.freezeAuthority || new Uint8Array(32),
+      freezeAuthority: value.freezeAuthority || addressFromBytes(new Uint8Array(32)),
     };
 
     const baseBytes = baseStruct.encode(baseData);
@@ -221,29 +231,29 @@ export const mintAccountCodec: Codec<MintAccount> = {
     return baseBytes;
   },
 
-  decode(bytes: Uint8Array, offset = 0): readonly [MintAccount, number] {
+  decode(bytes: Uint8Array, offset = 0): readonly [MintAccountType, number] {
     if (bytes.length - offset < ACCOUNT_SIZE.MINT) {
       throw new CodecError(`Mint account requires at least ${ACCOUNT_SIZE.MINT} bytes`);
     }
 
     const baseStruct = struct({
       mintAuthorityOption: u32,
-      mintAuthority: publicKey,
+      mintAuthority: addressCodec,
       supply: u64,
       decimals: u8,
       isInitialized: boolean,
       freezeAuthorityOption: u32,
-      freezeAuthority: publicKey,
+      freezeAuthority: addressCodec,
     });
 
     const [baseData, baseSize] = baseStruct.decode(bytes, offset);
 
-    const account: MintAccount = {
+    const account: MintAccountType = {
       supply: baseData.supply,
       decimals: baseData.decimals,
       isInitialized: baseData.isInitialized,
-      mintAuthority: baseData.mintAuthorityOption === 1 ? baseData.mintAuthority : undefined,
-      freezeAuthority: baseData.freezeAuthorityOption === 1 ? baseData.freezeAuthority : undefined,
+      ...(baseData.mintAuthorityOption === 1 && { mintAuthority: baseData.mintAuthority }),
+      ...(baseData.freezeAuthorityOption === 1 && { freezeAuthority: baseData.freezeAuthority }),
     };
 
     // Check for Token-2022 extensions
@@ -274,7 +284,7 @@ export const mintAccountCodec: Codec<MintAccount> = {
     return [account, totalBytesRead] as const;
   },
 
-  size: (value: MintAccount): number => {
+  size: (value: MintAccountType): number => {
     let size = ACCOUNT_SIZE.MINT;
 
     if (value.extensions && value.extensions.length > 0) {
@@ -283,9 +293,9 @@ export const mintAccountCodec: Codec<MintAccount> = {
         if (codec) {
           size += 4; // TLV header
           if ('size' in codec) {
-            size += typeof codec.size === 'function' ? codec.size(extension) : codec.size;
+            size += typeof codec.size === 'function' ? codec.size(extension as any) : codec.size;
           } else {
-            size += codec.encode(extension).length;
+            size += codec.encode(extension as any).length;
           }
         }
       }
@@ -293,13 +303,13 @@ export const mintAccountCodec: Codec<MintAccount> = {
 
     return size;
   },
-} as VariableSizeCodec<MintAccount>;
+} as VariableSizeCodec<MintAccountType>;
 
 /**
  * Multisig account codec (355 bytes fixed).
  */
-export const multisigCodec: FixedSizeCodec<Multisig> = {
-  encode(value: Multisig): Uint8Array {
+export const multisigCodec: FixedSizeCodec<MultisigType> = {
+  encode(value: MultisigType): Uint8Array {
     const buffer = new Uint8Array(ACCOUNT_SIZE.MULTISIG);
 
     // Write m (number of required signers)
@@ -315,30 +325,30 @@ export const multisigCodec: FixedSizeCodec<Multisig> = {
     for (let i = 0; i < 11; i++) {
       const signer = value.signers[i];
       if (signer) {
-        buffer.set(signer, 3 + i * 32);
+        buffer.set(getAddressBytes(signer), 3 + i * 32);
       }
     }
 
     return buffer;
   },
 
-  decode(bytes: Uint8Array, offset = 0): readonly [Multisig, number] {
+  decode(bytes: Uint8Array, offset = 0): readonly [MultisigType, number] {
     if (bytes.length - offset < ACCOUNT_SIZE.MULTISIG) {
       throw new CodecError(`Multisig account requires ${ACCOUNT_SIZE.MULTISIG} bytes`);
     }
 
-    const m = bytes[offset];
-    const n = bytes[offset + 1];
+    const m = bytes[offset] ?? 0;
+    const n = bytes[offset + 1] ?? 0;
     const isInitialized = bytes[offset + 2] === 1;
 
-    const signers: (Uint8Array | undefined)[] = [];
+    const signers: (Address | undefined)[] = [];
     for (let i = 0; i < 11; i++) {
       const signerOffset = offset + 3 + i * 32;
       const signer = bytes.slice(signerOffset, signerOffset + 32);
 
       // Check if signer is empty (all zeros)
       const isEmpty = signer.every((b) => b === 0);
-      signers.push(isEmpty ? undefined : signer);
+      signers.push(isEmpty ? undefined : addressFromBytes(signer));
     }
 
     return [
@@ -409,3 +419,8 @@ export function isToken2022Account(
 
 // Import needed for u16
 import { u16 } from '@photon/codecs/primitives/numeric';
+
+// Re-export types with original names for compatibility
+export type TokenAccount = TokenAccountType;
+export type MintAccount = MintAccountType;
+export type Multisig = MultisigType;

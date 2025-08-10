@@ -58,7 +58,7 @@ export function detectProgramVersion(programId: Address | Uint8Array | string): 
 export function detectProgramVersionFromAccount(accountData: Uint8Array): ProgramVersion {
   const accountType = detectAccountType(accountData);
 
-  if (!accountType || accountType === AccountTypeDiscriminator.Uninitialized) {
+  if (accountType === null || accountType === AccountTypeDiscriminator.Uninitialized) {
     return ProgramVersion.Unknown;
   }
 
@@ -85,6 +85,10 @@ export function detectProgramVersionFromInstruction(instructionData: Uint8Array)
   }
 
   const instructionType = instructionData[0];
+  
+  if (instructionType === undefined) {
+    return ProgramVersion.Unknown;
+  }
 
   // Instructions 0-20 exist in both programs
   if (instructionType <= 20) {

@@ -139,6 +139,11 @@ export interface TokenAccount {
    * Optional authority to close this account
    */
   closeAuthority?: Address;
+
+  /**
+   * Extensions for Token-2022 (if applicable)
+   */
+  extensions?: TokenExtension[];
 }
 
 /**

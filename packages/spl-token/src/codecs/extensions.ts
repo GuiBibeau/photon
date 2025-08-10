@@ -5,7 +5,7 @@
  * to be added to mints and token accounts while maintaining backward compatibility.
  */
 
-// import type { Address } from '@photon/addresses';
+import { addressFromBytes, getAddressBytes } from '@photon/addresses';
 import type { Codec } from '@photon/codecs';
 import { struct, option, some, none } from '@photon/codecs/composites';
 import { u8, u16, u64, i64 } from '@photon/codecs/primitives/numeric';
@@ -17,15 +17,15 @@ import type {
   TransferFeeConfig,
   InterestBearingConfig,
   DefaultAccountState,
-  MintCloseAuthority,
-  PermanentDelegate,
-  TransferHook,
-  MetadataPointer,
-  // TokenMetadata,
-  CpiGuard,
-  ImmutableOwner,
-  MemoTransfer,
-  NonTransferable,
+  MintCloseAuthorityExtension as MintCloseAuthority,
+  PermanentDelegateExtension as PermanentDelegate,
+  TransferHookExtension as TransferHook,
+  MetadataPointerExtension as MetadataPointer,
+  // TokenMetadataExtension as TokenMetadata,
+  CpiGuardExtension as CpiGuard,
+  ImmutableOwnerExtension as ImmutableOwner,
+  MemoTransferExtension as MemoTransfer,
+  NonTransferableExtension as NonTransferable,
 } from '../types.js';
 import { tlvCodec } from './tlv.js';
 
@@ -34,8 +34,8 @@ import { tlvCodec } from './tlv.js';
  */
 export const transferFeeConfigCodec: Codec<TransferFeeConfig> = mapCodec(
   struct({
-    transferFeeConfigAuthority: option(publicKey),
-    withdrawWithheldAuthority: option(publicKey),
+    transferFeeConfigAuthority: option(publicKey) as Codec<any>,
+    withdrawWithheldAuthority: option(publicKey) as Codec<any>,
     withheldAmount: u64,
     olderTransferFee: struct({
       epoch: u64,
@@ -59,16 +59,14 @@ export const transferFeeConfigCodec: Codec<TransferFeeConfig> = mapCodec(
     olderTransferFee: value.olderTransferFee,
     newerTransferFee: value.newerTransferFee,
   }),
-  (value) => ({
+  (value: any) => ({
     type: ExtensionType.TransferFeeConfig,
-    transferFeeConfigAuthority:
-      value.transferFeeConfigAuthority.__option === 'some'
-        ? value.transferFeeConfigAuthority.value
-        : undefined,
-    withdrawWithheldAuthority:
-      value.withdrawWithheldAuthority.__option === 'some'
-        ? value.withdrawWithheldAuthority.value
-        : undefined,
+    ...(value.transferFeeConfigAuthority.__option === 'some' && {
+      transferFeeConfigAuthority: value.transferFeeConfigAuthority.value,
+    }),
+    ...(value.withdrawWithheldAuthority.__option === 'some' && {
+      withdrawWithheldAuthority: value.withdrawWithheldAuthority.value,
+    }),
     withheldAmount: value.withheldAmount,
     olderTransferFee: value.olderTransferFee,
     newerTransferFee: value.newerTransferFee,
@@ -93,7 +91,7 @@ export const interestBearingConfigCodec: Codec<InterestBearingConfig> = mapCodec
     lastUpdateTimestamp: value.lastUpdateTimestamp,
     currentRate: value.currentRate,
   }),
-  (value) => ({
+  (value: any) => ({
     type: ExtensionType.InterestBearingConfig,
     rateAuthority: value.rateAuthority.__option === 'some' ? value.rateAuthority.value : undefined,
     initializationTimestamp: value.initializationTimestamp,
@@ -109,7 +107,7 @@ export const interestBearingConfigCodec: Codec<InterestBearingConfig> = mapCodec
 export const defaultAccountStateCodec: Codec<DefaultAccountState> = mapCodec(
   u8,
   (value: DefaultAccountState) => value.state,
-  (value) => ({
+  (value: any) => ({
     type: ExtensionType.DefaultAccountState,
     state: value as AccountState,
   }),
@@ -119,11 +117,11 @@ export const defaultAccountStateCodec: Codec<DefaultAccountState> = mapCodec(
  * Mint close authority codec.
  */
 export const mintCloseAuthorityCodec: Codec<MintCloseAuthority> = mapCodec(
-  option(publicKey),
+  option(publicKey) as Codec<any>,
   (value: MintCloseAuthority) => (value.closeAuthority ? some(value.closeAuthority) : none()),
-  (value) => ({
+  (value: any) => ({
     type: ExtensionType.MintCloseAuthority,
-    closeAuthority: value.__option === 'some' ? value.value : undefined,
+    ...(value.__option === 'some' && { closeAuthority: value.value }),
   }),
 );
 
@@ -132,10 +130,10 @@ export const mintCloseAuthorityCodec: Codec<MintCloseAuthority> = mapCodec(
  */
 export const permanentDelegateCodec: Codec<PermanentDelegate> = mapCodec(
   publicKey,
-  (value: PermanentDelegate) => value.delegate,
-  (value) => ({
+  (value: PermanentDelegate) => value.delegate ? getAddressBytes(value.delegate) : new Uint8Array(32),
+  (value: any) => ({
     type: ExtensionType.PermanentDelegate,
-    delegate: value,
+    ...(value && value.length === 32 && !value.every((b: number) => b === 0) && { delegate: addressFromBytes(value) }),
   }),
 );
 
@@ -144,17 +142,17 @@ export const permanentDelegateCodec: Codec<PermanentDelegate> = mapCodec(
  */
 export const transferHookCodec: Codec<TransferHook> = mapCodec(
   struct({
-    authority: option(publicKey),
-    programId: option(publicKey),
+    authority: option(publicKey) as Codec<any>,
+    programId: option(publicKey) as Codec<any>,
   }),
   (value: TransferHook) => ({
     authority: value.authority ? some(value.authority) : none(),
     programId: value.programId ? some(value.programId) : none(),
   }),
-  (value) => ({
+  (value: any) => ({
     type: ExtensionType.TransferHook,
-    authority: value.authority.__option === 'some' ? value.authority.value : undefined,
-    programId: value.programId.__option === 'some' ? value.programId.value : undefined,
+    ...(value.authority.__option === 'some' && { authority: value.authority.value }),
+    ...(value.programId.__option === 'some' && { programId: value.programId.value }),
   }),
 );
 
@@ -163,18 +161,17 @@ export const transferHookCodec: Codec<TransferHook> = mapCodec(
  */
 export const metadataPointerCodec: Codec<MetadataPointer> = mapCodec(
   struct({
-    authority: option(publicKey),
-    metadataAddress: option(publicKey),
+    authority: option(publicKey) as Codec<any>,
+    metadataAddress: option(publicKey) as Codec<any>,
   }),
   (value: MetadataPointer) => ({
     authority: value.authority ? some(value.authority) : none(),
     metadataAddress: value.metadataAddress ? some(value.metadataAddress) : none(),
   }),
-  (value) => ({
+  (value: any) => ({
     type: ExtensionType.MetadataPointer,
-    authority: value.authority.__option === 'some' ? value.authority.value : undefined,
-    metadataAddress:
-      value.metadataAddress.__option === 'some' ? value.metadataAddress.value : undefined,
+    ...((value.authority as any).__option === 'some' && { authority: (value.authority as any).value }),
+    ...((value.metadataAddress as any).__option === 'some' && { metadataAddress: (value.metadataAddress as any).value }),
   }),
 );
 
@@ -195,7 +192,7 @@ export const nonTransferableCodec: Codec<NonTransferable> = mapCodec(
 export const cpiGuardCodec: Codec<CpiGuard> = mapCodec(
   boolean,
   (value: CpiGuard) => value.lockCpi,
-  (value) => ({
+  (value: any) => ({
     type: ExtensionType.CpiGuard,
     lockCpi: value,
   }),
@@ -218,7 +215,7 @@ export const immutableOwnerCodec: Codec<ImmutableOwner> = mapCodec(
 export const memoTransferCodec: Codec<MemoTransfer> = mapCodec(
   boolean,
   (value: MemoTransfer) => value.requireIncomingTransferMemos,
-  (value) => ({
+  (value: any) => ({
     type: ExtensionType.MemoTransfer,
     requireIncomingTransferMemos: value,
   }),
@@ -229,17 +226,17 @@ export const memoTransferCodec: Codec<MemoTransfer> = mapCodec(
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const extensionCodecs: Map<ExtensionType, Codec<any>> = new Map([
-  [ExtensionType.TransferFeeConfig, transferFeeConfigCodec],
-  [ExtensionType.InterestBearingConfig, interestBearingConfigCodec],
-  [ExtensionType.DefaultAccountState, defaultAccountStateCodec],
-  [ExtensionType.MintCloseAuthority, mintCloseAuthorityCodec],
-  [ExtensionType.PermanentDelegate, permanentDelegateCodec],
-  [ExtensionType.TransferHook, transferHookCodec],
-  [ExtensionType.MetadataPointer, metadataPointerCodec],
-  [ExtensionType.NonTransferable, nonTransferableCodec],
-  [ExtensionType.CpiGuard, cpiGuardCodec],
-  [ExtensionType.ImmutableOwner, immutableOwnerCodec],
-  [ExtensionType.MemoTransfer, memoTransferCodec],
+  [ExtensionType.TransferFeeConfig, transferFeeConfigCodec as Codec<any>],
+  [ExtensionType.InterestBearingConfig, interestBearingConfigCodec as Codec<any>],
+  [ExtensionType.DefaultAccountState, defaultAccountStateCodec as Codec<any>],
+  [ExtensionType.MintCloseAuthority, mintCloseAuthorityCodec as Codec<any>],
+  [ExtensionType.PermanentDelegate, permanentDelegateCodec as Codec<any>],
+  [ExtensionType.TransferHook, transferHookCodec as Codec<any>],
+  [ExtensionType.MetadataPointer, metadataPointerCodec as Codec<any>],
+  [ExtensionType.NonTransferable, nonTransferableCodec as Codec<any>],
+  [ExtensionType.CpiGuard, cpiGuardCodec as Codec<any>],
+  [ExtensionType.ImmutableOwner, immutableOwnerCodec as Codec<any>],
+  [ExtensionType.MemoTransfer, memoTransferCodec as Codec<any>],
 ]);
 
 /**
@@ -276,7 +273,7 @@ export function getExtensionSize(type: ExtensionType, data?: any): number {
   }
 
   // Fallback: encode and measure
-  return 4 + (data ? codec.encode(data).length : 0);
+  return 4 + (data ? (codec as any).encode(data).length : 0);
 }
 
 /**
@@ -304,6 +301,6 @@ export const extensionSupport = {
  * Check if an extension is supported for a given account type.
  */
 export function isExtensionSupported(type: ExtensionType, accountType: 'mint' | 'token'): boolean {
-  const support = extensionSupport[type];
+  const support = extensionSupport[type as keyof typeof extensionSupport];
   return support ? support[accountType] : false;
 }

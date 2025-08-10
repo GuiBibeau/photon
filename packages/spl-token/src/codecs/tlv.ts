@@ -200,8 +200,8 @@ export function tlvCodec<T>(type: number, valueCodec: Codec<T>): Codec<T> {
     size:
       'size' in valueCodec
         ? typeof valueCodec.size === 'function'
-          ? (value: T) => 4 + valueCodec.size(value)
-          : 4 + valueCodec.size
+          ? (value: T) => 4 + (valueCodec.size as (v: T) => number)(value)
+          : 4 + (valueCodec.size as number)
         : undefined,
   } as Codec<T>;
 }
