@@ -19,6 +19,8 @@
     "airdrop": "solana airdrop 10",
     "build": "tsup --config tsup.config.ts",
     "test": "vitest",
+    "test:integration": "vitest run test/integration",
+    "test:integration:watch": "vitest watch test/integration",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "test:ui": "vitest --ui",
