@@ -1745,28 +1745,493 @@ Create typed functions to fetch and decode system variables.
 
 ---
 
-### SDK-56: Write sysvar tests
+### SDK-57: Define SPL Token constants and types
 
-**Priority**: Low | **Story Points**: 2 | **Labels**: `test`, `sysvars`  
-**Dependencies**: SDK-55
+**Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `tokens`  
+**Dependencies**: SDK-22
 
 **Description**:
-Test sysvar constants and fetching functions.
+Create comprehensive type definitions and constants for SPL Token and Token-2022 programs, forming the foundation for token operations.
+
+**Acceptance Criteria**:
+
+- Define program addresses:
+  - SPL Token Program ID
+  - Token-2022 Program ID  
+  - Associated Token Program ID
+  - Token Metadata Program ID
+- Create token account types:
+  - `TokenAccount` interface
+  - `MintAccount` interface
+  - `Multisig` interface
+  - Account state enums
+- Define instruction types:
+  - Standard SPL instructions
+  - Token-2022 specific instructions
+  - Extension instructions
+- Add constants:
+  - Account sizes
+  - Native mint address
+  - Authority types
+  - Maximum supply
+- Type safety:
+  - Branded types for amounts
+  - Discriminated unions for states
+  - Proper bigint usage
+
+**Type Definitions**:
+
+```typescript
+export interface TokenAccount {
+  mint: Address;
+  owner: Address;
+  amount: bigint;
+  delegate?: Address;
+  state: AccountState;
+  isNative?: boolean;
+  delegatedAmount?: bigint;
+  closeAuthority?: Address;
+}
+
+export interface MintAccount {
+  supply: bigint;
+  decimals: number;
+  isInitialized: boolean;
+  freezeAuthority?: Address;
+  mintAuthority?: Address;
+  extensions?: TokenExtension[];
+}
+```
+
+---
+
+### SDK-58: Implement SPL Token codecs
+
+**Priority**: High | **Story Points**: 5 | **Labels**: `feature`, `tokens`  
+**Dependencies**: SDK-57, SDK-14
+
+**Description**:
+Build codecs for all SPL Token account types and instructions, handling both legacy and Token-2022 formats.
+
+**Acceptance Criteria**:
+
+- Implement account codecs:
+  - Token account codec (165 bytes)
+  - Mint account codec (82 bytes base)
+  - Multisig codec
+  - Handle variable sizes for extensions
+- Create instruction codecs:
+  - Initialize mint/account
+  - Transfer/TransferChecked
+  - Approve/Revoke
+  - Mint/Burn tokens
+  - Freeze/Thaw
+  - Close account
+- Extension codecs:
+  - TLV (Type-Length-Value) parser
+  - Each extension type decoder
+  - Extension detection logic
+- Backward compatibility:
+  - Detect program version
+  - Handle both formats
+  - Graceful fallbacks
+- Optimization:
+  - Efficient TLV parsing
+  - Lazy extension decoding
+  - Minimal allocations
+
+---
+
+### SDK-59: Create Associated Token Account utilities
+
+**Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `tokens`  
+**Dependencies**: SDK-58
+
+**Description**:
+Implement utilities for working with Associated Token Accounts (ATAs), including derivation and creation.
+
+**Acceptance Criteria**:
+
+- Implement ATA derivation:
+  - `getAssociatedTokenAddress()`
+  - PDA seed construction
+  - Support both token programs
+  - Handle Token-2022 ATAs
+- Create ATA helpers:
+  - `createAssociatedTokenAccountInstruction()`
+  - `getOrCreateAssociatedTokenAccount()`
+  - Check ATA existence
+  - Idempotent creation
+- Add ATA features:
+  - Immutable owner by default (Token-2022)
+  - Recovery if incorrectly closed
+  - Batch ATA creation
+- Type safety:
+  - Proper return types
+  - Program ID validation
+  - Address validation
+- Error handling:
+  - Account already exists
+  - Invalid mint/owner
+  - Insufficient funds
+
+**API Example**:
+
+```typescript
+const ataAddress = await getAssociatedTokenAddress(
+  mint,
+  owner,
+  allowOwnerOffCurve,
+  programId,
+  associatedTokenProgramId
+);
+```
+
+---
+
+### SDK-60: Build Token-2022 extension handlers
+
+**Priority**: High | **Story Points**: 8 | **Labels**: `feature`, `tokens`, `extensions`  
+**Dependencies**: SDK-59
+
+**Description**:
+Implement comprehensive support for all Token-2022 extensions available on mainnet, with type-safe APIs for each extension.
+
+**Acceptance Criteria**:
+
+- Core extension support:
+  - Transfer fees configuration
+  - Interest bearing tokens
+  - Default account state (frozen)
+  - Non-transferable tokens
+  - Permanent delegate
+  - Mint close authority
+- Account extensions:
+  - Immutable owner
+  - Required memo transfers
+  - CPI guard
+  - Reallocate support
+- Advanced extensions:
+  - Transfer hooks interface
+  - Metadata pointer
+  - Token metadata (on-chain)
+- Extension utilities:
+  - `getExtensionData(mint, extensionType)`
+  - `hasExtension(account, extensionType)`
+  - Calculate account size with extensions
+  - Extension initialization helpers
+- Type definitions:
+  - Extension discriminated unions
+  - Configuration interfaces
+  - Authority types
+  - Extension-specific errors
+
+**Extension Handler Example**:
+
+```typescript
+export interface TransferFeeConfig {
+  transferFeeBasisPoints: number;
+  maximumFee: bigint;
+  transferFeeConfigAuthority?: Address;
+  withdrawWithheldAuthority?: Address;
+}
+
+export function getTransferFeeConfig(
+  mint: MintAccount
+): TransferFeeConfig | null {
+  // Parse extension data
+}
+```
+
+---
+
+### SDK-61: Implement token transfer builders
+
+**Priority**: High | **Story Points**: 5 | **Labels**: `feature`, `tokens`  
+**Dependencies**: SDK-60
+
+**Description**:
+Create high-level builders for token transfers that handle all extension requirements and safety checks.
+
+**Acceptance Criteria**:
+
+- Basic transfer support:
+  - `createTransferInstruction()`
+  - `createTransferCheckedInstruction()`
+  - Amount validation
+  - Decimal handling
+- Extension-aware transfers:
+  - Transfer fee calculation
+  - Required memo detection
+  - CPI guard checks
+  - Transfer hook support
+- Batch operations:
+  - Multi-recipient transfers
+  - Atomic transfers
+  - Efficient instruction packing
+- Safety features:
+  - Slippage protection
+  - Balance verification
+  - Authority validation
+  - Extension compatibility
+- Helper functions:
+  - `transferTokens()` high-level API
+  - `estimateTransferFee()`
+  - `validateTransferAmount()`
+
+**Usage Example**:
+
+```typescript
+const instructions = await createTransferInstructions({
+  source,
+  destination,
+  amount,
+  mint,
+  owner,
+  // Auto-handles fees, memos, hooks
+});
+```
+
+---
+
+### SDK-62: Add token mint and burn operations
+
+**Priority**: Medium | **Story Points**: 3 | **Labels**: `feature`, `tokens`  
+**Dependencies**: SDK-61
+
+**Description**:
+Implement minting and burning operations with proper authority handling and extension support.
+
+**Acceptance Criteria**:
+
+- Minting operations:
+  - `createMintToInstruction()`
+  - `createMintToCheckedInstruction()`
+  - Supply cap validation
+  - Authority verification
+- Burning operations:
+  - `createBurnInstruction()`
+  - `createBurnCheckedInstruction()`
+  - From owned accounts
+  - From delegated accounts
+- Extension handling:
+  - Non-transferable compatibility
+  - Interest bearing adjustments
+  - Supply tracking
+- Utility functions:
+  - `mintTokens()` helper
+  - `burnTokens()` helper
+  - Supply calculations
+  - Maximum supply checks
+
+---
+
+### SDK-63: Create token account management utilities
+
+**Priority**: Medium | **Story Points**: 4 | **Labels**: `feature`, `tokens`  
+**Dependencies**: SDK-62
+
+**Description**:
+Build utilities for token account lifecycle management including creation, closing, and authority management.
+
+**Acceptance Criteria**:
+
+- Account creation:
+  - `createInitializeAccountInstruction()`
+  - Size calculation with extensions
+  - Rent-exempt balance calculation
+  - System account creation
+- Account closing:
+  - `createCloseAccountInstruction()`
+  - Balance verification
+  - Authority checks
+  - Mint close support (Token-2022)
+- Authority management:
+  - `createSetAuthorityInstruction()`
+  - Freeze authority
+  - Mint authority
+  - Account owner changes
+  - Permanent delegate setup
+- Freezing operations:
+  - `createFreezeAccountInstruction()`
+  - `createThawAccountInstruction()`
+  - Default frozen state handling
+- Account queries:
+  - Get all token accounts by owner
+  - Filter by mint
+  - Include/exclude frozen
+
+---
+
+### SDK-64: Implement token metadata helpers
+
+**Priority**: Medium | **Story Points**: 4 | **Labels**: `feature`, `tokens`, `metadata`  
+**Dependencies**: SDK-63
+
+**Description**:
+Create utilities for working with token metadata, supporting both on-chain Token-2022 metadata and Metaplex metadata.
+
+**Acceptance Criteria**:
+
+- On-chain metadata (Token-2022):
+  - Initialize metadata instruction
+  - Update metadata fields
+  - Add custom fields
+  - Remove fields
+  - Parse metadata from mint
+- Metadata pointer support:
+  - Set metadata pointer
+  - Resolve metadata address
+  - Auto-detection logic
+- Metaplex compatibility:
+  - Detect Metaplex metadata
+  - Basic read support
+  - Metadata PDA derivation
+- Unified interface:
+  - `getTokenMetadata(mint)`
+  - Returns normalized metadata
+  - Handles both standards
+  - Caching support
+- Type definitions:
+  - TokenMetadata interface
+  - Field types
+  - Update authorities
+
+**Metadata Structure**:
+
+```typescript
+export interface TokenMetadata {
+  name: string;
+  symbol: string;
+  uri: string;
+  additionalFields?: Map<string, string>;
+  updateAuthority?: Address;
+  source: 'token-2022' | 'metaplex';
+}
+```
+
+---
+
+### SDK-65: Build token delegation and approval system
+
+**Priority**: Low | **Story Points**: 3 | **Labels**: `feature`, `tokens`  
+**Dependencies**: SDK-64
+
+**Description**:
+Implement delegation and approval mechanisms for token accounts with safety checks.
+
+**Acceptance Criteria**:
+
+- Approval operations:
+  - `createApproveInstruction()`
+  - `createApproveCheckedInstruction()`
+  - Amount validation
+  - Delegate setting
+- Revocation:
+  - `createRevokeInstruction()`
+  - Clear delegate
+  - Reset delegated amount
+- Permanent delegate:
+  - Detection logic
+  - Warning utilities
+  - Operation validation
+- Helper functions:
+  - `approveTokens()`
+  - `revokeApproval()`
+  - Check delegate status
+  - Get delegated amount
+
+---
+
+### SDK-66: Create high-level token helpers
+
+**Priority**: Low | **Story Points**: 5 | **Labels**: `feature`, `tokens`  
+**Dependencies**: SDK-65
+
+**Description**:
+Build convenience functions that combine multiple operations for common token workflows.
+
+**Acceptance Criteria**:
+
+- Token creation workflow:
+  - `createToken()` - Full mint setup
+  - `createTokenWithMetadata()`
+  - Configure all extensions
+  - Return mint address
+- Token distribution:
+  - `airdropTokens()` - Batch distribution
+  - `createTokenAccounts()` - Bulk creation
+  - Progress tracking
+  - Error recovery
+- Token queries:
+  - `getTokenSupply()`
+  - `getTokenHolders()`
+  - `getTokenBalances()`
+  - Extension-aware calculations
+- Common patterns:
+  - Wrapped SOL handling
+  - Token swap preparation
+  - Escrow account setup
+  - Vesting account creation
+- Extension utilities:
+  - `enableRequiredMemo()`
+  - `enableCpiGuard()`
+  - `calculateTransferFeeAmount()`
+  - `getInterestAccrued()`
+
+**High-Level API Example**:
+
+```typescript
+const mint = await createToken({
+  payer,
+  mintAuthority,
+  freezeAuthority,
+  decimals: 9,
+  extensions: {
+    transferFees: { basisPoints: 50, maxFee: 1000000n },
+    metadata: { name: "My Token", symbol: "MTK", uri: "..." },
+    defaultAccountState: 'frozen'
+  }
+});
+```
+
+---
+
+### SDK-67: Write comprehensive token tests
+
+**Priority**: High | **Story Points**: 5 | **Labels**: `test`, `tokens`  
+**Dependencies**: SDK-66
+
+**Description**:
+Create extensive test coverage for all token functionality including extensions and edge cases.
 
 **Test Coverage**:
 
-- Constant values:
-  - Correct addresses
-  - Type safety
-- Fetching:
-  - Mock responses
-  - Decoding accuracy
-  - Error scenarios
-- Data structures:
-  - Field presence
-  - Type correctness
-  - Value ranges
-
+- Basic token operations:
+  - Mint creation and configuration
+  - Transfer scenarios
+  - Burn operations
+  - Account lifecycle
+- Extension testing:
+  - Each extension individually
+  - Multiple extensions combined
+  - Extension conflicts
+  - Upgrade scenarios
+- Integration tests:
+  - Complete workflows
+  - Cross-program calls
+  - Error recovery
+  - Performance benchmarks
+- Edge cases:
+  - Maximum values
+  - Zero amounts
+  - Authority edge cases
+  - Reentrancy protection
+- Compatibility:
+  - SPL Token vs Token-2022
+  - Extension detection
+  - Fallback behavior
+  - Version migration
 ---
 
 ## Epic 8: Integration & Documentation
