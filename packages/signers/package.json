@@ -3,33 +3,33 @@
   "version": "0.0.0",
   "description": "Signer utilities for Photon SDK",
   "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     },
     "./interface": {
       "types": "./dist/interface.d.ts",
-      "import": "./dist/interface.js",
-      "require": "./dist/interface.cjs"
+      "import": "./dist/interface.mjs",
+      "require": "./dist/interface.js"
     },
     "./multi-signer": {
       "types": "./dist/multi-signer.d.ts",
-      "import": "./dist/multi-signer.js",
-      "require": "./dist/multi-signer.cjs"
+      "import": "./dist/multi-signer.mjs",
+      "require": "./dist/multi-signer.js"
     },
     "./guards": {
       "types": "./dist/guards.d.ts",
-      "import": "./dist/guards.js",
-      "require": "./dist/guards.cjs"
+      "import": "./dist/guards.mjs",
+      "require": "./dist/guards.js"
     },
     "./webcrypto-signer": {
       "types": "./dist/webcrypto-signer.d.ts",
-      "import": "./dist/webcrypto-signer.js",
-      "require": "./dist/webcrypto-signer.cjs"
+      "import": "./dist/webcrypto-signer.mjs",
+      "require": "./dist/webcrypto-signer.js"
     }
   },
   "files": [

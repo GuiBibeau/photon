@@ -3,33 +3,33 @@
   "version": "0.0.0",
   "description": "Account utilities for Photon SDK",
   "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     },
     "./fetch": {
       "types": "./dist/fetch.d.ts",
-      "import": "./dist/fetch.js",
-      "require": "./dist/fetch.cjs"
+      "import": "./dist/fetch.mjs",
+      "require": "./dist/fetch.js"
     },
     "./types": {
       "types": "./dist/types.d.ts",
-      "import": "./dist/types.js",
-      "require": "./dist/types.cjs"
+      "import": "./dist/types.mjs",
+      "require": "./dist/types.js"
     },
     "./decode": {
       "types": "./dist/decode.d.ts",
-      "import": "./dist/decode.js",
-      "require": "./dist/decode.cjs"
+      "import": "./dist/decode.mjs",
+      "require": "./dist/decode.js"
     },
     "./common-accounts": {
       "types": "./dist/common-accounts.d.ts",
-      "import": "./dist/common-accounts.js",
-      "require": "./dist/common-accounts.cjs"
+      "import": "./dist/common-accounts.mjs",
+      "require": "./dist/common-accounts.js"
     }
   },
   "files": [
@@ -38,7 +38,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && tsc --emitDeclarationOnly",
     "build:watch": "tsup --watch",
     "dev": "tsup --watch",
     "test": "vitest run",
