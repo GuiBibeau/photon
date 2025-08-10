@@ -1,5 +1,6 @@
 import type { Address } from '@photon/addresses';
 import type { CompileableTransactionMessage, AccountMeta } from '@photon/transaction-messages';
+import { serializeMessage } from './serialize.js';
 
 /**
  * Compiled transaction ready for signing
@@ -98,22 +99,8 @@ export function compileTransaction(message: CompileableTransactionMessage): Comp
  */
 function createMessageBytes(
   message: CompileableTransactionMessage,
-  accounts: AccountMeta[],
+  _accounts: AccountMeta[], // unused but kept for compatibility
 ): Uint8Array {
-  // For now, create a simple hash of the message content
-  // Real implementation would serialize according to Solana format
-  const encoder = new TextEncoder();
-
-  // Combine key pieces of data
-  const parts: string[] = [
-    message.version === 'legacy' ? 'legacy' : `v${message.version}`,
-    message.blockhash,
-    message.feePayer,
-    ...accounts.map((a) => `${a.pubkey}:${a.isSigner}:${a.isWritable}`),
-    ...message.instructions.map((i) => `${i.programId}:${i.accounts.length}:${i.data.length}`),
-  ];
-
-  const encoded = encoder.encode(parts.join('|'));
-  // Ensure we return a proper Uint8Array instance
-  return new Uint8Array(encoded);
+  // Use the actual Solana message serialization
+  return serializeMessage(message);
 }

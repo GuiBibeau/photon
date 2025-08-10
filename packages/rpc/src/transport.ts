@@ -153,7 +153,9 @@ export function createHttpTransport(url: string, config?: TransportConfig): Conf
           'Content-Type': 'application/json',
           ...config?.headers,
         },
-        body: JSON.stringify(request),
+        body: JSON.stringify(request, (_key, value) =>
+          typeof value === 'bigint' ? Number(value) : value,
+        ),
         signal,
         // Connection hints for better performance
         keepalive: true,

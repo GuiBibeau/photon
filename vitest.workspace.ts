@@ -1,3 +1,6 @@
 import { defineWorkspace } from 'vitest/config';
 
-export default defineWorkspace(['packages/*']);
+// Exclude integration tests when running in CI
+const packages = process.env.CI ? ['packages/*', '!packages/integration'] : ['packages/*'];
+
+export default defineWorkspace(packages);

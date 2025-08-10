@@ -62,9 +62,11 @@ export function encodeBase58(bytes: Uint8Array): string {
 
   // Convert to base58
   const encoded: string[] = [];
+
+  // Special case: if all bytes were zeros
   if (num === 0n) {
-    // If all bytes were zero, we just return the leading zeros as '1's
-    return '1'.repeat(bytes.length);
+    // All bytes were zeros, return the appropriate number of '1's
+    return '1'.repeat(leadingZeros);
   }
 
   while (num > 0n) {
