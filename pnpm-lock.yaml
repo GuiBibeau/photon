@@ -209,6 +209,9 @@ importers:
       '@photon/addresses':
         specifier: workspace:*
         version: link:../addresses
+      '@photon/codecs':
+        specifier: workspace:*
+        version: link:../codecs
       '@photon/errors':
         specifier: workspace:*
         version: link:../errors

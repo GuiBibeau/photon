@@ -1,5 +1,9 @@
 import type { Address } from '@photon/addresses';
-import type { AccountState, AuthorityType } from './types';
+import type { AccountState } from './types';
+import { type AuthorityType } from './types';
+
+// Re-export AuthorityType for convenience
+export { AuthorityType } from './types';
 
 /**
  * SPL Token instruction types

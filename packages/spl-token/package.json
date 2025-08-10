@@ -30,6 +30,31 @@
       "types": "./dist/instructions.d.ts",
       "import": "./dist/instructions.mjs",
       "require": "./dist/instructions.js"
+    },
+    "./codecs/accounts": {
+      "types": "./dist/codecs/accounts.d.ts",
+      "import": "./dist/codecs/accounts.mjs",
+      "require": "./dist/codecs/accounts.js"
+    },
+    "./codecs/instructions": {
+      "types": "./dist/codecs/instructions.d.ts",
+      "import": "./dist/codecs/instructions.mjs",
+      "require": "./dist/codecs/instructions.js"
+    },
+    "./codecs/extensions": {
+      "types": "./dist/codecs/extensions.d.ts",
+      "import": "./dist/codecs/extensions.mjs",
+      "require": "./dist/codecs/extensions.js"
+    },
+    "./codecs/tlv": {
+      "types": "./dist/codecs/tlv.d.ts",
+      "import": "./dist/codecs/tlv.mjs",
+      "require": "./dist/codecs/tlv.js"
+    },
+    "./codecs/program-detection": {
+      "types": "./dist/codecs/program-detection.d.ts",
+      "import": "./dist/codecs/program-detection.mjs",
+      "require": "./dist/codecs/program-detection.js"
     }
   },
   "files": [
@@ -52,6 +77,7 @@
   },
   "dependencies": {
     "@photon/addresses": "workspace:*",
+    "@photon/codecs": "workspace:*",
     "@photon/errors": "workspace:*"
   },
   "devDependencies": {
