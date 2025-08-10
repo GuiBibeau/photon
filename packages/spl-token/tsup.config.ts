@@ -6,7 +6,7 @@ export default defineConfig({
     constants: 'src/constants.ts',
   },
   format: ['esm', 'cjs'],
-  dts: true,
+  dts: false, // We use tsc --emitDeclarationOnly instead
   splitting: true,
   sourcemap: true,
   clean: true,
