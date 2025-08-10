@@ -436,6 +436,34 @@ describe('Sysvar Fetchers', () => {
 
       expect(result).toEqual(feesData);
     });
+
+    it('should throw error if Fees sysvar not found', async () => {
+      mockRpc.getAccountInfo.mockResolvedValue({ value: null });
+
+      await expect(getFeesSysvar(mockRpc as any)).rejects.toThrow('Fees sysvar account not found');
+    });
+
+    it('should handle different lamportsPerSignature values', async () => {
+      const testCases = [
+        { lamportsPerSignature: 0n },
+        { lamportsPerSignature: 1n },
+        { lamportsPerSignature: BigInt(Number.MAX_SAFE_INTEGER) },
+      ];
+
+      for (const feesData of testCases) {
+        const encodedData = feesSysvarCodec.encode(feesData);
+        const base64Data = Buffer.from(encodedData).toString('base64');
+
+        mockRpc.getAccountInfo.mockResolvedValue({
+          value: {
+            data: [base64Data, 'base64'],
+          },
+        });
+
+        const result = await getFeesSysvar(mockRpc as any);
+        expect(result).toEqual(feesData);
+      }
+    });
   });
 
   describe('getLastRestartSlotSysvar', () => {
@@ -527,6 +555,82 @@ describe('Sysvar Codecs', () => {
 
       expect(decoded).toEqual(epochScheduleData);
       expect(bytesRead).toBe(encoded.length);
+    });
+
+    it('should handle warmup=false correctly', () => {
+      const epochScheduleData = {
+        slotsPerEpoch: 432000n,
+        leaderScheduleSlotOffset: 432000n,
+        warmup: false,
+        firstNormalEpoch: 0n,
+        firstNormalSlot: 0n,
+      };
+
+      const encoded = epochScheduleSysvarCodec.encode(epochScheduleData);
+      const [decoded, bytesRead] = epochScheduleSysvarCodec.decode(encoded);
+
+      expect(decoded).toEqual(epochScheduleData);
+      expect(bytesRead).toBe(encoded.length);
+    });
+  });
+
+  describe('feesSysvarCodec', () => {
+    it('should encode and decode Fees data correctly', () => {
+      const feesData = {
+        lamportsPerSignature: 5000n,
+      };
+
+      const encoded = feesSysvarCodec.encode(feesData);
+      const [decoded, bytesRead] = feesSysvarCodec.decode(encoded);
+
+      expect(decoded).toEqual(feesData);
+      expect(bytesRead).toBe(encoded.length);
+    });
+
+    it('should handle edge case values', () => {
+      const testCases = [
+        { lamportsPerSignature: 0n },
+        { lamportsPerSignature: 1n },
+        { lamportsPerSignature: 18446744073709551615n }, // Max u64
+      ];
+
+      for (const feesData of testCases) {
+        const encoded = feesSysvarCodec.encode(feesData);
+        const [decoded, bytesRead] = feesSysvarCodec.decode(encoded);
+
+        expect(decoded).toEqual(feesData);
+        expect(bytesRead).toBe(encoded.length);
+      }
+    });
+  });
+
+  describe('lastRestartSlotSysvarCodec', () => {
+    it('should encode and decode LastRestartSlot data correctly', () => {
+      const lastRestartSlotData = {
+        lastRestartSlot: 1000000n,
+      };
+
+      const encoded = lastRestartSlotSysvarCodec.encode(lastRestartSlotData);
+      const [decoded, bytesRead] = lastRestartSlotSysvarCodec.decode(encoded);
+
+      expect(decoded).toEqual(lastRestartSlotData);
+      expect(bytesRead).toBe(encoded.length);
+    });
+
+    it('should handle edge case values', () => {
+      const testCases = [
+        { lastRestartSlot: 0n },
+        { lastRestartSlot: 1n },
+        { lastRestartSlot: 18446744073709551615n }, // Max u64
+      ];
+
+      for (const testCase of testCases) {
+        const encoded = lastRestartSlotSysvarCodec.encode(testCase);
+        const [decoded, bytesRead] = lastRestartSlotSysvarCodec.decode(encoded);
+
+        expect(decoded).toEqual(testCase);
+        expect(bytesRead).toBe(encoded.length);
+      }
     });
   });
 });
