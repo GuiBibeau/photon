@@ -21,6 +21,7 @@ export default defineConfig({
     alias: {
       '@photon/addresses': resolve(__dirname, '../addresses/src'),
       '@photon/errors': resolve(__dirname, '../errors/src'),
+      '@photon/codecs': resolve(__dirname, '../codecs/src'),
     },
   },
 });
