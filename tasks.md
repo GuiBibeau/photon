@@ -1715,7 +1715,7 @@ Create constants for all Solana system variables with proper typing.
 
 ---
 
-### SDK-55: Implement sysvar fetchers
+### SDK-55: Implement sysvar fetchers ✅
 
 **Priority**: Medium | **Story Points**: 5 | **Labels**: `feature`, `sysvars`  
 **Dependencies**: SDK-54
@@ -1745,7 +1745,7 @@ Create typed functions to fetch and decode system variables.
 
 ---
 
-### SDK-57: Define SPL Token constants and types
+### SDK-57: Define SPL Token constants and types 
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `tokens`  
 **Dependencies**: SDK-22

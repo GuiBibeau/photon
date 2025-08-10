@@ -20,6 +20,16 @@
       "types": "./dist/constants.d.ts",
       "import": "./dist/constants.mjs",
       "require": "./dist/constants.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.mjs",
+      "require": "./dist/types.js"
+    },
+    "./instructions": {
+      "types": "./dist/instructions.d.ts",
+      "import": "./dist/instructions.mjs",
+      "require": "./dist/instructions.js"
     }
   },
   "files": [
