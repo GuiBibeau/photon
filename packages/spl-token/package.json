@@ -1,0 +1,66 @@
+{
+  "name": "@photon/spl-token",
+  "version": "0.0.0",
+  "description": "SPL Token utilities for Photon SDK",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./instructions": {
+      "types": "./dist/instructions.d.ts",
+      "import": "./dist/instructions.mjs",
+      "require": "./dist/instructions.js"
+    },
+    "./ata": {
+      "types": "./dist/ata.d.ts",
+      "import": "./dist/ata.mjs",
+      "require": "./dist/ata.js"
+    },
+    "./helpers": {
+      "types": "./dist/helpers.d.ts",
+      "import": "./dist/helpers.mjs",
+      "require": "./dist/helpers.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup && tsc --emitDeclarationOnly",
+    "build:watch": "tsup --watch",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "format": "prettier --check \"src/**/*.{ts,tsx}\"",
+    "format:fix": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "size": "echo \"Size analysis not yet configured\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GuiBibeau/photon.git",
+    "directory": "packages/spl-token"
+  },
+  "license": "MIT",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@photon/addresses": "workspace:*",
+    "@photon/codecs": "workspace:*",
+    "@photon/errors": "workspace:*",
+    "@photon/transaction-messages": "workspace:*"
+  }
+}
