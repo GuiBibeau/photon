@@ -20,7 +20,7 @@ import {
 } from './types.js';
 
 /**
- * Create an InitializeMint instruction
+ * Create an InitializeMint instruction (legacy version with rent sysvar)
  *
  * @param mint - The mint account to initialize
  * @param config - Mint configuration
@@ -30,11 +30,26 @@ export function createInitializeMintInstruction(
   mint: Address,
   config: InitializeMintConfig,
 ): Instruction {
+  // Use InitializeMint2 which doesn't require rent sysvar
+  return createInitializeMint2Instruction(mint, config);
+}
+
+/**
+ * Create an InitializeMint2 instruction (modern version without rent sysvar)
+ *
+ * @param mint - The mint account to initialize
+ * @param config - Mint configuration
+ * @returns The instruction to initialize a mint
+ */
+export function createInitializeMint2Instruction(
+  mint: Address,
+  config: InitializeMintConfig,
+): Instruction {
   const data = new Uint8Array(1 + 1 + 32 + 1 + 32);
   let offset = 0;
 
-  // Instruction
-  data.set(u8.encode(TokenInstruction.InitializeMint), offset);
+  // Instruction (InitializeMint2 = 20)
+  data.set(u8.encode(TokenInstruction.InitializeMint2), offset);
   offset += 1;
 
   // Decimals
@@ -46,16 +61,19 @@ export function createInitializeMintInstruction(
   offset += 32;
 
   // Freeze authority option
-  data.set(u8.encode(config.freezeAuthority ? 1 : 0), offset);
-  offset += 1;
+  if (config.freezeAuthority) {
+    data.set(u8.encode(1), offset);
+    offset += 1;
+    data.set(getAddressBytes(config.freezeAuthority), offset);
+  } else {
+    data.set(u8.encode(0), offset);
+    offset += 1;
+    // When no freeze authority, fill with zeros
+    data.set(new Uint8Array(32), offset);
+  }
 
-  // Freeze authority (use mint authority as placeholder if none)
-  data.set(getAddressBytes(config.freezeAuthority || config.mintAuthority), offset);
-
-  const accounts: AccountMeta[] = [
-    { pubkey: mint, isSigner: false, isWritable: true },
-    { pubkey: '11111111111111111111111111111111' as Address, isSigner: false, isWritable: false }, // Rent sysvar (legacy, not actually used)
-  ];
+  // InitializeMint2 only requires the mint account, no rent sysvar
+  const accounts: AccountMeta[] = [{ pubkey: mint, isSigner: false, isWritable: true }];
 
   return createInstruction(TOKEN_PROGRAM_ADDRESS, accounts, data);
 }

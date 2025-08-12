@@ -34,14 +34,14 @@ describe('SPL Token Instructions', () => {
       });
 
       expect(instruction.programId).toBe(TOKEN_PROGRAM_ADDRESS);
-      expect(instruction.accounts).toHaveLength(2);
+      expect(instruction.accounts).toHaveLength(1); // InitializeMint2 only needs mint account
       expect(instruction.accounts[0].pubkey).toBe(mint);
       expect(instruction.accounts[0].isWritable).toBe(true);
       expect(instruction.accounts[0].isSigner).toBe(false);
 
       // Check instruction data
       const [instructionType] = u8.decode(instruction.data.slice(0, 1));
-      expect(instructionType).toBe(TokenInstruction.InitializeMint);
+      expect(instructionType).toBe(TokenInstruction.InitializeMint2); // Using InitializeMint2 (20)
 
       const [decimals] = u8.decode(instruction.data.slice(1, 2));
       expect(decimals).toBe(9);
@@ -55,11 +55,11 @@ describe('SPL Token Instructions', () => {
       });
 
       expect(instruction.programId).toBe(TOKEN_PROGRAM_ADDRESS);
-      expect(instruction.accounts).toHaveLength(2);
+      expect(instruction.accounts).toHaveLength(1); // InitializeMint2 only needs mint account
 
       // Check instruction data
       const [instructionType] = u8.decode(instruction.data.slice(0, 1));
-      expect(instructionType).toBe(TokenInstruction.InitializeMint);
+      expect(instructionType).toBe(TokenInstruction.InitializeMint2); // Using InitializeMint2 (20)
 
       const [decimals] = u8.decode(instruction.data.slice(1, 2));
       expect(decimals).toBe(6);
@@ -218,7 +218,7 @@ describe('SPL Token Instructions', () => {
       const instruction = createRevokeInstruction(tokenAccount, owner);
 
       expect(instruction.programId).toBe(TOKEN_PROGRAM_ADDRESS);
-      expect(instruction.accounts).toHaveLength(2);
+      expect(instruction.accounts).toHaveLength(2); // Revoke needs token account and owner
       expect(instruction.accounts[0].pubkey).toBe(tokenAccount);
       expect(instruction.accounts[0].isWritable).toBe(true);
       expect(instruction.accounts[1].pubkey).toBe(owner);
@@ -258,7 +258,7 @@ describe('SPL Token Instructions', () => {
       );
 
       expect(instruction.programId).toBe(TOKEN_PROGRAM_ADDRESS);
-      expect(instruction.accounts).toHaveLength(2);
+      expect(instruction.accounts).toHaveLength(2); // SetAuthority needs account and current authority
       expect(instruction.accounts[0].pubkey).toBe(mint);
       expect(instruction.accounts[0].isWritable).toBe(true);
       expect(instruction.accounts[1].pubkey).toBe(authority);

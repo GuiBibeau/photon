@@ -29,7 +29,7 @@ describe('SPL Token Integration', () => {
 
       expect(initMintInstruction).toBeDefined();
       expect(initMintInstruction.programId).toBe('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
-      expect(initMintInstruction.accounts).toHaveLength(2);
+      expect(initMintInstruction.accounts).toHaveLength(1); // InitializeMint2 only needs mint account
       expect(initMintInstruction.accounts[0].pubkey).toBe(mint);
       expect(initMintInstruction.accounts[0].isWritable).toBe(true);
     });

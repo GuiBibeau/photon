@@ -7,6 +7,7 @@
 // Re-export all instruction builders
 export {
   createInitializeMintInstruction,
+  createInitializeMint2Instruction,
   createInitializeAccountInstruction,
   createTransferInstruction,
   createMintToInstruction,

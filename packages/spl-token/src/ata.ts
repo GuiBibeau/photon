@@ -6,9 +6,9 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
   TOKEN_PROGRAM_ADDRESS,
   TOKEN_2022_PROGRAM_ADDRESS,
+  SYSTEM_PROGRAM_ADDRESS,
   type Address,
 } from '@photon/addresses';
-import { findProgramAddressSync } from '@photon/addresses/pda';
 import {
   createInstruction,
   type AccountMeta,
@@ -30,12 +30,15 @@ export async function getAssociatedTokenAddress(
 ): Promise<Address> {
   // Import getAddressBytes to convert addresses to bytes
   const { getAddressBytes } = await import('@photon/addresses');
+  const { findProgramAddressSync } = await import('@photon/addresses/pda');
 
   // The correct seed order is: wallet, token_program, mint
-  const [address] = await findProgramAddressSync(
-    [getAddressBytes(owner), getAddressBytes(tokenProgramId), getAddressBytes(mint)],
-    ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-  );
+  // These must be EXACTLY in this order for the derivation to work
+  const seeds = [getAddressBytes(owner), getAddressBytes(tokenProgramId), getAddressBytes(mint)];
+
+  // ATAs use findProgramAddressSync to find the valid off-curve address
+  // We only return the address, not the bump (bump is implicit/hidden)
+  const [address] = await findProgramAddressSync(seeds, ASSOCIATED_TOKEN_PROGRAM_ADDRESS);
 
   return address;
 }
@@ -62,7 +65,7 @@ export function createAssociatedTokenAccountInstruction(
     { pubkey: associatedToken, isSigner: false, isWritable: true },
     { pubkey: owner, isSigner: false, isWritable: false },
     { pubkey: mint, isSigner: false, isWritable: false },
-    { pubkey: '11111111111111111111111111111111' as Address, isSigner: false, isWritable: false }, // System program
+    { pubkey: SYSTEM_PROGRAM_ADDRESS, isSigner: false, isWritable: false },
     { pubkey: tokenProgramId, isSigner: false, isWritable: false },
   ];
 
@@ -93,7 +96,7 @@ export function createAssociatedTokenAccountIdempotentInstruction(
     { pubkey: associatedToken, isSigner: false, isWritable: true },
     { pubkey: owner, isSigner: false, isWritable: false },
     { pubkey: mint, isSigner: false, isWritable: false },
-    { pubkey: '11111111111111111111111111111111' as Address, isSigner: false, isWritable: false }, // System program
+    { pubkey: SYSTEM_PROGRAM_ADDRESS, isSigner: false, isWritable: false },
     { pubkey: tokenProgramId, isSigner: false, isWritable: false },
   ];
 

@@ -4,6 +4,7 @@ import {
   TOKEN_PROGRAM_ADDRESS,
   TOKEN_2022_PROGRAM_ADDRESS,
   ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+  SYSTEM_PROGRAM_ADDRESS,
 } from '@photon/addresses';
 import {
   createAssociatedTokenAccountInstruction,
@@ -45,7 +46,7 @@ describe('Associated Token Account Utilities (Mocked)', () => {
       expect(instruction.accounts[3].isWritable).toBe(false);
 
       // System program
-      expect(instruction.accounts[4].pubkey).toBe('11111111111111111111111111111111');
+      expect(instruction.accounts[4].pubkey).toBe(SYSTEM_PROGRAM_ADDRESS);
 
       // Token program
       expect(instruction.accounts[5].pubkey).toBe(TOKEN_PROGRAM_ADDRESS);
