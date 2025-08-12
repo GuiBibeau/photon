@@ -128,12 +128,18 @@ export function UnifiedDashboard() {
 
   // Save current wallet
   const handleSaveWallet = async () => {
-    if (!wallet?.keyPair || !wallet.address || !walletName) {
+    if ((!wallet?.keyPair && !wallet?.signer) || !wallet.address || !walletName) {
       setStatusMessage('Please generate a wallet and enter a name');
       return;
     }
 
     try {
+      // Only allow saving wallets that were generated (have a keyPair)
+      if (!wallet.keyPair) {
+        setStatusMessage('Cannot save imported wallets');
+        return;
+      }
+
       const { privateKey, publicKey } = await exportKeyPair(wallet.keyPair.cryptoKeyPair);
 
       const storedWallet: StoredWallet = {
@@ -229,14 +235,24 @@ export function UnifiedDashboard() {
 
   // Sign message
   const handleSign = async () => {
-    if (!wallet?.keyPair) {
+    if (!wallet?.keyPair && !wallet?.signer) {
       setStatusMessage('No wallet connected');
       return;
     }
 
     try {
       const message = new TextEncoder().encode(messageToSign);
-      const sig = await wallet.keyPair.sign(message);
+
+      // Use signer if available, otherwise use keypair
+      let sig;
+      if (wallet.signer) {
+        sig = await wallet.signer.sign(message);
+      } else if (wallet.keyPair) {
+        sig = await wallet.keyPair.sign(message);
+      } else {
+        throw new Error('No signing capability available');
+      }
+
       setSignature(encodeBase58(sig));
       setStatusMessage('Message signed!');
       setTimeout(() => setStatusMessage(''), 3000);
@@ -248,7 +264,7 @@ export function UnifiedDashboard() {
 
   // Verify signature
   const handleVerify = async () => {
-    if (!wallet?.keyPair || !signature) {
+    if ((!wallet?.keyPair && !wallet?.signer) || !signature) {
       setStatusMessage('Sign a message first');
       return;
     }
@@ -256,7 +272,17 @@ export function UnifiedDashboard() {
     try {
       const message = new TextEncoder().encode(verifyMessage);
       const sig = decodeBase58(signature);
-      const publicKeyBytes = await wallet.keyPair.getPublicKeyBytes();
+
+      // Get public key bytes from signer or keypair
+      let publicKeyBytes;
+      if (wallet.signer) {
+        publicKeyBytes = await wallet.signer.getPublicKeyBytes();
+      } else if (wallet.keyPair) {
+        publicKeyBytes = await wallet.keyPair.getPublicKeyBytes();
+      } else {
+        throw new Error('Cannot get public key bytes');
+      }
+
       const valid = await verifySignature(publicKeyBytes, message, createSignature(sig));
       setIsValid(valid);
       setStatusMessage(valid ? 'Signature valid!' : 'Invalid signature');
@@ -323,7 +349,7 @@ export function UnifiedDashboard() {
 
   // Create new token mint (REAL)
   const handleCreateToken = async () => {
-    if (!wallet?.address || !wallet?.keyPair || !tokenName || !tokenSymbol) {
+    if (!wallet?.address || (!wallet?.keyPair && !wallet?.signer) || !tokenName || !tokenSymbol) {
       setStatusMessage('Please connect wallet and fill in token details');
       return;
     }
@@ -361,7 +387,13 @@ export function UnifiedDashboard() {
       console.log('Blockhash:', recentBlockhash);
 
       // Build mint initialization instruction
-      const owner = address(wallet.address);
+      // For imported wallets, use the signer's address directly
+      let owner: Address;
+      if (wallet.signer) {
+        owner = await wallet.signer.getPublicKey();
+      } else {
+        owner = address(wallet.address);
+      }
       const mint = address(mintAddress);
       const decimals = parseInt(tokenDecimals);
 
@@ -449,10 +481,19 @@ export function UnifiedDashboard() {
 
       // Sign the transaction with both wallet and mint keypair
       console.log('Signing transaction...');
-      if (!wallet.keyPair) {
-        throw new Error('Wallet keypair not available');
+
+      // Use the signer if available (for imported wallets), otherwise create from keypair
+      let walletSigner;
+      if (wallet.signer) {
+        console.log('Using imported wallet signer');
+        walletSigner = wallet.signer;
+      } else if (wallet.keyPair) {
+        console.log('Creating signer from keypair');
+        walletSigner = await importCryptoKeySignerFromKeyPair(wallet.keyPair);
+      } else {
+        throw new Error('Wallet keypair or signer not available');
       }
-      const walletSigner = await importCryptoKeySignerFromKeyPair(wallet.keyPair);
+
       const mintSigner = await importCryptoKeySignerFromKeyPair(newMintKeypair);
 
       console.log('Wallet signer public key:', walletSigner.publicKey);
@@ -506,7 +547,7 @@ export function UnifiedDashboard() {
 
   // Mint tokens to wallet (REAL)
   const handleMintTokens = async () => {
-    if (!wallet?.address || !wallet?.keyPair || !createdMint || !mintAmount) {
+    if (!wallet?.address || (!wallet?.keyPair && !wallet?.signer) || !createdMint || !mintAmount) {
       setStatusMessage('Create a token first, then specify amount');
       return;
     }
@@ -515,7 +556,16 @@ export function UnifiedDashboard() {
     setStatusMessage('Minting tokens on-chain...');
 
     try {
-      const owner = address(wallet.address);
+      // For imported wallets, use the signer's address directly
+      let owner: Address;
+      if (wallet.signer) {
+        // Signer already has the proper Address type
+        owner = await wallet.signer.getPublicKey();
+      } else {
+        // For generated wallets, create Address from string
+        owner = address(wallet.address);
+      }
+
       const mint = address(createdMint);
       const amount = BigInt(parseInt(mintAmount) * Math.pow(10, parseInt(tokenDecimals)));
 
@@ -595,10 +645,16 @@ export function UnifiedDashboard() {
 
       // Sign the transaction
       console.log('Signing transaction...');
-      if (!wallet.keyPair) {
-        throw new Error('Wallet keypair not available');
+
+      // Use the signer if available (for imported wallets), otherwise create from keypair
+      let walletSigner;
+      if (wallet.signer) {
+        walletSigner = wallet.signer;
+      } else if (wallet.keyPair) {
+        walletSigner = await importCryptoKeySignerFromKeyPair(wallet.keyPair);
+      } else {
+        throw new Error('Wallet keypair or signer not available');
       }
-      const walletSigner = await importCryptoKeySignerFromKeyPair(wallet.keyPair);
       // Now finalMessage is properly typed as CompileableTransactionMessage
       const signedTx = await signTransaction([walletSigner], finalMessage);
 
@@ -648,7 +704,13 @@ export function UnifiedDashboard() {
     }
 
     try {
-      const owner = address(wallet.address);
+      // For imported wallets, use the signer's address directly
+      let owner: Address;
+      if (wallet.signer) {
+        owner = await wallet.signer.getPublicKey();
+      } else {
+        owner = address(wallet.address);
+      }
       const mint = address(createdMint);
 
       // Get the associated token address
@@ -734,7 +796,13 @@ export function UnifiedDashboard() {
     try {
       setIsTransferring(true);
 
-      const sender = address(wallet.address);
+      // For imported wallets, use the signer's address directly
+      let sender: Address;
+      if (wallet.signer) {
+        sender = await wallet.signer.getPublicKey();
+      } else {
+        sender = address(wallet.address);
+      }
       const recipient = address(recipientAddress);
       const mint = address(createdMint);
       const amount = BigInt(parseFloat(transferAmount) * Math.pow(10, parseInt(tokenDecimals)));
@@ -791,10 +859,15 @@ export function UnifiedDashboard() {
         messageWithInstructions,
       );
 
-      if (!wallet.keyPair) {
-        throw new Error('Wallet keypair not available');
+      // Use the signer if available (for imported wallets), otherwise create from keypair
+      let walletSigner;
+      if (wallet.signer) {
+        walletSigner = wallet.signer;
+      } else if (wallet.keyPair) {
+        walletSigner = await importCryptoKeySignerFromKeyPair(wallet.keyPair);
+      } else {
+        throw new Error('Wallet keypair or signer not available');
       }
-      const walletSigner = await importCryptoKeySignerFromKeyPair(wallet.keyPair);
       const signedTx = await signTransaction([walletSigner], finalMessage);
 
       const signature = await sendAndConfirmTransaction(
@@ -1328,7 +1401,7 @@ export function UnifiedDashboard() {
                 >
                   Your Balance
                 </label>
-                <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
+                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#333' }}>
                   {tokenBalance || '0'} {tokenSymbol || 'tokens'}
                 </div>
               </div>
@@ -1460,7 +1533,7 @@ export function UnifiedDashboard() {
               <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.25rem' }}>
                 Balance:
               </div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#0ea5e9' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#333' }}>
                 {checkedBalance} tokens
               </div>
             </div>

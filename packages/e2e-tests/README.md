@@ -29,12 +29,50 @@ A minimal React + TypeScript application to test and demonstrate the Photon SDK 
 pnpm install
 ```
 
-2. Start the development server:
+2. (Optional) Set up environment variables for auto-loading a wallet:
+```bash
+cp .env.example .env
+# Edit .env and add your private key:
+# VITE_PRIVATE_KEY=your_base58_encoded_private_key_here
+```
+
+3. Start the development server:
 ```bash
 pnpm dev
 ```
 
-3. Open http://localhost:5173 in your browser
+4. Open http://localhost:5173 in your browser
+
+## Environment Variables
+
+The demo app supports automatically loading a wallet from a private key environment variable:
+
+### `VITE_PRIVATE_KEY`
+
+Private key in various formats (must be 64 bytes - standard Solana keypair format with 32-byte seed + 32-byte public key):
+
+**Supported Formats:**
+- **Base58**: `"5J3mVnYq4vDRwZEgR..."` - Standard Solana/Phantom export format
+- **Hex with prefix**: `"0x1234567890abcdef..."` - Hexadecimal with 0x prefix
+- **Hex without prefix**: `"1234567890abcdef..."` - Plain hexadecimal
+- **JSON array**: `"[255,101,67,24,15,...]"` - Array of byte values (0-255)
+- **Comma-separated**: `"255,101,67,24,15,..."` - Comma-separated byte values
+
+**Examples:**
+```bash
+# Base58 (most common - from Phantom/Solflare export)
+VITE_PRIVATE_KEY=5J3mVnYq4vDRwZEgR...
+
+# Hex format
+VITE_PRIVATE_KEY=0x1234567890abcdef...
+
+# Byte array (useful for programmatic generation)
+VITE_PRIVATE_KEY=[255,101,67,24,15,...]
+```
+
+The wallet will be automatically loaded when the app starts, and you'll see "Imported Wallet" in the context with your address and balance.
+
+**⚠️ Security Warning**: Never commit your actual private key to version control! The `.env` file is gitignored for security.
 
 ## Project Structure
 

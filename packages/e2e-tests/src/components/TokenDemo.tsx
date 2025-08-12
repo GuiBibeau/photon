@@ -45,7 +45,7 @@ export function TokenDemo() {
         freezeAuthority: null,
       });
 
-      const _updatedMessage = appendTransactionMessageInstruction(initMintInstruction, message);
+      appendTransactionMessageInstruction(initMintInstruction, message);
 
       // Show preview
       const preview = {
@@ -95,7 +95,7 @@ export function TokenDemo() {
         amount: BigInt(mintAmount),
       });
 
-      const _updatedMessage = appendTransactionMessageInstruction(mintToInstruction, message);
+      appendTransactionMessageInstruction(mintToInstruction, message);
 
       // Show preview
       const preview = {
@@ -160,7 +160,7 @@ export function TokenDemo() {
         }),
       ];
 
-      const _updatedMessage = appendTransactionMessageInstructions(instructions, message);
+      appendTransactionMessageInstructions(instructions, message);
 
       // Show preview
       const preview = {

@@ -14,58 +14,113 @@ const MAX_SEED_LENGTH = 32;
  * Check if a 32-byte value represents a valid Ed25519 curve point
  *
  * For PDA generation, we need to find addresses that are NOT valid Ed25519 points.
- * In practice, we can use a simplified approach since we're only checking
- * SHA-256 hashes, and the vast majority of them will be off-curve.
+ * This implementation uses the actual Ed25519 curve equation to determine
+ * if a point is on the curve.
  */
 async function isOnCurve(bytes: Uint8Array): Promise<boolean> {
   if (bytes.length !== 32) {
     return false;
   }
-
-  // In the real Solana implementation, this would check if the point
-  // satisfies the Ed25519 curve equation: -x^2 + y^2 = 1 + d*x^2*y^2
-  //
-  // However, for PDA generation we can use a simpler approach:
-  // Most SHA-256 hashes are NOT valid Ed25519 points (off-curve)
-  //
-  // The probability of a random 256-bit number being a valid Ed25519 point
-  // is approximately 50%, but SHA-256 outputs with the PDA marker have
-  // different statistical properties.
-
-  // For now, we'll use a simple heuristic that works for known PDAs:
-  // We check if the highest bit pattern suggests it could be on curve
-
-  // Convert the last few bytes to check the high-order bits
-  const high = bytes[31] || 0;
-
-  // Most PDAs have their high byte in certain ranges that make them off-curve
-  // This is a simplified check that works for ATA and other known PDAs
-
-  // Points with high byte >= 0xED are very likely on curve (about 11% of the range)
-  // Points with high byte < 0x80 have about 50% chance
-  // Points in between are more likely to be off curve
-
-  if (high >= 0xed) {
-    // Very likely on curve - these rarely work as PDAs
-    return true;
+  // Constants
+  const p = 2n ** 255n - 19n;
+  const d = mod(-121665n * modInverse(121666n, p), p);
+  // Decode y-coordinate from bytes (little-endian)
+  let y = 0n;
+  for (let i = 0; i < 32; i++) {
+    y += BigInt(bytes[i] ?? 0) << BigInt(8 * i);
   }
+  // Extract sign bit (bit 255)
+  const sign = (y >> 255n) & 1n;
+  // Clear the sign bit for y
+  y &= (1n << 255n) - 1n;
+  // Check y is in valid range [0, p-1]
+  if (y >= p) {
+    return false;
+  }
+  // Compute y² mod p
+  const y2 = modMul(y, y, p);
+  // Compute u = y² - 1 mod p
+  const u = modSub(y2, 1n, p);
+  // Compute v = d·y² + 1 mod p
+  const v = modAdd(modMul(d, y2, p), 1n, p);
+  // Compute inv(v) mod p
+  const invV = modInverse(v, p);
+  // If v is not invertible (v == 0 mod p), invalid
+  if (invV === 0n) {
+    return false;
+  }
+  // Compute x² = u · inv(v) mod p
+  const x2 = modMul(u, invV, p);
+  // Compute sqrt(x²) mod p
+  const x = modSqrt(x2, p);
+  // If no square root exists, not on curve
+  if (x === null) {
+    return false;
+  }
+  // Special case: if x == 0 and sign == 1, invalid
+  if (x === 0n && sign === 1n) {
+    return false;
+  }
+  // Otherwise, it is on the curve
+  return true;
+}
 
-  // For other values, use a deterministic pattern that gives good results
-  // for known PDAs like ATAs
+// Helper functions
 
-  // Check a pattern in the bytes that correlates with being on-curve
-  // This is tuned to work with the known bump seeds used by ATAs
-  const byte30 = bytes[30] || 0;
-  const byte29 = bytes[29] || 0;
+function mod(a: bigint, p: bigint): bigint {
+  const res = a % p;
+  return res < 0n ? res + p : res;
+}
 
-  // Use a combination of bytes to determine curve membership
-  // This pattern is chosen to make most PDA attempts succeed within
-  // reasonable bump attempts
-  const pattern = (high ^ byte30 ^ byte29) & 0xff;
+function modAdd(a: bigint, b: bigint, p: bigint): bigint {
+  return mod(a + b, p);
+}
 
-  // About 40% will be considered "on curve" with this pattern
-  // This ensures most PDAs can be found within 255 attempts
-  return pattern < 102; // 102/256 ≈ 40%
+function modSub(a: bigint, b: bigint, p: bigint): bigint {
+  return mod(a - b, p);
+}
+
+function modMul(a: bigint, b: bigint, p: bigint): bigint {
+  return mod(a * b, p);
+}
+
+function modPow(base: bigint, exp: bigint, p: bigint): bigint {
+  let res = 1n;
+  let b = mod(base, p);
+  let e = exp;
+  while (e > 0n) {
+    if (e & 1n) {
+      res = modMul(res, b, p);
+    }
+    b = modMul(b, b, p);
+    e >>= 1n;
+  }
+  return res;
+}
+
+function modInverse(a: bigint, p: bigint): bigint {
+  return modPow(a, p - 2n, p);
+}
+
+function modSqrt(a: bigint, p: bigint): bigint | null {
+  const amod = mod(a, p);
+  if (amod === 0n) {
+    return 0n;
+  }
+  const legendre = modPow(amod, (p - 1n) / 2n, p);
+  if (legendre !== 1n) {
+    return null;
+  }
+  const i = modPow(2n, (p - 1n) / 4n, p); // sqrt(-1) mod p
+  let r = modPow(amod, (p + 3n) / 8n, p);
+  if (mod(r * r, p) === amod) {
+    return r;
+  }
+  r = mod(r * i, p);
+  if (mod(r * r, p) === amod) {
+    return r;
+  }
+  return null;
 }
 
 /**
