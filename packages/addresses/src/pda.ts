@@ -12,34 +12,115 @@ const MAX_SEED_LENGTH = 32;
 
 /**
  * Check if a 32-byte value represents a valid Ed25519 curve point
- * This uses WebCrypto's validation as the primary check
+ *
+ * For PDA generation, we need to find addresses that are NOT valid Ed25519 points.
+ * This implementation uses the actual Ed25519 curve equation to determine
+ * if a point is on the curve.
  */
 async function isOnCurve(bytes: Uint8Array): Promise<boolean> {
   if (bytes.length !== 32) {
     return false;
   }
-
-  try {
-    // Try to import as Ed25519 public key
-    // If WebCrypto can import it successfully, it's a valid curve point
-    await crypto.subtle.importKey(
-      'raw',
-      bytes as BufferSource,
-      {
-        name: 'Ed25519',
-        namedCurve: 'Ed25519',
-      } as EcKeyImportParams,
-      false,
-      ['verify'],
-    );
-
-    // If we get here, WebCrypto accepted it as a valid Ed25519 public key
-    // This means it's on the curve
-    return true;
-  } catch {
-    // WebCrypto rejected it, so it's not a valid curve point
+  // Constants
+  const p = 2n ** 255n - 19n;
+  const d = mod(-121665n * modInverse(121666n, p), p);
+  // Decode y-coordinate from bytes (little-endian)
+  let y = 0n;
+  for (let i = 0; i < 32; i++) {
+    y += BigInt(bytes[i] ?? 0) << BigInt(8 * i);
+  }
+  // Extract sign bit (bit 255)
+  const sign = (y >> 255n) & 1n;
+  // Clear the sign bit for y
+  y &= (1n << 255n) - 1n;
+  // Check y is in valid range [0, p-1]
+  if (y >= p) {
     return false;
   }
+  // Compute y² mod p
+  const y2 = modMul(y, y, p);
+  // Compute u = y² - 1 mod p
+  const u = modSub(y2, 1n, p);
+  // Compute v = d·y² + 1 mod p
+  const v = modAdd(modMul(d, y2, p), 1n, p);
+  // Compute inv(v) mod p
+  const invV = modInverse(v, p);
+  // If v is not invertible (v == 0 mod p), invalid
+  if (invV === 0n) {
+    return false;
+  }
+  // Compute x² = u · inv(v) mod p
+  const x2 = modMul(u, invV, p);
+  // Compute sqrt(x²) mod p
+  const x = modSqrt(x2, p);
+  // If no square root exists, not on curve
+  if (x === null) {
+    return false;
+  }
+  // Special case: if x == 0 and sign == 1, invalid
+  if (x === 0n && sign === 1n) {
+    return false;
+  }
+  // Otherwise, it is on the curve
+  return true;
+}
+
+// Helper functions
+
+function mod(a: bigint, p: bigint): bigint {
+  const res = a % p;
+  return res < 0n ? res + p : res;
+}
+
+function modAdd(a: bigint, b: bigint, p: bigint): bigint {
+  return mod(a + b, p);
+}
+
+function modSub(a: bigint, b: bigint, p: bigint): bigint {
+  return mod(a - b, p);
+}
+
+function modMul(a: bigint, b: bigint, p: bigint): bigint {
+  return mod(a * b, p);
+}
+
+function modPow(base: bigint, exp: bigint, p: bigint): bigint {
+  let res = 1n;
+  let b = mod(base, p);
+  let e = exp;
+  while (e > 0n) {
+    if (e & 1n) {
+      res = modMul(res, b, p);
+    }
+    b = modMul(b, b, p);
+    e >>= 1n;
+  }
+  return res;
+}
+
+function modInverse(a: bigint, p: bigint): bigint {
+  return modPow(a, p - 2n, p);
+}
+
+function modSqrt(a: bigint, p: bigint): bigint | null {
+  const amod = mod(a, p);
+  if (amod === 0n) {
+    return 0n;
+  }
+  const legendre = modPow(amod, (p - 1n) / 2n, p);
+  if (legendre !== 1n) {
+    return null;
+  }
+  const i = modPow(2n, (p - 1n) / 4n, p); // sqrt(-1) mod p
+  let r = modPow(amod, (p + 3n) / 8n, p);
+  if (mod(r * r, p) === amod) {
+    return r;
+  }
+  r = mod(r * i, p);
+  if (mod(r * r, p) === amod) {
+    return r;
+  }
+  return null;
 }
 
 /**
@@ -125,7 +206,7 @@ export async function findProgramAddressSync(
       return [address, bump];
     } catch (error) {
       // Continue to next bump if this one resulted in an on-curve address
-      if (error instanceof Error && error.message.includes('on the Ed25519 curve')) {
+      if (error instanceof Error && error.message.includes('Ed25519 curve')) {
         continue;
       }
       // Re-throw other errors (like invalid seeds)

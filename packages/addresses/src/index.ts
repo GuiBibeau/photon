@@ -157,7 +157,7 @@ export function addressFromBytes(bytes: Uint8Array): Address {
  * The System Program address.
  * This program is responsible for account creation, transfer of lamports, and assignment of account ownership.
  */
-export const SYSTEM_PROGRAM_ADDRESS = address('11111111111111111111111111111112');
+export const SYSTEM_PROGRAM_ADDRESS = address('11111111111111111111111111111111');
 
 /**
  * The SPL Token Program address.

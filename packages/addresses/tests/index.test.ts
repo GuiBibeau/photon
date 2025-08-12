@@ -273,7 +273,7 @@ describe('Address type and validation', () => {
     });
 
     it('should have correct system program address', () => {
-      expect(SYSTEM_PROGRAM_ADDRESS).toBe('11111111111111111111111111111112');
+      expect(SYSTEM_PROGRAM_ADDRESS).toBe('11111111111111111111111111111111');
     });
 
     it('should have correct token program address', () => {
