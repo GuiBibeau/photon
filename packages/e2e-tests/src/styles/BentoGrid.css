@@ -330,8 +330,12 @@ button:disabled {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .status-text {
@@ -344,12 +348,12 @@ button:disabled {
   .bento-container {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .rpc-selector,
   .status-bar {
     grid-column: span 2;
   }
-  
+
   .wallet-main,
   .wallet-manager,
   .signing-demo,
@@ -364,7 +368,7 @@ button:disabled {
   .bento-container {
     grid-template-columns: 1fr;
   }
-  
+
   .bento-item {
     grid-column: span 1 !important;
     grid-row: auto !important;

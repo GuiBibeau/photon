@@ -5,11 +5,13 @@ A minimal React + TypeScript application to test and demonstrate the Photon SDK 
 ## Features
 
 ### 🔑 Wallet Demo
+
 - Generate Ed25519 keypairs using WebCrypto API
 - Sign and verify messages
 - Display public keys in Base58 format
 
 ### 🪙 SPL Token Demo
+
 - Build SPL Token transactions
 - Initialize mints with custom decimals
 - Create Associated Token Accounts (ATAs)
@@ -17,6 +19,7 @@ A minimal React + TypeScript application to test and demonstrate the Photon SDK 
 - Preview transaction structure
 
 ### 🌐 RPC Client Demo
+
 - Connect to different Solana networks (Devnet, Testnet, Mainnet)
 - Fetch account balances and info
 - Get network information (block height, version)
@@ -25,11 +28,13 @@ A minimal React + TypeScript application to test and demonstrate the Photon SDK 
 ## Getting Started
 
 1. Install dependencies:
+
 ```bash
 pnpm install
 ```
 
 2. (Optional) Set up environment variables for auto-loading a wallet:
+
 ```bash
 cp .env.example .env
 # Edit .env and add your private key:
@@ -37,6 +42,7 @@ cp .env.example .env
 ```
 
 3. Start the development server:
+
 ```bash
 pnpm dev
 ```
@@ -52,6 +58,7 @@ The demo app supports automatically loading a wallet from a private key environm
 Private key in various formats (must be 64 bytes - standard Solana keypair format with 32-byte seed + 32-byte public key):
 
 **Supported Formats:**
+
 - **Base58**: `"5J3mVnYq4vDRwZEgR..."` - Standard Solana/Phantom export format
 - **Hex with prefix**: `"0x1234567890abcdef..."` - Hexadecimal with 0x prefix
 - **Hex without prefix**: `"1234567890abcdef..."` - Plain hexadecimal
@@ -59,6 +66,7 @@ Private key in various formats (must be 64 bytes - standard Solana keypair forma
 - **Comma-separated**: `"255,101,67,24,15,..."` - Comma-separated byte values
 
 **Examples:**
+
 ```bash
 # Base58 (most common - from Phantom/Solflare export)
 VITE_PRIVATE_KEY=5J3mVnYq4vDRwZEgR...
@@ -112,6 +120,7 @@ This demo app is designed to test the Photon SDK in a real browser environment:
 ## Note
 
 This is a demo application for testing purposes. In production:
+
 - Use a proper wallet adapter (Phantom, Solflare, etc.)
 - Implement proper error handling
 - Add transaction confirmation logic
