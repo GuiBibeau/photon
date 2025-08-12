@@ -1,0 +1,396 @@
+.bento-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: auto;
+  gap: 1rem;
+  padding: 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.bento-item {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.3s ease;
+}
+
+.bento-item:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.bento-item h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Grid Layout */
+.rpc-selector {
+  grid-column: span 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.rpc-selector h3 {
+  color: white;
+  margin: 0;
+}
+
+.wallet-main {
+  grid-column: span 2;
+  grid-row: span 2;
+  min-height: 250px;
+}
+
+.wallet-manager {
+  grid-column: span 2;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.signing-demo {
+  grid-column: span 2;
+}
+
+.rpc-operations {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.token-builder {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.status-bar {
+  grid-column: span 4;
+  padding: 0.75rem 1.5rem;
+  background: #f8f9fa;
+  display: flex;
+  align-items: center;
+}
+
+/* Network Selector */
+.network-select {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  min-width: 150px;
+}
+
+.network-select option {
+  background: #333;
+  color: white;
+}
+
+.network-status {
+  color: #4ade80;
+  font-size: 0.9rem;
+}
+
+/* Wallet Styles */
+.wallet-info {
+  margin-bottom: 1.5rem;
+}
+
+.wallet-name {
+  font-weight: 600;
+  font-size: 1.2rem;
+  margin: 0.5rem 0;
+  color: #333;
+}
+
+.wallet-address {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wallet-balance {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #667eea;
+  margin: 1rem 0;
+}
+
+.wallet-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.wallet-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+  color: #999;
+}
+
+.wallet-empty p {
+  margin-bottom: 1rem;
+}
+
+/* Wallet Manager */
+.wallet-save {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.wallet-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.wallet-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #000;
+}
+
+.wallet-item span {
+  color: #000;
+  font-weight: 500;
+}
+
+.wallet-item-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+/* Signing Demo */
+.signing-section,
+.verify-section {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.signature-display {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  color: #666;
+  background: #f8f9fa;
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin: 0.5rem 0;
+  word-break: break-all;
+}
+
+.verify-result {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.verify-result.valid {
+  color: #16a34a;
+  background: #dcfce7;
+}
+
+.verify-result.invalid {
+  color: #dc2626;
+  background: #fee2e2;
+}
+
+/* RPC Operations */
+.rpc-section {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.code-display {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+  max-height: 150px;
+}
+
+/* Buttons */
+.btn-primary,
+.btn-secondary,
+.btn-small,
+.btn-tiny {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+  background: #e5e7eb;
+  color: #333;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #d1d5db;
+}
+
+.btn-small {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.btn-tiny {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+.btn-danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.btn-danger:hover {
+  background: #fecaca;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Inputs */
+.input-full,
+.input-small {
+  padding: 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease;
+}
+
+.input-full {
+  width: 100%;
+}
+
+.input-small {
+  flex: 1;
+}
+
+.input-full:focus,
+.input-small:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+/* Status Bar */
+.status-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+  font-size: 1.2rem;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.status-text {
+  color: #666;
+  font-size: 0.95rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .bento-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .rpc-selector,
+  .status-bar {
+    grid-column: span 2;
+  }
+  
+  .wallet-main,
+  .wallet-manager,
+  .signing-demo,
+  .rpc-operations,
+  .token-builder {
+    grid-column: span 1;
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .bento-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .bento-item {
+    grid-column: span 1 !important;
+    grid-row: auto !important;
+  }
+}
+
+/* Scrollbar Styling */
+.wallet-list::-webkit-scrollbar,
+.code-display::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.wallet-list::-webkit-scrollbar-track,
+.code-display::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.wallet-list::-webkit-scrollbar-thumb,
+.code-display::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.wallet-list::-webkit-scrollbar-thumb:hover,
+.code-display::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
