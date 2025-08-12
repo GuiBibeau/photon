@@ -19,7 +19,7 @@ import {
 } from '@photon/spl-token';
 import { signTransaction, sendAndConfirmTransaction } from '@photon/transactions';
 import { importCryptoKeySignerFromKeyPair } from '@photon/signers';
-import { useApp } from '../context/AppContext';
+import { useApp } from '../context/useApp';
 import {
   getStoredWallets,
   saveWallet,

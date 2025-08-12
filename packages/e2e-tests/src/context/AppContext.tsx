@@ -1,36 +1,9 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import type { KeyPair } from '@photon/crypto';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { Address } from '@photon/addresses';
-import type { CryptoKeySigner } from '@photon/signers';
 import { createSolanaRpc } from '@photon/rpc';
 import { getBalance } from '../utils/faucet';
 import { importWalletFromPrivateKey } from '../utils/wallet-import';
-
-interface WalletState {
-  keyPair: KeyPair | null;
-  signer?: CryptoKeySigner;
-  address: string;
-  balance: number | null;
-  name: string;
-}
-
-interface AppContextType {
-  // RPC
-  rpcUrl: string;
-  setRpcUrl: (url: string) => void;
-  rpc: ReturnType<typeof createSolanaRpc>;
-
-  // Wallet
-  wallet: WalletState | null;
-  setWallet: (wallet: WalletState | null) => void;
-  refreshBalance: () => Promise<void>;
-
-  // UI State
-  isLoading: boolean;
-  setIsLoading: (loading: boolean) => void;
-}
-
-const AppContext = createContext<AppContextType | undefined>(undefined);
+import { AppContext, type WalletState } from './AppContextTypes';
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [rpcUrl, setRpcUrl] = useState('https://api.devnet.solana.com');
@@ -92,7 +65,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
 
     loadWalletFromEnv();
-  }, []); // Only run once on mount
+  }, [rpcUrl]); // Run when rpcUrl changes
 
   // Refresh balance when wallet or RPC changes
   useEffect(() => {
@@ -144,12 +117,4 @@ export function AppProvider({ children }: { children: ReactNode }) {
       {children}
     </AppContext.Provider>
   );
-}
-
-export function useApp() {
-  const context = useContext(AppContext);
-  if (!context) {
-    throw new Error('useApp must be used within AppProvider');
-  }
-  return context;
 }
