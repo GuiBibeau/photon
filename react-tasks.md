@@ -1,4 +1,4 @@
-# React Wallet SDK - Task List
+# React Wallet SDK - Task List (Serverless)
 
 ## Epic 1: Core Wallet Connection Infrastructure
 
@@ -58,6 +58,10 @@ Build a comprehensive wallet detection system that identifies installed browser 
   - Immediate detection on load
   - Delayed detection (100ms intervals)
   - Maximum wait time (3 seconds)
+- Provider validation:
+  - Check for multiple identifiers (security)
+  - Validate required methods
+  - Detect potential hijacking
 - Return detected wallets:
   - Name and metadata
   - Provider reference
@@ -65,6 +69,7 @@ Build a comprehensive wallet detection system that identifies installed browser 
 - Mobile detection:
   - Check user agent
   - Available deep links
+  - Platform capabilities
 
 ---
 
@@ -98,8 +103,9 @@ Implement the core connection management logic for handling wallet connections, 
   - Clear on disconnect
 - Security:
   - Origin verification
-  - Connection rate limiting
+  - Connection rate limiting (5 attempts/minute)
   - Provider validation
+  - Exponential backoff on failures
 
 ---
 
@@ -127,6 +133,7 @@ Create the primary React hook for wallet connection management with comprehensiv
   - List detected wallets
   - Installation status
   - Ready state
+  - Platform availability
 - Event subscriptions:
   - Auto-cleanup on unmount
   - Reconnection handling
@@ -134,6 +141,9 @@ Create the primary React hook for wallet connection management with comprehensiv
 - TypeScript support:
   - Full type inference
   - Generic wallet types
+- Connection strategy:
+  - Detect optimal method
+  - Platform-specific logic
 
 ---
 
@@ -169,7 +179,7 @@ Build intelligent auto-connection that remembers user preferences and reconnects
 
 ---
 
-## Epic 2: Mobile Wallet Support
+## Epic 2: Mobile Wallet Support (Serverless)
 
 ### RW-6: Add mobile wallet detection
 
@@ -184,97 +194,206 @@ Extend wallet detection to identify mobile wallet apps and available connection 
   - iOS/Android detection
   - In-app browser detection
   - Mobile browser detection
+  - Platform version checking
 - Deep link support:
-  - Check installed apps
   - Build deep link URLs
+  - Custom URL schemes only
   - Handle URL schemes
 - Mobile wallet registry:
-  - Phantom Mobile
-  - Solflare Mobile
-  - Glow Mobile
-  - Trust Wallet
-- QR code preparation:
-  - Generate connection data
-  - Format for QR display
-  - Session management
-- Fallback strategies:
-  - Desktop → QR code
-  - Mobile → Deep link
-  - Universal links
+  - Phantom Mobile (phantom://)
+  - Solflare Mobile (solflare://)
+  - Glow Mobile (glow://)
+  - Trust Wallet (trust://)
+  - Backpack (backpack://)
+- Connection strategy:
+  - Same-device only
+  - No QR code generation
+  - Direct deep linking
+- Platform capabilities:
+  - Android MWA support detection
+  - iOS limitation detection
+  - Fallback strategies
 
 ---
 
-### RW-7: Implement deep linking
+### RW-7: Implement Android MWA Protocol
+
+**Priority**: High | **Story Points**: 8 | **Labels**: `feature`, `wallet`, `mobile`, `android`  
+**Dependencies**: RW-6
+
+**Description**:
+Build support for Solana's Mobile Wallet Adapter protocol for completely serverless Android connections.
+
+**Acceptance Criteria**:
+- Intent broadcasting:
+  - Create `solana-wallet://` URI
+  - Broadcast Android Intent
+  - Handle wallet selection
+- Local WebSocket server:
+  - Bind to 127.0.0.1
+  - Use ports 49152-65535
+  - Temporary server lifecycle
+  - Auto-cleanup on disconnect
+- Security implementation:
+  - ECDH key exchange
+  - AES-128-GCM encryption
+  - Session establishment
+  - Authorization tokens
+- Connection flow:
+  - Intent → Wallet opens
+  - Wallet starts local server
+  - dApp connects to localhost
+  - Encrypted session established
+- Error handling:
+  - Wallet not installed
+  - Connection timeout (30s)
+  - Port binding failures
+  - Session errors
+
+---
+
+### RW-8: Implement deep linking (Custom Schemes)
 
 **Priority**: High | **Story Points**: 5 | **Labels**: `feature`, `wallet`, `mobile`  
 **Dependencies**: RW-6
 
 **Description**:
-Build deep linking functionality for mobile wallet connections using universal links and app schemes.
+Build deep linking functionality for mobile wallet connections using custom URL schemes only (no Universal Links).
 
 **Acceptance Criteria**:
-- Association token:
-  - Generate secure token
-  - ECDH key generation
+- Custom URL schemes:
+  - phantom://connect
+  - solflare://connect
+  - glow://connect
+  - backpack://connect
+- Connection data:
+  - Generate session token
+  - Encode connection params
   - Base64 encoding
-- Deep link construction:
-  - Wallet-specific URLs
-  - Parameter encoding
   - Return URL handling
-- Protocol support:
-  - Universal links (https)
-  - App schemes (phantom://)
-  - Fallback to app store
 - Connection flow:
-  - Initiate connection
-  - Handle app switch
-  - Process return data
+  - Build deep link URL
+  - Trigger app switch
+  - Handle return data
+  - Parse response
   - Complete handshake
+- Security considerations:
+  - Accept scheme hijacking risk
+  - Validate response data
+  - Session token verification
 - Error handling:
-  - App not installed
+  - App not installed (redirect to store)
   - User cancellation
   - Timeout (30 seconds)
+  - Invalid response
 
 ---
 
-### RW-8: Create QR code connection
+### RW-9: Handle iOS limitations
 
-**Priority**: Medium | **Story Points**: 5 | **Labels**: `feature`, `wallet`, `mobile`  
-**Dependencies**: RW-7
+**Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `wallet`, `mobile`, `ios`  
+**Dependencies**: RW-8
 
 **Description**:
-Implement QR code-based connection for cross-device wallet linking.
+Implement graceful degradation and user guidance for iOS platform limitations.
 
 **Acceptance Criteria**:
-- QR data generation:
-  - Connection metadata
-  - Session identifier
-  - Reflector URL
-  - Encryption keys
-- WebSocket reflector:
-  - Connect to reflector service
-  - End-to-end encryption
-  - Message relay
-- QR display hook:
-  - `useQRConnection()`
-  - Generate QR data
-  - Connection status
-  - Timeout handling
-- Mobile scanning flow:
-  - Parse QR data
-  - Establish connection
-  - Key exchange
-  - Session establishment
-- Security:
-  - ECDH key exchange
-  - AES-GCM encryption
-  - Session expiry
+- Limitation detection:
+  - No localhost WebSocket support
+  - No MWA protocol
+  - Background connection drops
+  - In-app browser requirements
+- User messaging:
+  - Clear explanation of limitations
+  - Suggest in-app browser usage
+  - Guide to wallet app browsers
+- Fallback strategies:
+  - Prioritize in-app browsers
+  - Custom URL schemes only
+  - No persistent connections
+  - Session recovery guidance
+- Wallet-specific guidance:
+  - Phantom in-app browser
+  - Solflare in-app browser
+  - Instructions per wallet
+- Connection persistence:
+  - Save minimal state
+  - Quick reconnection
+  - Handle app switches
 
 ---
 
-## Epic 3: Transaction Signing
+## Epic 3: Security & Validation
 
-### RW-9: Build transaction signer
+### RW-10: Implement wallet verification
+
+**Priority**: Highest | **Story Points**: 3 | **Labels**: `feature`, `security`, `wallet`  
+**Dependencies**: RW-2
+
+**Description**:
+Add comprehensive security checks to prevent wallet hijacking and validate provider authenticity.
+
+**Acceptance Criteria**:
+- Provider validation:
+  - Check single identifier only
+  - Validate required methods
+  - Verify method signatures
+  - Detect suspicious patterns
+- Custom scheme security:
+  - Acknowledge hijacking risk
+  - Implement verification flow
+  - Public key consistency check
+  - Session validation
+- Origin verification:
+  - Check window.location.origin
+  - Allowed origins list
+  - Reject unknown origins
+- Security alerts:
+  - Multiple identifiers warning
+  - Suspicious behavior detection
+  - User notification system
+- Audit logging:
+  - Connection attempts
+  - Validation failures
+  - Security events
+
+---
+
+### RW-11: Add connection rate limiting
+
+**Priority**: High | **Story Points**: 2 | **Labels**: `feature`, `security`, `wallet`  
+**Dependencies**: RW-10
+
+**Description**:
+Implement rate limiting to prevent connection spam and abuse.
+
+**Acceptance Criteria**:
+- Rate limit implementation:
+  - 5 attempts per minute
+  - Per-wallet tracking
+  - Global limit (10/minute)
+- Exponential backoff:
+  - Start at 1 second
+  - Double on each failure
+  - Max 30 seconds
+  - Reset on success
+- Storage mechanism:
+  - Track in memory
+  - Optional localStorage
+  - Clear old entries
+- User feedback:
+  - Show cooldown timer
+  - Clear error messages
+  - Retry availability
+- Override mechanism:
+  - Manual retry option
+  - Clear rate limit
+
+---
+
+## Epic 4: Transaction Signing
+
+### RW-12: Build transaction signer
 
 **Priority**: Highest | **Story Points**: 5 | **Labels**: `feature`, `wallet`, `transactions`  
 **Dependencies**: RW-4, SDK transactions
@@ -296,10 +415,15 @@ Implement transaction signing that integrates with the SDK's transaction system.
   - Use SDK's Transaction type
   - Compatible with SDK's RPC
   - Proper serialization
+- Mobile considerations:
+  - Handle app switches
+  - Maintain state
+  - Recovery on return
 - Error handling:
   - User rejection
   - Invalid transaction
   - Wallet errors
+  - Timeout handling
 - Version support:
   - Legacy transactions
   - Versioned transactions
@@ -307,10 +431,10 @@ Implement transaction signing that integrates with the SDK's transaction system.
 
 ---
 
-### RW-10: Add message signing
+### RW-13: Add message signing
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `wallet`, `auth`  
-**Dependencies**: RW-9
+**Dependencies**: RW-12
 
 **Description**:
 Implement message signing for authentication and proof of ownership.
@@ -330,6 +454,10 @@ Implement message signing for authentication and proof of ownership.
   - Verify with public key
   - Use SDK crypto module
   - Return boolean
+- Mobile handling:
+  - Deep link for signing
+  - Return URL with signature
+  - State preservation
 - Use cases:
   - Authentication
   - Terms acceptance
@@ -340,9 +468,9 @@ Implement message signing for authentication and proof of ownership.
 
 ---
 
-## Epic 4: Essential Wallet Operations
+## Epic 5: Essential Wallet Operations
 
-### RW-11: Create useBalance hook
+### RW-14: Create useBalance hook
 
 **Priority**: Highest | **Story Points**: 3 | **Labels**: `feature`, `wallet`, `balance`  
 **Dependencies**: RW-4, SDK RPC
@@ -376,10 +504,10 @@ Build a React hook for fetching and monitoring SOL balance with real-time update
 
 ---
 
-### RW-12: Implement useSendSOL hook
+### RW-15: Implement useSendSOL hook
 
 **Priority**: Highest | **Story Points**: 5 | **Labels**: `feature`, `wallet`, `transfer`  
-**Dependencies**: RW-9, SDK transactions
+**Dependencies**: RW-12, SDK transactions
 
 **Description**:
 Create a hook for sending SOL with automatic transaction building and confirmation.
@@ -412,7 +540,7 @@ Create a hook for sending SOL with automatic transaction building and confirmati
 
 ---
 
-### RW-13: Add useAirdrop hook
+### RW-16: Add useAirdrop hook
 
 **Priority**: Medium | **Story Points**: 2 | **Labels**: `feature`, `wallet`, `devnet`  
 **Dependencies**: RW-4, SDK RPC
@@ -445,7 +573,7 @@ Implement airdrop functionality for development and testing on devnet/testnet.
 
 ---
 
-### RW-14: Create useTransactionHistory hook
+### RW-17: Create useTransactionHistory hook
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `wallet`, `history`  
 **Dependencies**: RW-4, SDK RPC
@@ -480,9 +608,9 @@ Build a hook for fetching and displaying recent transactions for the connected w
 
 ---
 
-## Epic 5: SPL Token Operations
+## Epic 6: SPL Token Operations
 
-### RW-15: Build useTokenBalances hook
+### RW-18: Build useTokenBalances hook
 
 **Priority**: Highest | **Story Points**: 5 | **Labels**: `feature`, `tokens`, `balance`  
 **Dependencies**: RW-4, SDK RPC
@@ -517,10 +645,10 @@ Create a comprehensive hook for fetching all SPL token balances for the connecte
 
 ---
 
-### RW-16: Implement useSendToken hook
+### RW-19: Implement useSendToken hook
 
 **Priority**: Highest | **Story Points**: 5 | **Labels**: `feature`, `tokens`, `transfer`  
-**Dependencies**: RW-15, SDK transactions
+**Dependencies**: RW-18, SDK transactions
 
 **Description**:
 Create a hook for sending SPL tokens with automatic ATA creation if needed.
@@ -552,7 +680,7 @@ Create a hook for sending SPL tokens with automatic ATA creation if needed.
 
 ---
 
-### RW-17: Add useCreateTokenAccount hook
+### RW-20: Add useCreateTokenAccount hook
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `tokens`, `accounts`  
 **Dependencies**: RW-4, SDK transactions
@@ -586,10 +714,10 @@ Implement token account creation with support for both regular and associated to
 
 ---
 
-### RW-18: Create useTokenMetadata hook
+### RW-21: Create useTokenMetadata hook
 
 **Priority**: Medium | **Story Points**: 3 | **Labels**: `feature`, `tokens`, `metadata`  
-**Dependencies**: RW-15
+**Dependencies**: RW-18
 
 **Description**:
 Build a hook for fetching and caching token metadata from various sources.
@@ -621,10 +749,10 @@ Build a hook for fetching and caching token metadata from various sources.
 
 ---
 
-### RW-19: Implement useWrapSOL hook
+### RW-22: Implement useWrapSOL hook
 
 **Priority**: Medium | **Story Points**: 3 | **Labels**: `feature`, `tokens`, `wsol`  
-**Dependencies**: RW-16
+**Dependencies**: RW-19
 
 **Description**:
 Create functionality for wrapping and unwrapping SOL to wSOL for DeFi operations.
@@ -654,12 +782,12 @@ Create functionality for wrapping and unwrapping SOL to wSOL for DeFi operations
 
 ---
 
-## Epic 6: DeFi Integrations
+## Epic 7: DeFi Integrations
 
-### RW-20: Build useTokenPrice hook
+### RW-23: Build useTokenPrice hook
 
 **Priority**: High | **Story Points**: 5 | **Labels**: `feature`, `defi`, `oracle`  
-**Dependencies**: RW-15, SDK RPC
+**Dependencies**: RW-18, SDK RPC
 
 **Description**:
 Implement price fetching from on-chain oracles (Pyth, Switchboard) and APIs.
@@ -690,10 +818,10 @@ Implement price fetching from on-chain oracles (Pyth, Switchboard) and APIs.
 
 ---
 
-### RW-21: Create useSwap hook
+### RW-24: Create useSwap hook
 
 **Priority**: High | **Story Points**: 8 | **Labels**: `feature`, `defi`, `swap`  
-**Dependencies**: RW-20, SDK transactions
+**Dependencies**: RW-23, SDK transactions
 
 **Description**:
 Build token swapping functionality using Jupiter or Raydium aggregators.
@@ -726,10 +854,10 @@ Build token swapping functionality using Jupiter or Raydium aggregators.
 
 ---
 
-### RW-22: Add useTokenAllowance hook
+### RW-25: Add useTokenAllowance hook
 
 **Priority**: Medium | **Story Points**: 3 | **Labels**: `feature`, `defi`, `delegation`  
-**Dependencies**: RW-15, SDK RPC
+**Dependencies**: RW-18, SDK RPC
 
 **Description**:
 Implement checking and managing token delegation/allowances for DeFi protocols.
@@ -760,10 +888,10 @@ Implement checking and managing token delegation/allowances for DeFi protocols.
 
 ---
 
-### RW-23: Implement useBurnTokens hook
+### RW-26: Implement useBurnTokens hook
 
 **Priority**: Low | **Story Points**: 2 | **Labels**: `feature`, `tokens`, `burn`  
-**Dependencies**: RW-15, SDK transactions
+**Dependencies**: RW-18, SDK transactions
 
 **Description**:
 Create functionality for permanently burning SPL tokens.
@@ -790,12 +918,12 @@ Create functionality for permanently burning SPL tokens.
 
 ---
 
-## Epic 7: Stablecoin Operations
+## Epic 8: Stablecoin Operations
 
-### RW-24: Create useStablecoins hook
+### RW-27: Create useStablecoins hook
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `stablecoin`, `balance`  
-**Dependencies**: RW-15
+**Dependencies**: RW-18
 
 **Description**:
 Specialized hook for stablecoin operations with proper decimal handling and compliance features.
@@ -824,10 +952,10 @@ Specialized hook for stablecoin operations with proper decimal handling and comp
 
 ---
 
-### RW-25: Add memo support
+### RW-28: Add memo support
 
 **Priority**: Medium | **Story Points**: 3 | **Labels**: `feature`, `stablecoin`, `compliance`  
-**Dependencies**: RW-24, SDK transactions
+**Dependencies**: RW-27, SDK transactions
 
 **Description**:
 Implement memo instructions for compliance and reference tracking in transfers.
@@ -856,12 +984,12 @@ Implement memo instructions for compliance and reference tracking in transfers.
 
 ---
 
-## Epic 8: Transaction Management
+## Epic 9: Transaction Management
 
-### RW-26: Build useTransaction hook
+### RW-29: Build useTransaction hook
 
 **Priority**: Highest | **Story Points**: 5 | **Labels**: `feature`, `transactions`, `core`  
-**Dependencies**: RW-9, SDK RPC
+**Dependencies**: RW-12, SDK RPC
 
 **Description**:
 Create a comprehensive hook for transaction lifecycle management.
@@ -880,6 +1008,10 @@ Create a comprehensive hook for transaction lifecycle management.
   - WebSocket subscription
   - Retry on failure
   - Timeout handling
+- Mobile considerations:
+  - Handle app switches
+  - State persistence
+  - Recovery on return
 - Hook interface:
   - `execute(instructions)`
   - `status: TransactionStatus`
@@ -894,10 +1026,10 @@ Create a comprehensive hook for transaction lifecycle management.
 
 ---
 
-### RW-27: Implement useSimulateTransaction hook
+### RW-30: Implement useSimulateTransaction hook
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `transactions`, `simulation`  
-**Dependencies**: RW-26, SDK RPC
+**Dependencies**: RW-29, SDK RPC
 
 **Description**:
 Add transaction simulation to preview effects before execution.
@@ -927,10 +1059,10 @@ Add transaction simulation to preview effects before execution.
 
 ---
 
-### RW-28: Add priority fee management
+### RW-31: Add priority fee management
 
 **Priority**: Medium | **Story Points**: 3 | **Labels**: `feature`, `transactions`, `fees`  
-**Dependencies**: RW-26
+**Dependencies**: RW-29
 
 **Description**:
 Implement dynamic priority fee calculation and management for faster transaction processing.
@@ -961,12 +1093,12 @@ Implement dynamic priority fee calculation and management for faster transaction
 
 ---
 
-## Epic 9: Advanced Features
+## Epic 10: Advanced Features
 
-### RW-29: Create useWalletMultiSig hook
+### RW-32: Create useWalletMultiSig hook
 
 **Priority**: Low | **Story Points**: 5 | **Labels**: `feature`, `wallet`, `multisig`  
-**Dependencies**: RW-9
+**Dependencies**: RW-12
 
 **Description**:
 Support for multi-signature wallets and partial transaction signing.
@@ -993,10 +1125,10 @@ Support for multi-signature wallets and partial transaction signing.
 
 ---
 
-### RW-30: Implement offline transaction support
+### RW-33: Implement offline transaction support
 
 **Priority**: Low | **Story Points**: 3 | **Labels**: `feature`, `transactions`, `offline`  
-**Dependencies**: RW-26
+**Dependencies**: RW-29
 
 **Description**:
 Enable transaction creation and signing in offline mode for air-gapped security.
@@ -1006,12 +1138,12 @@ Enable transaction creation and signing in offline mode for air-gapped security.
   - Create without RPC
   - Manual blockhash input
   - Export unsigned
-  - QR code format
+  - JSON format
 - Import/export:
   - JSON format
   - Base64 encoding
-  - QR code generation
-  - File download
+  - File download/upload
+  - Copy/paste support
 - Signing flow:
   - Import to offline device
   - Sign transaction
@@ -1023,9 +1155,9 @@ Enable transaction creation and signing in offline mode for air-gapped security.
 
 ---
 
-## Epic 10: Testing & Documentation
+## Epic 11: Testing & Documentation
 
-### RW-31: Write unit tests
+### RW-34: Write unit tests
 
 **Priority**: Highest | **Story Points**: 8 | **Labels**: `test`, `quality`  
 **Dependencies**: All hooks
@@ -1047,23 +1179,29 @@ Comprehensive unit testing for all hooks and utilities.
   - Building
   - Signing
   - Confirmation
+- Mobile flows:
+  - Deep link handling
+  - App switch simulation
+  - MWA protocol mocking
 - Integration:
   - With SDK modules
   - Type safety
 
 ---
 
-### RW-32: Create integration tests
+### RW-35: Create integration tests
 
 **Priority**: High | **Story Points**: 5 | **Labels**: `test`, `integration`  
-**Dependencies**: RW-31
+**Dependencies**: RW-34
 
 **Description**:
 End-to-end testing with real wallet connections on devnet.
 
 **Test Scenarios**:
 - Connection flows:
-  - All wallet types
+  - Browser wallets
+  - Mobile wallets (Android)
+  - iOS limitations
   - Reconnection
   - Switching wallets
 - Transactions:
@@ -1075,13 +1213,14 @@ End-to-end testing with real wallet connections on devnet.
   - Timeout handling
   - Retry logic
 - Performance:
-  - Bundle size
+  - Bundle size (<30KB)
   - Render performance
   - Memory leaks
+  - Tree-shaking verification
 
 ---
 
-### RW-33: Write hook documentation
+### RW-36: Write hook documentation
 
 **Priority**: High | **Story Points**: 5 | **Labels**: `doc`, `dx`  
 **Dependencies**: All hooks
@@ -1099,6 +1238,11 @@ Create comprehensive documentation with examples for all hooks.
   - Parameters
   - Return values
   - Examples
+- Mobile guide:
+  - Android MWA setup
+  - iOS limitations
+  - Deep linking
+  - Best practices
 - Recipes:
   - Common patterns
   - Error handling
@@ -1109,10 +1253,10 @@ Create comprehensive documentation with examples for all hooks.
 
 ---
 
-### RW-34: Build example application
+### RW-37: Build example application
 
 **Priority**: Medium | **Story Points**: 5 | **Labels**: `doc`, `examples`  
-**Dependencies**: RW-33
+**Dependencies**: RW-36
 
 **Description**:
 Create a full-featured example application demonstrating all SDK capabilities.
@@ -1121,7 +1265,8 @@ Create a full-featured example application demonstrating all SDK capabilities.
 - Wallet connection:
   - Multi-wallet selector
   - Auto-connect
-  - Mobile support
+  - Mobile support demo
+  - Platform detection
 - Token operations:
   - Balance display
   - Send tokens
@@ -1129,9 +1274,10 @@ Create a full-featured example application demonstrating all SDK capabilities.
 - Transaction history:
   - Recent transactions
   - Filter and search
-- DeFi showcase:
-  - Price display
-  - Swap simulation
+- Mobile showcase:
+  - Android MWA demo
+  - iOS fallback demo
+  - Deep link examples
 - Code snippets:
   - Copy-paste ready
   - TypeScript examples
@@ -1140,13 +1286,20 @@ Create a full-featured example application demonstrating all SDK capabilities.
 
 ## Summary
 
-This comprehensive task list covers the complete implementation of a zero-dependency React wallet SDK for Solana. The tasks are organized to build from core wallet connection infrastructure through to advanced DeFi operations, ensuring each feature integrates seamlessly with the existing Solana SDK.
+This comprehensive task list covers the complete implementation of a **fully serverless, zero-dependency** React wallet SDK for Solana. The key changes from the original:
+
+1. **Removed all cross-device features** requiring servers (QR codes, reflector servers)
+2. **Added Android MWA protocol support** for true serverless mobile connections
+3. **Added iOS limitation handling** with clear user guidance
+4. **Enhanced security tasks** for custom URL scheme risks
+5. **Focused on same-device connections** only
 
 Key implementation priorities:
-1. **Core wallet hooks** (RW-1 through RW-10) - Essential connection and signing
-2. **Essential operations** (RW-11 through RW-14) - Basic SOL operations
-3. **Token support** (RW-15 through RW-19) - SPL token functionality
-4. **DeFi features** (RW-20 through RW-28) - Advanced trading and DeFi
-5. **Testing & docs** (RW-31 through RW-34) - Production readiness
+1. **Core wallet hooks** (RW-1 through RW-5) - Essential connection and signing
+2. **Mobile support** (RW-6 through RW-11) - Serverless mobile connections
+3. **Essential operations** (RW-14 through RW-17) - Basic SOL operations
+4. **Token support** (RW-18 through RW-22) - SPL token functionality
+5. **DeFi features** (RW-23 through RW-31) - Advanced trading and DeFi
+6. **Testing & docs** (RW-34 through RW-37) - Production readiness
 
-The modular design allows for incremental releases while maintaining a consistent, type-safe API that leverages the existing SDK's primitives.
+The modular design allows for incremental releases while maintaining a consistent, type-safe API that leverages the existing SDK's primitives and stays 100% serverless.
