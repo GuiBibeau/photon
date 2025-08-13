@@ -267,6 +267,17 @@ Key packages with multiple entry points:
 - **@photon/crypto**: 7 entry points (signing, hash, keypair, etc.)
 - **@photon/addresses**: 3 entry points (main, pda, derive)
 
+### IMPORTANT: Commit and PR Guidelines
+
+### ⚠️ NEVER ADD CO-AUTHOR ATTRIBUTION ⚠️
+**EXTREMELY IMPORTANT**: When creating commits or pull requests:
+- **NEVER** add "Co-Authored-By: Claude" or any similar attribution
+- **NEVER** include "🤖 Generated with Claude Code" or similar tags
+- **DO NOT** mention Claude, Anthropic, or AI assistance in commits or PRs
+- Keep all commits and PRs professional without AI attribution
+
+This is a critical requirement that must always be followed.
+
 ## Code Quality Tools
 
 ### ESLint Configuration

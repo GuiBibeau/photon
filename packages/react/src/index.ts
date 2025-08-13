@@ -21,6 +21,12 @@ export {
   WalletSignTransactionError,
   WalletSignMessageError,
   WalletTimeoutError,
+  WalletUserRejectedError,
+  WalletNotInstalledError,
+  WalletNetworkError,
+  WalletInvalidTransactionError,
+  WalletRateLimitError,
+  WalletMobileConnectionError,
 } from './types';
 
 // Re-export providers (includes WalletProvider component)
