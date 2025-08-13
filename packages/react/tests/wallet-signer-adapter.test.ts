@@ -222,9 +222,7 @@ describe('Wallet Signer Adapter', () => {
       const signatures = await batch.signWith(message, [pk1, pk3]);
 
       expect(signatures.size).toBe(2);
-      const pk1 = wallet1.publicKey;
       const pk2 = wallet2.publicKey;
-      const pk3 = wallet3.publicKey;
       if (!pk1 || !pk2 || !pk3) {
         throw new Error('Expected wallets to have publicKeys');
       }
