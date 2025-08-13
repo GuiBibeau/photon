@@ -55,7 +55,7 @@ export function generateDeepLink(config: DeepLinkConfig): string {
     queryParams.set('return_url', returnUrl);
   }
 
-  return `${baseUrl}/${action}?${queryParams.toString()}`;
+  return `${baseUrl}${action}?${queryParams.toString()}`;
 }
 
 /**
