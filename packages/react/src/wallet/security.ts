@@ -299,12 +299,14 @@ export function createSecurityManager(rateLimitConfig: RateLimitConfig): Securit
       try {
         // Import the public key for verification
         const publicKeyBytes = base58ToBytes(publicKey);
+        const publicKeyBuffer = publicKeyBytes.buffer.slice(
+          publicKeyBytes.byteOffset,
+          publicKeyBytes.byteOffset + publicKeyBytes.byteLength,
+        ) as ArrayBuffer;
+
         const cryptoKey = await crypto.subtle.importKey(
           'raw',
-          publicKeyBytes.buffer.slice(
-            publicKeyBytes.byteOffset,
-            publicKeyBytes.byteOffset + publicKeyBytes.byteLength,
-          ),
+          publicKeyBuffer,
           {
             name: 'Ed25519',
             namedCurve: 'Ed25519',
@@ -314,15 +316,18 @@ export function createSecurityManager(rateLimitConfig: RateLimitConfig): Securit
         );
 
         // Verify the signature
-        const isValid = await crypto.subtle.verify(
-          'Ed25519',
-          cryptoKey,
-          (signature as Uint8Array).buffer.slice(
-            (signature as Uint8Array).byteOffset,
-            (signature as Uint8Array).byteOffset + (signature as Uint8Array).byteLength,
-          ),
-          message.buffer.slice(message.byteOffset, message.byteOffset + message.byteLength),
-        );
+        const sigArray = signature as Uint8Array;
+        const sigBuffer = sigArray.buffer.slice(
+          sigArray.byteOffset,
+          sigArray.byteOffset + sigArray.byteLength,
+        ) as ArrayBuffer;
+
+        const msgBuffer = message.buffer.slice(
+          message.byteOffset,
+          message.byteOffset + message.byteLength,
+        ) as ArrayBuffer;
+
+        const isValid = await crypto.subtle.verify('Ed25519', cryptoKey, sigBuffer, msgBuffer);
 
         return isValid;
       } catch (error) {

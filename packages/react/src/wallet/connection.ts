@@ -92,8 +92,14 @@ export class WalletConnectionManager implements ConnectionEventEmitter {
       ...config,
     };
 
-    this.securityManager = createSecurityManager(this.config.rateLimit);
-    this.sessionStorage = createSessionStorage(this.config.sessionDuration);
+    this.securityManager = createSecurityManager(
+      this.config.rateLimit || {
+        maxAttempts: 5,
+        timeWindow: 60000,
+        perWallet: true,
+      },
+    );
+    this.sessionStorage = createSessionStorage(this.config.sessionDuration || 24 * 60 * 60 * 1000);
 
     if (this.config.detectOnInit) {
       this.detectAndRegisterWallets();
@@ -174,7 +180,7 @@ export class WalletConnectionManager implements ConnectionEventEmitter {
       if (state) {
         state.connected = false;
         state.publicKey = null;
-        state.session = undefined;
+        delete state.session;
         if (this.currentWallet === walletName) {
           this.currentWallet = null;
         }
@@ -374,7 +380,7 @@ export class WalletConnectionManager implements ConnectionEventEmitter {
         state.session = this.sessionStorage.createSession(
           state.publicKey,
           normalizedName,
-          options?.sessionDuration || this.config.sessionDuration,
+          options?.sessionDuration || this.config.sessionDuration || 24 * 60 * 60 * 1000,
         );
       }
 
@@ -430,7 +436,7 @@ export class WalletConnectionManager implements ConnectionEventEmitter {
 
       state.connected = false;
       state.publicKey = null;
-      state.session = undefined;
+      delete state.session;
 
       const previousWallet = this.currentWallet;
       this.currentWallet = null;
@@ -562,7 +568,7 @@ export class WalletConnectionManager implements ConnectionEventEmitter {
       state.connected = false;
       state.connecting = false;
       state.publicKey = null;
-      state.session = undefined;
+      delete state.session;
       state.retryCount = 0;
       state.backoffDelay = this.config.rateLimit?.backoff?.initialDelay || 1000;
     }
