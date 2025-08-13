@@ -35,7 +35,7 @@ Create TypeScript interfaces for wallet providers that abstract browser extensio
 
 ---
 
-### RW-2: Implement wallet detector
+### ✅ RW-2: Implement wallet detector
 
 **Priority**: Highest | **Story Points**: 5 | **Labels**: `feature`, `wallet`, `detection`  
 **Dependencies**: RW-1
