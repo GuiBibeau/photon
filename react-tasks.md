@@ -2,7 +2,7 @@
 
 ## Epic 1: Core Wallet Connection Infrastructure
 
-### RW-1: Define wallet provider interfaces
+### ✅ RW-1: Define wallet provider interfaces
 
 **Priority**: Highest | **Story Points**: 3 | **Labels**: `feature`, `wallet`, `core`  
 **Dependencies**: SDK core modules
@@ -35,7 +35,7 @@ Create TypeScript interfaces for wallet providers that abstract browser extensio
 
 ---
 
-### RW-2: Implement wallet detector
+### ✅ RW-2: Implement wallet detector
 
 **Priority**: Highest | **Story Points**: 5 | **Labels**: `feature`, `wallet`, `detection`  
 **Dependencies**: RW-1
