@@ -2,7 +2,7 @@
 
 ## Epic 1: Core Wallet Connection Infrastructure
 
-### RW-1: Define wallet provider interfaces
+### ✅ RW-1: Define wallet provider interfaces
 
 **Priority**: Highest | **Story Points**: 3 | **Labels**: `feature`, `wallet`, `core`  
 **Dependencies**: SDK core modules
