@@ -247,19 +247,30 @@ function detectWindowInjectedWallets(allowMultipleIdentifiers: boolean): Detecte
  */
 async function detectWalletStandardWallets(): Promise<DetectedWallet[]> {
   const wallets: DetectedWallet[] = [];
+
+  // Ensure we're in a browser environment
+  if (typeof window === 'undefined') {
+    return wallets;
+  }
+
   const win = window as WindowWithWallets;
 
   // Check if Wallet Standard is available
   const registry = win.navigator?.wallets;
   if (!registry) {
-    // Dispatch app-ready event to trigger wallet registration
-    win.dispatchEvent(new Event('wallet-standard:app-ready'));
+    try {
+      // Dispatch app-ready event to trigger wallet registration
+      win.dispatchEvent(new Event('wallet-standard:app-ready'));
 
-    // Wait a bit for wallets to register
-    await new Promise((resolve) => setTimeout(resolve, 100));
+      // Wait a bit for wallets to register
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-    // Check again
-    if (!win.navigator?.wallets) {
+      // Check again
+      if (!win.navigator?.wallets) {
+        return wallets;
+      }
+    } catch (error) {
+      console.warn('Failed to dispatch wallet-standard:app-ready event:', error);
       return wallets;
     }
   }
@@ -268,6 +279,11 @@ async function detectWalletStandardWallets(): Promise<DetectedWallet[]> {
   const standardWallets = win.navigator.wallets?.get() || [];
 
   for (const standardWallet of standardWallets) {
+    // Skip if wallet doesn't have required properties
+    if (!standardWallet || !standardWallet.chains || !standardWallet.features) {
+      continue;
+    }
+
     // Check if wallet supports Solana
     if (!standardWallet.chains.some((chain) => chain.startsWith('solana:'))) {
       continue;

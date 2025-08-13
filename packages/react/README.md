@@ -34,7 +34,13 @@ function App() {
 }
 
 function WalletConnect() {
-  const { connected, publicKey, connect, disconnect } = useWallet();
+  const { 
+    connected, 
+    publicKey, 
+    connect, 
+    disconnect,
+    autoConnecting 
+  } = useWallet();
   
   if (connected) {
     return (
@@ -45,14 +51,110 @@ function WalletConnect() {
     );
   }
   
+  if (autoConnecting) {
+    return <p>Connecting...</p>;
+  }
+  
   return <button onClick={() => connect()}>Connect Wallet</button>;
 }
 ```
 
+## Auto-Connect Feature
+
+### Basic Auto-Connect
+
+Enable auto-connect to automatically reconnect to the last used wallet:
+
+```tsx
+<WalletProvider autoConnect>
+  {/* Your app */}
+</WalletProvider>
+```
+
+### User-Controlled Auto-Connect
+
+Give users control over auto-connect preferences:
+
+```tsx
+function AutoConnectSettings() {
+  const { 
+    getAutoConnectPreference, 
+    setAutoConnect,
+    clearAutoConnectPreference 
+  } = useWallet();
+  
+  const isEnabled = getAutoConnectPreference();
+  
+  return (
+    <div>
+      <label>
+        <input
+          type="checkbox"
+          checked={isEnabled}
+          onChange={(e) => setAutoConnect(e.target.checked)}
+        />
+        Auto-connect on page load
+      </label>
+      
+      <button onClick={clearAutoConnectPreference}>
+        Clear saved preferences
+      </button>
+    </div>
+  );
+}
+```
+
+### Auto-Connect Configuration
+
+```tsx
+function App() {
+  return (
+    <WalletProvider 
+      autoConnect
+      connectionConfig={{
+        eagerness: 'lazy', // 'eager' | 'lazy' (default)
+        sessionDuration: 24 * 60 * 60 * 1000, // 24 hours
+        rateLimit: {
+          maxAttempts: 5,
+          timeWindow: 60000,
+        }
+      }}
+    >
+      <YourApp />
+    </WalletProvider>
+  );
+}
+```
+
+### Manual Auto-Connect Trigger
+
+```tsx
+function ReconnectButton() {
+  const { autoConnect, autoConnecting } = useWallet();
+  
+  return (
+    <button 
+      onClick={autoConnect}
+      disabled={autoConnecting}
+    >
+      {autoConnecting ? 'Reconnecting...' : 'Reconnect'}
+    </button>
+  );
+}
+```
+
+### Auto-Connect Behavior
+
+- **Session Persistence**: Saves wallet connection for 24 hours by default
+- **Only-If-Trusted Mode**: Uses `onlyIfTrusted` flag to avoid popups
+- **Silent Failures**: Auto-connect failures don't show errors to users
+- **Timeout Protection**: 5-second timeout prevents hanging connections
+- **Expiry Validation**: Automatically validates session expiry before reconnecting
+
 ## Available Hooks
 
 ### Wallet Hooks
-- `useWallet` - Primary wallet connection hook
+- `useWallet` - Primary wallet connection hook with auto-connect support
 - `useWalletMultiSig` - Multi-signature wallet support
 
 ### Balance & Transaction Hooks

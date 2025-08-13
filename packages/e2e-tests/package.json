@@ -21,6 +21,7 @@
     "@photon/addresses": "workspace:*",
     "@photon/codecs": "workspace:*",
     "@photon/crypto": "workspace:*",
+    "@photon/react": "workspace:*",
     "@photon/rpc": "workspace:*",
     "@photon/signers": "workspace:*",
     "@photon/spl-token": "workspace:*",

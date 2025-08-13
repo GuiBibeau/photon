@@ -147,7 +147,7 @@ Create the primary React hook for wallet connection management with comprehensiv
 
 ---
 
-### RW-5: Implement auto-connect logic
+### ✅ RW-5: Implement auto-connect logic
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `wallet`, `ux`  
 **Dependencies**: RW-4

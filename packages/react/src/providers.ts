@@ -15,6 +15,7 @@ import type {
 } from './types';
 import { createWalletConnectionManager, type ConnectionManagerConfig } from './wallet/connection';
 import { detectWallets } from './wallet/detector';
+import type { createSessionStorage } from './wallet/session-storage';
 
 /**
  * Wallet context value
@@ -28,6 +29,8 @@ export interface WalletContextValue {
   disconnecting: boolean;
   autoConnect: boolean;
   error: Error | null;
+  sessionStorage?: ReturnType<typeof createSessionStorage>;
+  connectionConfig?: ConnectionManagerConfig;
 
   select(walletName: string): void;
   connect(walletName?: string, options?: WalletConnectionOptions): Promise<void>;
@@ -264,6 +267,8 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
       disconnecting,
       autoConnect,
       error,
+      sessionStorage: connectionManager.sessionStorage,
+      connectionConfig: connectionConfig ?? ({} as ConnectionManagerConfig),
       select,
       connect,
       disconnect,
@@ -278,6 +283,8 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
       disconnecting,
       autoConnect,
       error,
+      connectionManager.sessionStorage,
+      connectionConfig,
       select,
       connect,
       disconnect,
