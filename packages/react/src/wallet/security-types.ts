@@ -160,7 +160,7 @@ export interface Session {
   createdAt: number;
   expiresAt: number;
   lastActivity: number;
-  metadata?: SessionMetadata;
+  metadata?: SessionMetadata | undefined;
 }
 
 /**
