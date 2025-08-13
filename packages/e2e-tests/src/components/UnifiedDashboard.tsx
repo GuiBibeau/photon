@@ -511,10 +511,10 @@ export function UnifiedDashboard() {
         rpc,
         {
           skipPreflight: false,
-          preflightCommitment: 'confirmed',
+          preflightCommitment: 'processed',
         },
         {
-          commitment: 'confirmed',
+          commitment: 'processed',
           timeout: 30000,
         },
       );
@@ -585,14 +585,14 @@ export function UnifiedDashboard() {
 
       // Check if mint account exists with retry
       console.log('Checking if mint account exists...');
-      let mintAccountInfo = await rpc.getAccountInfo(mint, { commitment: 'confirmed' });
+      let mintAccountInfo = await rpc.getAccountInfo(mint, { commitment: 'processed' });
 
       // Retry up to 5 times with 1 second delay
       let retries = 0;
       while (!mintAccountInfo.value && retries < 5) {
         console.log(`Mint not found yet, retrying... (${retries + 1}/5)`);
         await new Promise((resolve) => setTimeout(resolve, 1000));
-        mintAccountInfo = await rpc.getAccountInfo(mint, { commitment: 'confirmed' });
+        mintAccountInfo = await rpc.getAccountInfo(mint, { commitment: 'processed' });
         retries++;
       }
 
@@ -665,10 +665,10 @@ export function UnifiedDashboard() {
         rpc,
         {
           skipPreflight: false,
-          preflightCommitment: 'confirmed',
+          preflightCommitment: 'processed',
         },
         {
-          commitment: 'confirmed',
+          commitment: 'processed',
           timeout: 30000,
         },
       );
@@ -728,7 +728,7 @@ export function UnifiedDashboard() {
       // Fetch the token account info from the network with explicit base64 encoding
       const accountInfo = await rpc.getAccountInfo(ata, {
         encoding: 'base64',
-        commitment: 'confirmed',
+        commitment: 'processed',
       });
 
       if (accountInfo.value) {
@@ -875,10 +875,10 @@ export function UnifiedDashboard() {
         rpc,
         {
           skipPreflight: false,
-          preflightCommitment: 'confirmed',
+          preflightCommitment: 'processed',
         },
         {
-          commitment: 'confirmed',
+          commitment: 'processed',
           timeout: 30000,
         },
       );
@@ -932,7 +932,7 @@ export function UnifiedDashboard() {
       // Fetch the token account info from the network
       const accountInfo = await rpc.getAccountInfo(ata, {
         encoding: 'base64',
-        commitment: 'confirmed',
+        commitment: 'processed',
       });
 
       if (accountInfo.value) {
