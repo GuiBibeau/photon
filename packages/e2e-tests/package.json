@@ -11,7 +11,11 @@
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
-    "test:debug": "playwright test --debug"
+    "test:debug": "playwright test --debug",
+    "test:wallet": "playwright test wallet-flow.spec.ts",
+    "test:token": "playwright test token-flow.spec.ts",
+    "test:e2e": "./run-e2e-tests.sh",
+    "test:report": "playwright show-report"
   },
   "dependencies": {
     "@photon/addresses": "workspace:*",

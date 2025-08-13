@@ -1,0 +1,77 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: |
+          # Try frozen lockfile first, fall back to regular install if lockfile is incompatible
+          pnpm install --frozen-lockfile || pnpm install
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Install Playwright Browsers
+        run: |
+          cd packages/e2e-tests
+          npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        env:
+          VITE_PRIVATE_KEY: ${{ secrets.SOLANA_TEST_PRIVATE_KEY }}
+        run: |
+          cd packages/e2e-tests
+          pnpm test
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: packages/e2e-tests/playwright-report/
+          retention-days: 7
+
+      - name: Upload test videos
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-videos
+          path: packages/e2e-tests/test-results/
+          retention-days: 3
