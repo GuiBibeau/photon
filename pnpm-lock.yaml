@@ -116,6 +116,9 @@ importers:
       '@photon/crypto':
         specifier: workspace:*
         version: link:../crypto
+      '@photon/react':
+        specifier: workspace:*
+        version: link:../react
       '@photon/rpc':
         specifier: workspace:*
         version: link:../rpc

@@ -18,6 +18,16 @@ export interface AvailableWallet {
 }
 
 /**
+ * Auto-connect options
+ */
+export interface AutoConnectOptions {
+  enabled: boolean;
+  eagerness?: 'eager' | 'lazy';
+  onlyIfTrusted?: boolean;
+  timeout?: number;
+}
+
+/**
  * useWallet hook interface
  */
 export interface UseWalletResult {
@@ -27,6 +37,7 @@ export interface UseWalletResult {
   publicKey: Address | null;
   wallet: string | null;
   error: Error | null;
+  autoConnecting: boolean;
 
   // Available wallets
   availableWallets: AvailableWallet[];
@@ -40,6 +51,11 @@ export interface UseWalletResult {
   disconnect(): Promise<void>;
   select(walletName: string): void;
   autoConnect(): Promise<void>;
+
+  // Auto-connect control
+  setAutoConnect(enabled: boolean): void;
+  getAutoConnectPreference(): boolean;
+  clearAutoConnectPreference(): void;
 
   // Utility methods
   refreshWallets(): Promise<void>;
@@ -89,6 +105,8 @@ export interface UseWalletResult {
 export function useWallet(): UseWalletResult {
   const context = useWalletContext();
   const [localError, setLocalError] = useState<Error | null>(null);
+  const [autoConnecting, setAutoConnecting] = useState(false);
+  const [autoConnectAttempted, setAutoConnectAttempted] = useState(false);
 
   // Combine context error with local error
   const error = context.error || localError;
@@ -180,48 +198,102 @@ export function useWallet(): UseWalletResult {
     [context],
   );
 
-  // Auto-connect functionality
+  // Auto-connect functionality with enhanced options
   const autoConnect = useCallback(async () => {
+    // Prevent multiple auto-connect attempts
+    if (autoConnecting || context.connected || context.connecting) {
+      return;
+    }
+
     try {
       setLocalError(null);
+      setAutoConnecting(true);
 
-      // Try to auto-connect using saved session
-      if (context.autoConnect) {
-        // Check if we have a saved session in localStorage
-        const savedWallet = localStorage.getItem('photon_wallet_name');
-        const savedTimestamp = localStorage.getItem('photon_wallet_timestamp');
+      // Check if auto-connect is enabled in storage
+      const autoConnectEnabled = context.sessionStorage?.getAutoConnect() || context.autoConnect;
+      if (!autoConnectEnabled) {
+        return;
+      }
 
-        if (savedWallet && savedTimestamp) {
-          const timestamp = parseInt(savedTimestamp, 10);
-          const elapsed = Date.now() - timestamp;
-          const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+      // Get saved session from storage
+      const sessions = context.sessionStorage?.getActiveSessions() || [];
+      const lastWallet = context.sessionStorage?.getLastWallet();
 
+      // Try to find a valid session
+      let targetSession = null;
+      if (sessions.length > 0) {
+        // Sort by last activity and find most recent valid session
+        const sortedSessions = sessions.sort((a, b) => b.lastActivity - a.lastActivity);
+        targetSession = sortedSessions.find((session) => {
+          const elapsed = Date.now() - session.createdAt;
+          const maxAge = 24 * 60 * 60 * 1000; // 24 hours default expiry
+          return elapsed < maxAge;
+        });
+      }
+
+      // If no valid session but we have a last wallet, try that
+      if (!targetSession && lastWallet) {
+        const timestamp = localStorage.getItem('photon_wallet_timestamp');
+        if (timestamp) {
+          const elapsed = Date.now() - parseInt(timestamp, 10);
+          const maxAge = 24 * 60 * 60 * 1000;
           if (elapsed < maxAge) {
-            // Check if wallet is available
-            const wallet = availableWallets.find((w) => w.name === savedWallet && w.isInstalled);
-
-            if (wallet) {
-              await connect(savedWallet, { onlyIfTrusted: true });
-              return;
-            }
+            targetSession = { walletName: lastWallet };
           }
         }
       }
+
+      if (targetSession) {
+        // Check if wallet is available
+        const wallet = availableWallets.find(
+          (w) => w.name === targetSession.walletName && w.isInstalled && w.isCurrentPlatform,
+        );
+
+        if (wallet) {
+          // Set timeout for auto-connect attempt (5 seconds default)
+          const timeout = 5000;
+          const timeoutPromise = new Promise<void>((_, reject) => {
+            setTimeout(() => reject(new Error('Auto-connect timeout')), timeout);
+          });
+
+          // Attempt connection with onlyIfTrusted flag
+          const connectPromise = connect(targetSession.walletName, { onlyIfTrusted: true });
+
+          await Promise.race([connectPromise, timeoutPromise]);
+
+          // Save successful connection
+          context.sessionStorage?.saveLastWallet(targetSession.walletName);
+          return;
+        }
+      }
     } catch (_err) {
-      // Silent failure for auto-connect - no logging needed
+      // Silent failure for auto-connect
+      // Clear invalid session if needed
+      if (_err instanceof Error && _err.message !== 'Auto-connect timeout') {
+        localStorage.removeItem('photon_wallet_name');
+        localStorage.removeItem('photon_wallet_timestamp');
+      }
+    } finally {
+      setAutoConnecting(false);
+      setAutoConnectAttempted(true);
     }
-  }, [context.autoConnect, availableWallets, connect]);
+  }, [autoConnecting, context, availableWallets, connect]);
 
   // Save wallet selection for auto-connect
   useEffect(() => {
     if (context.connected && walletName) {
+      // Save wallet preference
       localStorage.setItem('photon_wallet_name', walletName);
       localStorage.setItem('photon_wallet_timestamp', Date.now().toString());
+      context.sessionStorage?.saveLastWallet(walletName);
     } else if (!context.connected) {
-      localStorage.removeItem('photon_wallet_name');
-      localStorage.removeItem('photon_wallet_timestamp');
+      // Only clear if user explicitly disconnected (not on page load)
+      if (autoConnectAttempted) {
+        localStorage.removeItem('photon_wallet_name');
+        localStorage.removeItem('photon_wallet_timestamp');
+      }
     }
-  }, [context.connected, walletName]);
+  }, [context.connected, walletName, context.sessionStorage, autoConnectAttempted]);
 
   // Refresh wallets
   const refreshWallets = useCallback(async () => {
@@ -240,12 +312,67 @@ export function useWallet(): UseWalletResult {
     setLocalError(null);
   }, []);
 
+  // Set auto-connect preference
+  const setAutoConnect = useCallback(
+    (enabled: boolean) => {
+      context.sessionStorage?.setAutoConnect(enabled);
+      if (!enabled) {
+        // Clear stored sessions when disabling auto-connect
+        localStorage.removeItem('photon_wallet_name');
+        localStorage.removeItem('photon_wallet_timestamp');
+      }
+    },
+    [context.sessionStorage],
+  );
+
+  // Get auto-connect preference
+  const getAutoConnectPreference = useCallback((): boolean => {
+    return context.sessionStorage?.getAutoConnect() || false;
+  }, [context.sessionStorage]);
+
+  // Clear auto-connect preference
+  const clearAutoConnectPreference = useCallback(() => {
+    context.sessionStorage?.setAutoConnect(false);
+    localStorage.removeItem('photon_wallet_name');
+    localStorage.removeItem('photon_wallet_timestamp');
+    context.sessionStorage?.clearAll();
+  }, [context.sessionStorage]);
+
   // Auto-connect on mount if enabled
   useEffect(() => {
-    if (context.autoConnect && !context.connected && !context.connecting) {
-      autoConnect();
+    if (!autoConnectAttempted && !context.connected && !context.connecting) {
+      // Check stored preference
+      const storedAutoConnect = context.sessionStorage?.getAutoConnect();
+      const shouldAutoConnect =
+        storedAutoConnect !== undefined ? storedAutoConnect : context.autoConnect;
+
+      if (shouldAutoConnect) {
+        // Use eager or lazy connection based on configuration
+        const eagerness = context.connectionConfig?.eagerness || 'lazy';
+
+        if (eagerness === 'eager') {
+          // Connect immediately
+          autoConnect();
+        } else {
+          // Wait for wallets to be detected first
+          if (availableWallets.length > 0) {
+            autoConnect();
+          }
+        }
+      } else {
+        setAutoConnectAttempted(true);
+      }
     }
-  }, [context.autoConnect, context.connected, context.connecting, autoConnect]);
+  }, [
+    autoConnectAttempted,
+    context.connected,
+    context.connecting,
+    context.autoConnect,
+    context.sessionStorage,
+    context.connectionConfig,
+    availableWallets.length,
+    autoConnect,
+  ]);
 
   return {
     // State
@@ -254,6 +381,7 @@ export function useWallet(): UseWalletResult {
     publicKey: context.publicKey,
     wallet: walletName,
     error,
+    autoConnecting,
 
     // Available wallets
     availableWallets,
@@ -267,6 +395,11 @@ export function useWallet(): UseWalletResult {
     disconnect,
     select,
     autoConnect,
+
+    // Auto-connect control
+    setAutoConnect,
+    getAutoConnectPreference,
+    clearAutoConnectPreference,
 
     // Utility methods
     refreshWallets,

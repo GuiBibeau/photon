@@ -65,7 +65,7 @@ export class WalletConnectionManager implements ConnectionEventEmitter {
   private currentWallet: string | null = null;
   private eventListeners: Map<string, Set<WalletEventListener>> = new Map();
   private securityManager: SecurityManager;
-  private sessionStorage: ReturnType<typeof createSessionStorage>;
+  public readonly sessionStorage: ReturnType<typeof createSessionStorage>;
   private config: ConnectionManagerConfig;
   private connectionAttempts: Map<string, ConnectionAttempt[]> = new Map();
   private globalConnectionCount = 0;

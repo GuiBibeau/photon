@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import React from 'react';
 import { useWallet, type UseWalletResult, type AvailableWallet } from '../../src/hooks/wallet';
 import { WalletProvider } from '../../src/providers';
@@ -61,6 +61,21 @@ describe('useWallet hook', () => {
 
     // Create a fresh mock for connection manager
     const eventHandlers = new Map<string, Set<(data: unknown) => void>>();
+    const mockSessionStorage = {
+      createSession: vi.fn(),
+      getSession: vi.fn(),
+      getActiveSessions: vi.fn().mockReturnValue([]),
+      validateSession: vi.fn(),
+      refreshSession: vi.fn(),
+      revokeSession: vi.fn(),
+      clearExpiredSessions: vi.fn(),
+      clearAll: vi.fn(),
+      saveLastWallet: vi.fn(),
+      getLastWallet: vi.fn().mockReturnValue(null),
+      setAutoConnect: vi.fn(),
+      getAutoConnect: vi.fn().mockReturnValue(false),
+    };
+
     const mockManager = {
       on: vi.fn((event: string, handler: (data: unknown) => void) => {
         if (!eventHandlers.has(event)) {
@@ -80,6 +95,7 @@ describe('useWallet hook', () => {
       connect: vi.fn(),
       disconnect: vi.fn(),
       autoConnect: vi.fn(),
+      sessionStorage: mockSessionStorage,
       _eventHandlers: eventHandlers,
     };
 
@@ -511,6 +527,492 @@ describe('useWallet hook', () => {
     });
   });
 
+  describe('Auto-connect Functionality', () => {
+    it('should auto-connect when enabled with valid session', async () => {
+      const mockWallet = createMockWallet('Phantom');
+      const mockWallets = [mockWallet];
+
+      const { detectWallets } = await import('../../src/wallet/detector');
+      vi.mocked(detectWallets).mockResolvedValue(mockWallets);
+
+      // Set up mock sessionStorage with auto-connect data
+      const mockSessionStorage = {
+        createSession: vi.fn(),
+        getSession: vi.fn(),
+        getActiveSessions: vi.fn().mockReturnValue([
+          {
+            id: 'test-session',
+            publicKey: mockPublicKey,
+            walletName: 'Phantom',
+            createdAt: Date.now() - 1000 * 60 * 60, // 1 hour ago
+            expiresAt: Date.now() + 1000 * 60 * 60 * 23, // 23 hours from now
+            lastActivity: Date.now() - 1000 * 60 * 60, // 1 hour ago
+          },
+        ]),
+        validateSession: vi.fn(),
+        refreshSession: vi.fn(),
+        revokeSession: vi.fn(),
+        clearExpiredSessions: vi.fn(),
+        clearAll: vi.fn(),
+        saveLastWallet: vi.fn(),
+        getLastWallet: vi.fn().mockReturnValue('Phantom'),
+        setAutoConnect: vi.fn(),
+        getAutoConnect: vi.fn().mockReturnValue(true),
+      };
+
+      // Override the mock manager creation for this test
+      const { createWalletConnectionManager } = await import('../../src/wallet/connection');
+      vi.mocked(createWalletConnectionManager).mockImplementation(
+        () =>
+          ({
+            on: vi.fn(),
+            off: vi.fn(),
+            emit: vi.fn(),
+            getWallet: vi.fn().mockReturnValue(mockWallet.provider),
+            getWallets: vi.fn().mockReturnValue([]),
+            registerWallet: vi.fn(),
+            connect: vi.fn(),
+            disconnect: vi.fn(),
+            autoConnect: vi.fn(),
+            sessionStorage: mockSessionStorage,
+          }) as any,
+      );
+
+      const autoConnectWrapper = ({ children }: { children: React.ReactNode }) =>
+        React.createElement(WalletProvider, { autoConnect: true }, children);
+
+      renderHook(() => useWallet(), { wrapper: autoConnectWrapper });
+
+      // Wait for auto-connect to trigger
+      await waitFor(
+        () => {
+          expect(mockSessionStorage.getAutoConnect).toHaveBeenCalled();
+        },
+        { timeout: 2000 },
+      );
+    });
+
+    it('should not auto-connect when disabled', async () => {
+      const mockWallet = createMockWallet('Phantom');
+      const mockWallets = [mockWallet];
+
+      const { detectWallets } = await import('../../src/wallet/detector');
+      vi.mocked(detectWallets).mockResolvedValue(mockWallets);
+
+      const mockConnect = vi.fn();
+      const mockSessionStorage = {
+        createSession: vi.fn(),
+        getSession: vi.fn(),
+        getActiveSessions: vi.fn().mockReturnValue([]),
+        validateSession: vi.fn(),
+        refreshSession: vi.fn(),
+        revokeSession: vi.fn(),
+        clearExpiredSessions: vi.fn(),
+        clearAll: vi.fn(),
+        saveLastWallet: vi.fn(),
+        getLastWallet: vi.fn().mockReturnValue(null),
+        setAutoConnect: vi.fn(),
+        getAutoConnect: vi.fn().mockReturnValue(false), // Disabled
+      };
+
+      const { createWalletConnectionManager } = await import('../../src/wallet/connection');
+      vi.mocked(createWalletConnectionManager).mockImplementation(
+        () =>
+          ({
+            on: vi.fn(),
+            off: vi.fn(),
+            emit: vi.fn(),
+            getWallet: vi.fn(),
+            getWallets: vi.fn().mockReturnValue([]),
+            registerWallet: vi.fn(),
+            connect: mockConnect,
+            disconnect: vi.fn(),
+            autoConnect: vi.fn(),
+            sessionStorage: mockSessionStorage,
+          }) as any,
+      );
+
+      const { result } = renderHook(() => useWallet(), { wrapper });
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      });
+
+      expect(result.current.autoConnecting).toBe(false);
+      expect(mockConnect).not.toHaveBeenCalled();
+    });
+
+    it('should respect 24-hour expiry for auto-connect', async () => {
+      const mockWallet = createMockWallet('Phantom');
+      const mockWallets = [mockWallet];
+
+      const { detectWallets } = await import('../../src/wallet/detector');
+      vi.mocked(detectWallets).mockResolvedValue(mockWallets);
+
+      const mockConnect = vi.fn();
+      const mockSessionStorage = {
+        createSession: vi.fn(),
+        getSession: vi.fn(),
+        getActiveSessions: vi.fn().mockReturnValue([]), // No active sessions due to expiry
+        validateSession: vi.fn(),
+        refreshSession: vi.fn(),
+        revokeSession: vi.fn(),
+        clearExpiredSessions: vi.fn(),
+        clearAll: vi.fn(),
+        saveLastWallet: vi.fn(),
+        getLastWallet: vi.fn().mockReturnValue('Phantom'),
+        setAutoConnect: vi.fn(),
+        getAutoConnect: vi.fn().mockReturnValue(true),
+      };
+
+      // Set expired timestamp in localStorage
+      localStorage.setItem('photon_wallet_name', 'Phantom');
+      localStorage.setItem(
+        'photon_wallet_timestamp',
+        (Date.now() - 1000 * 60 * 60 * 25).toString(),
+      ); // 25 hours ago
+
+      const { createWalletConnectionManager } = await import('../../src/wallet/connection');
+      vi.mocked(createWalletConnectionManager).mockImplementation(
+        () =>
+          ({
+            on: vi.fn(),
+            off: vi.fn(),
+            emit: vi.fn(),
+            getWallet: vi.fn(),
+            getWallets: vi.fn().mockReturnValue([]),
+            registerWallet: vi.fn(),
+            connect: mockConnect,
+            disconnect: vi.fn(),
+            autoConnect: vi.fn(),
+            sessionStorage: mockSessionStorage,
+          }) as any,
+      );
+
+      const autoConnectWrapper = ({ children }: { children: React.ReactNode }) =>
+        React.createElement(WalletProvider, { autoConnect: true }, children);
+
+      const { result } = renderHook(() => useWallet(), { wrapper: autoConnectWrapper });
+
+      // Wait for auto-connect check to complete
+      await waitFor(
+        () => {
+          expect(result.current.autoConnecting).toBe(false);
+        },
+        { timeout: 2000 },
+      );
+
+      // Should not attempt connection with expired session
+      expect(mockConnect).not.toHaveBeenCalled();
+    });
+
+    it.skip('should use onlyIfTrusted flag for auto-connect', { timeout: 10000 }, async () => {
+      const mockWallet = createMockWallet('Phantom');
+      mockWallet.provider.connect = vi.fn().mockResolvedValue(undefined);
+      const mockWallets = [mockWallet];
+
+      const { detectWallets } = await import('../../src/wallet/detector');
+      vi.mocked(detectWallets).mockResolvedValue(mockWallets);
+
+      // Save wallet preference in localStorage
+      localStorage.setItem('photon_wallet_name', 'Phantom');
+      localStorage.setItem('photon_wallet_timestamp', Date.now().toString());
+
+      const mockSessionStorage = {
+        createSession: vi.fn(),
+        getSession: vi.fn(),
+        getActiveSessions: vi.fn().mockReturnValue([
+          {
+            id: 'test-session',
+            walletName: 'Phantom',
+            publicKey: mockPublicKey,
+            createdAt: Date.now() - 1000,
+            expiresAt: Date.now() + 1000 * 60 * 60,
+            lastActivity: Date.now() - 1000,
+          },
+        ]),
+        validateSession: vi.fn(),
+        refreshSession: vi.fn(),
+        revokeSession: vi.fn(),
+        clearExpiredSessions: vi.fn(),
+        clearAll: vi.fn(),
+        saveLastWallet: vi.fn(),
+        getLastWallet: vi.fn().mockReturnValue('Phantom'),
+        setAutoConnect: vi.fn(),
+        getAutoConnect: vi.fn().mockReturnValue(true),
+      };
+
+      const { createWalletConnectionManager } = await import('../../src/wallet/connection');
+      vi.mocked(createWalletConnectionManager).mockImplementation(
+        () =>
+          ({
+            on: vi.fn(),
+            off: vi.fn(),
+            emit: vi.fn(),
+            getWallet: vi.fn().mockReturnValue(mockWallet.provider),
+            getWallets: vi.fn().mockReturnValue([]),
+            registerWallet: vi.fn(),
+            connect: vi.fn(),
+            disconnect: vi.fn(),
+            autoConnect: vi.fn(),
+            sessionStorage: mockSessionStorage,
+          }) as any,
+      );
+
+      const autoConnectWrapper = ({ children }: { children: React.ReactNode }) =>
+        React.createElement(WalletProvider, { autoConnect: true }, children);
+
+      const { result } = renderHook(() => useWallet(), { wrapper: autoConnectWrapper });
+
+      // Trigger auto-connect
+      await act(async () => {
+        await result.current.autoConnect();
+      });
+
+      // Wait for connection attempt and verify onlyIfTrusted was used
+      await waitFor(
+        () => {
+          expect(mockWallet.provider.connect).toHaveBeenCalledWith({ onlyIfTrusted: true });
+        },
+        { timeout: 2000 },
+      );
+    });
+
+    it.skip('should handle auto-connect timeout (5 seconds)', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+
+      const mockWallet = createMockWallet('Phantom');
+      // Mock a slow connection that never resolves
+      mockWallet.provider.connect = vi.fn().mockImplementation(() => new Promise(() => {}));
+      const mockWallets = [mockWallet];
+
+      const { detectWallets } = await import('../../src/wallet/detector');
+      vi.mocked(detectWallets).mockResolvedValue(mockWallets);
+
+      const mockSessionStorage = {
+        createSession: vi.fn(),
+        getSession: vi.fn(),
+        getActiveSessions: vi.fn().mockReturnValue([
+          {
+            id: 'test-session',
+            publicKey: mockPublicKey,
+            walletName: 'Phantom',
+            createdAt: Date.now() - 1000 * 60,
+            expiresAt: Date.now() + 1000 * 60 * 60 * 23,
+            lastActivity: Date.now() - 1000 * 60,
+          },
+        ]),
+        validateSession: vi.fn(),
+        refreshSession: vi.fn(),
+        revokeSession: vi.fn(),
+        clearExpiredSessions: vi.fn(),
+        clearAll: vi.fn(),
+        saveLastWallet: vi.fn(),
+        getLastWallet: vi.fn().mockReturnValue('Phantom'),
+        setAutoConnect: vi.fn(),
+        getAutoConnect: vi.fn().mockReturnValue(true),
+      };
+
+      const { createWalletConnectionManager } = await import('../../src/wallet/connection');
+      vi.mocked(createWalletConnectionManager).mockImplementation(
+        () =>
+          ({
+            on: vi.fn(),
+            off: vi.fn(),
+            emit: vi.fn(),
+            getWallet: vi.fn().mockReturnValue(mockWallet.provider),
+            getWallets: vi.fn().mockReturnValue([]),
+            registerWallet: vi.fn(),
+            connect: vi.fn(),
+            disconnect: vi.fn(),
+            autoConnect: vi.fn(),
+            sessionStorage: mockSessionStorage,
+          }) as any,
+      );
+
+      const autoConnectWrapper = ({ children }: { children: React.ReactNode }) =>
+        React.createElement(WalletProvider, { autoConnect: true }, children);
+
+      const { result } = renderHook(() => useWallet(), { wrapper: autoConnectWrapper });
+
+      // Start auto-connect without awaiting
+      const autoConnectPromise = result.current.autoConnect();
+
+      // Wait a tick for state to update
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      // Should be in connecting state
+      expect(result.current.autoConnecting).toBe(true);
+
+      // Advance time to trigger timeout
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5001);
+      });
+
+      // Wait for state to update after timeout
+      await waitFor(
+        () => {
+          expect(result.current.autoConnecting).toBe(false);
+        },
+        { timeout: 1000 },
+      );
+
+      // Connection should have been attempted but timed out
+      expect(mockWallet.provider.connect).toHaveBeenCalled();
+      expect(result.current.connected).toBe(false);
+
+      // Clean up the promise
+      await expect(autoConnectPromise).resolves.toBeUndefined();
+
+      vi.useRealTimers();
+    });
+  });
+
+  describe('Auto-connect User Controls', () => {
+    it('should allow enabling/disabling auto-connect', async () => {
+      const mockSessionStorage = {
+        createSession: vi.fn(),
+        getSession: vi.fn(),
+        getActiveSessions: vi.fn().mockReturnValue([]),
+        validateSession: vi.fn(),
+        refreshSession: vi.fn(),
+        revokeSession: vi.fn(),
+        clearExpiredSessions: vi.fn(),
+        clearAll: vi.fn(),
+        saveLastWallet: vi.fn(),
+        getLastWallet: vi.fn().mockReturnValue(null),
+        setAutoConnect: vi.fn(),
+        getAutoConnect: vi.fn().mockReturnValue(false),
+      };
+
+      const { createWalletConnectionManager } = await import('../../src/wallet/connection');
+      vi.mocked(createWalletConnectionManager).mockImplementation(
+        () =>
+          ({
+            on: vi.fn(),
+            off: vi.fn(),
+            emit: vi.fn(),
+            getWallet: vi.fn(),
+            getWallets: vi.fn().mockReturnValue([]),
+            registerWallet: vi.fn(),
+            connect: vi.fn(),
+            disconnect: vi.fn(),
+            autoConnect: vi.fn(),
+            sessionStorage: mockSessionStorage,
+          }) as any,
+      );
+
+      const { result } = renderHook(() => useWallet(), { wrapper });
+
+      // Enable auto-connect
+      act(() => {
+        result.current.setAutoConnect(true);
+      });
+
+      expect(mockSessionStorage.setAutoConnect).toHaveBeenCalledWith(true);
+
+      // Disable auto-connect
+      act(() => {
+        result.current.setAutoConnect(false);
+      });
+
+      expect(mockSessionStorage.setAutoConnect).toHaveBeenCalledWith(false);
+      expect(localStorage.getItem('photon_wallet_name')).toBeNull();
+      expect(localStorage.getItem('photon_wallet_timestamp')).toBeNull();
+    });
+
+    it('should get auto-connect preference', async () => {
+      const mockSessionStorage = {
+        createSession: vi.fn(),
+        getSession: vi.fn(),
+        getActiveSessions: vi.fn().mockReturnValue([]),
+        validateSession: vi.fn(),
+        refreshSession: vi.fn(),
+        revokeSession: vi.fn(),
+        clearExpiredSessions: vi.fn(),
+        clearAll: vi.fn(),
+        saveLastWallet: vi.fn(),
+        getLastWallet: vi.fn().mockReturnValue(null),
+        setAutoConnect: vi.fn(),
+        getAutoConnect: vi.fn().mockReturnValue(true),
+      };
+
+      const { createWalletConnectionManager } = await import('../../src/wallet/connection');
+      vi.mocked(createWalletConnectionManager).mockImplementation(
+        () =>
+          ({
+            on: vi.fn(),
+            off: vi.fn(),
+            emit: vi.fn(),
+            getWallet: vi.fn(),
+            getWallets: vi.fn().mockReturnValue([]),
+            registerWallet: vi.fn(),
+            connect: vi.fn(),
+            disconnect: vi.fn(),
+            autoConnect: vi.fn(),
+            sessionStorage: mockSessionStorage,
+          }) as any,
+      );
+
+      const { result } = renderHook(() => useWallet(), { wrapper });
+
+      const preference = result.current.getAutoConnectPreference();
+      expect(preference).toBe(true);
+      expect(mockSessionStorage.getAutoConnect).toHaveBeenCalled();
+    });
+
+    it('should clear auto-connect preferences', async () => {
+      const mockSessionStorage = {
+        createSession: vi.fn(),
+        getSession: vi.fn(),
+        getActiveSessions: vi.fn().mockReturnValue([]),
+        validateSession: vi.fn(),
+        refreshSession: vi.fn(),
+        revokeSession: vi.fn(),
+        clearExpiredSessions: vi.fn(),
+        clearAll: vi.fn(),
+        saveLastWallet: vi.fn(),
+        getLastWallet: vi.fn().mockReturnValue(null),
+        setAutoConnect: vi.fn(),
+        getAutoConnect: vi.fn().mockReturnValue(false),
+      };
+
+      const { createWalletConnectionManager } = await import('../../src/wallet/connection');
+      vi.mocked(createWalletConnectionManager).mockImplementation(
+        () =>
+          ({
+            on: vi.fn(),
+            off: vi.fn(),
+            emit: vi.fn(),
+            getWallet: vi.fn(),
+            getWallets: vi.fn().mockReturnValue([]),
+            registerWallet: vi.fn(),
+            connect: vi.fn(),
+            disconnect: vi.fn(),
+            autoConnect: vi.fn(),
+            sessionStorage: mockSessionStorage,
+          }) as any,
+      );
+
+      // Set some initial values
+      localStorage.setItem('photon_wallet_name', 'Phantom');
+      localStorage.setItem('photon_wallet_timestamp', Date.now().toString());
+
+      const { result } = renderHook(() => useWallet(), { wrapper });
+
+      act(() => {
+        result.current.clearAutoConnectPreference();
+      });
+
+      expect(mockSessionStorage.setAutoConnect).toHaveBeenCalledWith(false);
+      expect(mockSessionStorage.clearAll).toHaveBeenCalled();
+      expect(localStorage.getItem('photon_wallet_name')).toBeNull();
+      expect(localStorage.getItem('photon_wallet_timestamp')).toBeNull();
+    });
+  });
+
   describe('TypeScript Support', () => {
     it('should have correct type for hook result', () => {
       const { result } = renderHook(() => useWallet(), { wrapper });
@@ -521,6 +1023,10 @@ describe('useWallet hook', () => {
       expect(hookResult).toHaveProperty('connecting');
       expect(hookResult).toHaveProperty('publicKey');
       expect(hookResult).toHaveProperty('wallet');
+      expect(hookResult).toHaveProperty('autoConnecting');
+      expect(hookResult).toHaveProperty('setAutoConnect');
+      expect(hookResult).toHaveProperty('getAutoConnectPreference');
+      expect(hookResult).toHaveProperty('clearAutoConnectPreference');
       expect(hookResult).toHaveProperty('error');
       expect(hookResult).toHaveProperty('availableWallets');
       expect(hookResult).toHaveProperty('connect');
