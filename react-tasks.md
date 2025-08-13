@@ -109,7 +109,7 @@ Implement the core connection management logic for handling wallet connections, 
 
 ---
 
-### RW-4: Build useWallet hook
+### ✅ RW-4: Build useWallet hook
 
 **Priority**: Highest | **Story Points**: 5 | **Labels**: `feature`, `wallet`, `hook`  
 **Dependencies**: RW-3
