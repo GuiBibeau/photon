@@ -1,22 +1,121 @@
 import type { Address } from '@photon/addresses';
 import type { Transaction } from '@photon/transactions';
+import type { Signature } from '@photon/crypto';
+
+/**
+ * Wallet event types
+ */
+export type WalletEvent = 'connect' | 'disconnect' | 'accountChanged' | 'error';
+
+/**
+ * Event listener callback
+ */
+export type WalletEventListener<T = unknown> = (data: T) => void;
 
 /**
  * Core wallet provider interface
+ * Extends concepts from SDK's Signer interface for compatibility
  */
 export interface WalletProvider {
+  // Identity
   name: string;
   icon?: string;
   url?: string;
+
+  // State
   publicKey: Address | null;
   connected: boolean;
   connecting: boolean;
 
-  connect(): Promise<void>;
+  // Feature support flags
+  features?: WalletFeatures;
+
+  // Connection methods
+  connect(options?: { onlyIfTrusted?: boolean }): Promise<void>;
   disconnect(): Promise<void>;
+
+  // Transaction signing
   signTransaction(transaction: Transaction): Promise<Transaction>;
   signAllTransactions(transactions: Transaction[]): Promise<Transaction[]>;
-  signMessage(message: Uint8Array): Promise<Uint8Array>;
+  sendTransaction?(transaction: Transaction, options?: SendTransactionOptions): Promise<string>;
+
+  // Message signing
+  signMessage(message: Uint8Array): Promise<Signature>;
+  signIn?(message?: SignInMessage): Promise<SignInOutput>;
+
+  // Event handling
+  on(event: WalletEvent, listener: WalletEventListener): void;
+  off(event: WalletEvent, listener: WalletEventListener): void;
+  emit?(event: WalletEvent, data?: unknown): void;
+}
+
+/**
+ * Wallet feature support flags
+ */
+export interface WalletFeatures {
+  // Core features
+  signTransaction: boolean;
+  signAllTransactions?: boolean;
+  signMessage: boolean;
+  signIn?: boolean;
+
+  // Advanced features
+  sendTransaction?: boolean;
+  simulateTransaction?: boolean;
+
+  // Transaction types
+  versionedTransactions?: boolean;
+  addressLookupTables?: boolean;
+
+  // Mobile features
+  deepLinking?: boolean;
+  mobileWalletAdapter?: boolean;
+
+  // Security features
+  encryptDecrypt?: boolean;
+  multisig?: boolean;
+}
+
+/**
+ * Options for sending transactions
+ */
+export interface SendTransactionOptions {
+  skipPreflight?: boolean;
+  preflightCommitment?: 'processed' | 'confirmed' | 'finalized';
+  maxRetries?: number;
+  minContextSlot?: number;
+}
+
+/**
+ * Sign-in with Solana (SIWS) message
+ */
+export interface SignInMessage {
+  domain?: string;
+  address?: string;
+  statement?: string;
+  uri?: string;
+  version?: string;
+  chainId?: string;
+  nonce?: string;
+  issuedAt?: string;
+  expirationTime?: string;
+  notBefore?: string;
+  requestId?: string;
+  resources?: string[];
+}
+
+/**
+ * Output from sign-in operation
+ */
+export interface SignInOutput {
+  account: {
+    address: string;
+    publicKey: Uint8Array;
+    chains?: string[];
+    features?: string[];
+  };
+  signedMessage: Uint8Array;
+  signature: Uint8Array;
 }
 
 /**
@@ -29,7 +128,15 @@ export interface WalletMetadata {
   readyState: WalletReadyState;
   isInstalled: boolean;
   isMobile: boolean;
+  platforms?: WalletPlatform[];
+  version?: string;
+  features?: WalletFeatures;
 }
+
+/**
+ * Supported platforms for wallet
+ */
+export type WalletPlatform = 'browser-extension' | 'ios' | 'android' | 'desktop' | 'hardware';
 
 /**
  * Wallet ready states
@@ -102,12 +209,52 @@ export class WalletTimeoutError extends WalletError {
   }
 }
 
+export class WalletUserRejectedError extends WalletError {
+  constructor(message: string = 'User rejected the request') {
+    super(message, 'USER_REJECTED');
+  }
+}
+
+export class WalletNotInstalledError extends WalletError {
+  constructor(walletName?: string) {
+    const message = walletName
+      ? `${walletName} wallet is not installed`
+      : 'Wallet is not installed';
+    super(message, 'NOT_INSTALLED');
+  }
+}
+
+export class WalletNetworkError extends WalletError {
+  constructor(message: string = 'Network error occurred') {
+    super(message, 'NETWORK_ERROR');
+  }
+}
+
+export class WalletInvalidTransactionError extends WalletError {
+  constructor(message: string = 'Invalid transaction') {
+    super(message, 'INVALID_TRANSACTION');
+  }
+}
+
+export class WalletRateLimitError extends WalletError {
+  constructor(message: string = 'Too many connection attempts') {
+    super(message, 'RATE_LIMITED');
+  }
+}
+
+export class WalletMobileConnectionError extends WalletError {
+  constructor(message: string = 'Mobile wallet connection failed') {
+    super(message, 'MOBILE_CONNECTION_FAILED');
+  }
+}
+
 /**
  * Detected wallet instance
  */
 export interface DetectedWallet {
   provider: WalletProvider;
   metadata: WalletMetadata;
+  detectionMethod: 'window-injection' | 'wallet-standard' | 'mobile-app' | 'deep-link';
 }
 
 /**
@@ -117,6 +264,8 @@ export interface WalletConnectionOptions {
   onlyIfTrusted?: boolean;
   timeout?: number;
   autoConnect?: boolean;
+  eagerness?: 'eager' | 'lazy';
+  sessionDuration?: number; // milliseconds
 }
 
 /**
