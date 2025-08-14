@@ -8,6 +8,8 @@ import React, {
   type ReactNode,
 } from 'react';
 import type { Address } from '@photon/addresses';
+import type { RpcClient, Commitment } from '@photon/rpc';
+import { createSolanaRpc } from '@photon/rpc';
 import type {
   WalletProvider as WalletProviderInterface,
   DetectedWallet,
@@ -31,6 +33,9 @@ export interface WalletContextValue {
   error: Error | null;
   sessionStorage?: ReturnType<typeof createSessionStorage>;
   connectionConfig?: ConnectionManagerConfig;
+  rpc: RpcClient | null;
+  rpcEndpoint: string | null;
+  commitment: Commitment;
 
   select(walletName: string): void;
   connect(walletName?: string, options?: WalletConnectionOptions): Promise<void>;
@@ -51,6 +56,8 @@ export interface WalletProviderProps {
   autoConnect?: boolean;
   onError?: (error: Error) => void;
   connectionConfig?: ConnectionManagerConfig;
+  rpcEndpoint?: string;
+  commitment?: Commitment;
 }
 
 /**
@@ -72,6 +79,8 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
   autoConnect = false,
   onError,
   connectionConfig,
+  rpcEndpoint = 'https://api.mainnet-beta.solana.com',
+  commitment = 'confirmed',
 }) => {
   const [wallets, setWallets] = useState<DetectedWallet[]>([]);
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
@@ -80,6 +89,14 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
   const [disconnecting, setDisconnecting] = useState(false);
   const [publicKey, setPublicKey] = useState<Address | null>(null);
   const [error, setError] = useState<Error | null>(null);
+
+  // Create RPC client instance
+  const rpc = useMemo(() => {
+    if (!rpcEndpoint) {
+      return null;
+    }
+    return createSolanaRpc(rpcEndpoint, { commitment });
+  }, [rpcEndpoint, commitment]);
 
   // Create connection manager instance
   const connectionManager = useMemo(() => {
@@ -269,6 +286,9 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
       error,
       sessionStorage: connectionManager.sessionStorage,
       connectionConfig: connectionConfig ?? ({} as ConnectionManagerConfig),
+      rpc,
+      rpcEndpoint,
+      commitment,
       select,
       connect,
       disconnect,
@@ -285,6 +305,9 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
       error,
       connectionManager.sessionStorage,
       connectionConfig,
+      rpc,
+      rpcEndpoint,
+      commitment,
       select,
       connect,
       disconnect,
