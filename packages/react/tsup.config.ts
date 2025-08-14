@@ -17,6 +17,8 @@ export default defineConfig({
     'wallet/detector': 'src/wallet/detector.ts',
     'wallet/connection': 'src/wallet/connection.ts',
     'wallet/mobile': 'src/wallet/mobile.ts',
+    'wallet/security': 'src/wallet/security.ts',
+    'wallet/verification': 'src/wallet/verification.ts',
   },
   format: ['esm', 'cjs'],
   dts: false,
