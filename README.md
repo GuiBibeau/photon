@@ -1,5 +1,7 @@
 # Photon SDK
 
+**_N.B. THIS IS AN EXPERIMENT DON"T USE THIS IN PROD_**
+
 > A lightweight, zero-dependency TypeScript SDK for Solana using Web Standards
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/GuiBibeau/photon/blob/main/LICENSE)
