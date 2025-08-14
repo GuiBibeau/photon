@@ -66,6 +66,16 @@
       "import": "./dist/wallet/mobile.mjs",
       "require": "./dist/wallet/mobile.js"
     },
+    "./wallet/security": {
+      "types": "./dist/wallet/security.d.ts",
+      "import": "./dist/wallet/security.mjs",
+      "require": "./dist/wallet/security.js"
+    },
+    "./wallet/verification": {
+      "types": "./dist/wallet/verification.d.ts",
+      "import": "./dist/wallet/verification.mjs",
+      "require": "./dist/wallet/verification.js"
+    },
     "./types": {
       "types": "./dist/types.d.ts",
       "import": "./dist/types.mjs",

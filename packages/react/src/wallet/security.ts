@@ -7,8 +7,17 @@ import type {
   SecurityIssue,
   RateLimitConfig,
   AuthenticationMessage,
+  SecurityMonitor,
 } from './security-types';
-import { validateProvider } from './detector';
+import {
+  validateProviderEnhanced,
+  createHijackDetector,
+  createSecurityMonitor,
+  createAuditLogger,
+  createSessionValidator,
+  type SessionValidator,
+  type AuditLogger,
+} from './verification';
 
 /**
  * Rate limit tracker
@@ -21,12 +30,28 @@ interface RateLimitTracker {
 }
 
 /**
+ * Extended security manager with enhanced verification
+ */
+export interface EnhancedSecurityManager extends SecurityManager {
+  monitor: SecurityMonitor;
+  auditLogger: AuditLogger;
+  sessionValidator: SessionValidator;
+  hijackDetector: ReturnType<typeof createHijackDetector>;
+}
+
+/**
  * Create a security manager instance
  */
-export function createSecurityManager(rateLimitConfig: RateLimitConfig): SecurityManager {
+export function createSecurityManager(rateLimitConfig: RateLimitConfig): EnhancedSecurityManager {
   const rateLimitTrackers = new Map<string, RateLimitTracker>();
   let globalAttempts = 0;
   let globalFirstAttempt = Date.now();
+
+  // Initialize enhanced components
+  const monitor = createSecurityMonitor();
+  const auditLogger = createAuditLogger();
+  const sessionValidator = createSessionValidator();
+  const hijackDetector = createHijackDetector();
 
   /**
    * Reset rate limit tracker if time window has passed
@@ -79,6 +104,14 @@ export function createSecurityManager(rateLimitConfig: RateLimitConfig): Securit
         }
       }
 
+      // Log invalid origin attempt
+      monitor.logEvent({
+        type: 'invalid-origin',
+        timestamp: Date.now(),
+        details: { origin: currentOrigin, allowed: allowedOrigins },
+        severity: 'high',
+      });
+
       return false;
     },
 
@@ -92,6 +125,12 @@ export function createSecurityManager(rateLimitConfig: RateLimitConfig): Securit
       if (rateLimitConfig.globalMaxAttempts) {
         resetGlobalIfNeeded(now);
         if (globalAttempts >= rateLimitConfig.globalMaxAttempts) {
+          monitor.logEvent({
+            type: 'rate-limit-exceeded',
+            timestamp: now,
+            details: { identifier, type: 'global' },
+            severity: 'medium',
+          });
           return false;
         }
       }
@@ -116,9 +155,21 @@ export function createSecurityManager(rateLimitConfig: RateLimitConfig): Securit
             );
 
             if (now - tracker.lastAttemptTime < backoffDelay) {
+              monitor.logEvent({
+                type: 'rate-limit-exceeded',
+                timestamp: now,
+                details: { identifier, type: 'per-wallet', backoffDelay },
+                severity: 'medium',
+              });
               return false;
             }
           } else {
+            monitor.logEvent({
+              type: 'rate-limit-exceeded',
+              timestamp: now,
+              details: { identifier, type: 'per-wallet' },
+              severity: 'medium',
+            });
             return false;
           }
         }
@@ -164,6 +215,9 @@ export function createSecurityManager(rateLimitConfig: RateLimitConfig): Securit
           );
         }
       }
+
+      // Log connection attempt
+      auditLogger.logConnectionAttempt(identifier, true);
     },
 
     /**
@@ -182,11 +236,20 @@ export function createSecurityManager(rateLimitConfig: RateLimitConfig): Securit
     /**
      * Validate a provider for security issues
      */
-    validateProvider(provider: unknown): ProviderSecurityAssessment {
-      const validation = validateProvider(provider);
+    validateProvider(
+      provider: unknown,
+      previousPublicKey?: Address | null,
+    ): ProviderSecurityAssessment {
+      const validation = validateProviderEnhanced(provider, previousPublicKey);
+
+      // Log validation attempt
+      auditLogger.logSecurityEvent('connection-attempt', {
+        provider: provider ? 'present' : 'missing',
+        timestamp: Date.now(),
+      });
 
       const issues: SecurityIssue[] = [];
-      let riskLevel: SecurityRiskLevel = 'low';
+      let riskLevel: SecurityRiskLevel = validation.securityRisk;
 
       // Convert validation issues to security issues
       for (const issue of validation.issues) {
@@ -202,6 +265,9 @@ export function createSecurityManager(rateLimitConfig: RateLimitConfig): Securit
         } else if (issue.includes('No wallet identifier')) {
           type = 'no-identifier';
           severity = 'medium';
+        } else if (issue.includes('Public key changed')) {
+          type = 'suspicious-behavior';
+          severity = 'high';
         }
 
         issues.push({
@@ -209,13 +275,49 @@ export function createSecurityManager(rateLimitConfig: RateLimitConfig): Securit
           severity,
           description: issue,
         });
+      }
 
-        // Update overall risk level
-        if (severity === 'critical' || (severity === 'high' && riskLevel !== 'critical')) {
-          riskLevel = severity;
-        } else if (severity === 'medium' && riskLevel === 'low') {
-          riskLevel = severity;
+      // Add suspicious patterns as security issues
+      for (const pattern of validation.suspiciousPatterns) {
+        issues.push({
+          type: 'suspicious-behavior',
+          severity: 'medium',
+          description: pattern,
+        });
+
+        // Log suspicious pattern
+        monitor.logEvent({
+          type: 'suspicious-provider',
+          timestamp: Date.now(),
+          details: { pattern },
+          severity: 'medium',
+        });
+      }
+
+      // Check for hijacking indicators
+      const hijackAssessment = hijackDetector.checkProvider(provider);
+      if (hijackAssessment.suspicious) {
+        riskLevel = 'critical';
+        for (const indicator of hijackAssessment.indicators) {
+          issues.push({
+            type: 'suspicious-behavior',
+            severity: 'critical',
+            description: `Hijacking indicator: ${indicator}`,
+          });
         }
+
+        // Log hijacking attempt
+        monitor.logEvent({
+          type: 'session-hijack-attempt',
+          timestamp: Date.now(),
+          details: { indicators: hijackAssessment.indicators },
+          severity: 'critical',
+        });
+
+        auditLogger.logSecurityEvent('session-hijack-attempt', {
+          indicators: hijackAssessment.indicators,
+          confidence: hijackAssessment.confidence,
+        });
       }
 
       // Generate recommendations
@@ -233,6 +335,19 @@ export function createSecurityManager(rateLimitConfig: RateLimitConfig): Securit
 
       if (!validation.isValid) {
         recommendations.push('This provider does not meet security requirements.');
+      }
+
+      if (hijackAssessment.suspicious) {
+        recommendations.push('Wallet shows signs of potential hijacking.');
+        recommendations.push('DO NOT connect to this wallet.');
+      }
+
+      // Log validation result
+      if (!validation.isValid) {
+        auditLogger.logValidationFailure(
+          validation.detectedIdentifiers[0] || 'unknown',
+          validation.issues,
+        );
       }
 
       return {
@@ -329,12 +444,37 @@ export function createSecurityManager(rateLimitConfig: RateLimitConfig): Securit
 
         const isValid = await crypto.subtle.verify('Ed25519', cryptoKey, sigBuffer, msgBuffer);
 
+        // Log signature verification result
+        if (!isValid) {
+          monitor.logEvent({
+            type: 'signature-verification-failed',
+            timestamp: Date.now(),
+            details: { publicKey },
+            severity: 'high',
+          });
+        }
+
         return isValid;
       } catch (error) {
         console.error('Signature verification failed:', error);
+
+        // Log verification failure
+        monitor.logEvent({
+          type: 'signature-verification-failed',
+          timestamp: Date.now(),
+          details: { publicKey, error: String(error) },
+          severity: 'high',
+        });
+
         return false;
       }
     },
+
+    // Expose enhanced components
+    monitor,
+    auditLogger,
+    sessionValidator,
+    hijackDetector,
   };
 }
 
