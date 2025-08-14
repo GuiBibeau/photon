@@ -8,23 +8,22 @@ import { useTransactionSigner } from '../src/hooks/transaction-signer';
 import { useWalletContext } from '../src/providers';
 import * as walletHook from '../src/hooks/wallet';
 import * as signerAdapter from '../src/wallet/signer-adapter';
-import * as transactions from '@photon/transactions';
-
 // Mock modules
 vi.mock('../src/hooks/wallet');
 vi.mock('../src/wallet/signer-adapter');
 vi.mock('../src/providers');
-vi.mock('@photon/transactions', async () => {
-  const actual = await vi.importActual('@photon/transactions');
-  return {
-    ...actual,
-    signTransaction: vi.fn(),
-    partiallySignTransaction: vi.fn(),
-    addSignaturesToTransaction: vi.fn(),
-    isFullySigned: vi.fn(),
-    getMissingSigners: vi.fn(),
-  };
-});
+
+// Mock the transactions module completely
+vi.mock('@photon/transactions', () => ({
+  signTransaction: vi.fn(),
+  partiallySignTransaction: vi.fn(),
+  addSignaturesToTransaction: vi.fn(),
+  isFullySigned: vi.fn(),
+  getMissingSigners: vi.fn(),
+}));
+
+// Import after mocking
+import * as transactions from '@photon/transactions';
 
 // Mock wallet provider
 const mockWalletProvider = {
