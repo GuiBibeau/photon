@@ -9,6 +9,7 @@ export {
   createInitializeMintInstruction,
   createInitializeMint2Instruction,
   createInitializeAccountInstruction,
+  createInitializeMultisigInstruction,
   createTransferInstruction,
   createMintToInstruction,
   createBurnInstruction,
@@ -51,6 +52,7 @@ export {
   type MintToConfig,
   type BurnConfig,
   type ApproveConfig,
+  type MultisigConfig,
 } from './types.js';
 
 // Re-export commonly used token addresses from @photon/addresses

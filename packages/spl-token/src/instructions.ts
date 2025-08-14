@@ -4,6 +4,7 @@
 
 import { TOKEN_PROGRAM_ADDRESS, getAddressBytes, type Address } from '@photon/addresses';
 import { u8, u64 } from '@photon/codecs/primitives';
+import { SYSVAR_RENT_ADDRESS } from '@photon/sysvars';
 import {
   createInstruction,
   type AccountMeta,
@@ -17,6 +18,7 @@ import {
   type MintToConfig,
   type BurnConfig,
   type ApproveConfig,
+  type MultisigConfig,
 } from './types.js';
 
 /**
@@ -99,6 +101,68 @@ export function createInitializeAccountInstruction(
     { pubkey: owner, isSigner: false, isWritable: false },
     { pubkey: '11111111111111111111111111111111' as Address, isSigner: false, isWritable: false }, // Rent sysvar
   ];
+
+  return createInstruction(TOKEN_PROGRAM_ADDRESS, accounts, data);
+}
+
+/**
+ * Create an InitializeMultisig instruction
+ *
+ * @param multisig - The multisig account to initialize
+ * @param config - Multisig configuration with M value and signers
+ * @returns The instruction to initialize a multisig account
+ *
+ * @throws Error if signer count is invalid (< 2 or > 11)
+ * @throws Error if M value is invalid (< 1 or > N)
+ *
+ * @remarks
+ * - The InitializeMultisig instruction requires no signers on the instruction itself
+ * - MUST be included in the same transaction as the system program's CreateAccount instruction
+ * - The multisig account must be pre-created with the correct size (355 bytes)
+ * - Supports 2-11 signers with M-of-N threshold signatures
+ * - Allows duplicate signers for simple weighting systems
+ */
+export function createInitializeMultisigInstruction(
+  multisig: Address,
+  config: MultisigConfig,
+): Instruction {
+  // Validate signer count (2-11 signers required)
+  if (config.signers.length < 2 || config.signers.length > 11) {
+    throw new Error(
+      `Invalid signer count: ${config.signers.length}. Must be between 2 and 11 signers.`,
+    );
+  }
+
+  // Check for obviously invalid M value (cannot exceed 11)
+  if (config.m > 11) {
+    throw new Error(`Invalid M value: ${config.m}. Cannot exceed 11.`);
+  }
+
+  // Validate M value (must be between 1 and N)
+  if (config.m < 1 || config.m > config.signers.length) {
+    throw new Error(
+      `Invalid M value: ${config.m}. Must be between 1 and ${config.signers.length} (total signers).`,
+    );
+  }
+
+  // Encode instruction data: discriminator (1 byte) + m value (1 byte)
+  const data = new Uint8Array(2);
+  data.set(u8.encode(TokenInstruction.InitializeMultisig), 0);
+  data.set(u8.encode(config.m), 1);
+
+  // Build accounts array
+  // 1. The multisig account being initialized (writable)
+  // 2. Rent sysvar (for rent exemption validation)
+  // 3-13. All signer accounts (read-only)
+  const accounts: AccountMeta[] = [
+    { pubkey: multisig, isSigner: false, isWritable: true },
+    { pubkey: SYSVAR_RENT_ADDRESS, isSigner: false, isWritable: false },
+  ];
+
+  // Add all signer accounts (read-only, non-signers on the instruction)
+  for (const signer of config.signers) {
+    accounts.push({ pubkey: signer, isSigner: false, isWritable: false });
+  }
 
   return createInstruction(TOKEN_PROGRAM_ADDRESS, accounts, data);
 }
