@@ -1,12 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
-import React from 'react';
+import { renderHook, act } from '@testing-library/react';
 import type { Address } from '@photon/addresses';
 import type { Signature } from '@photon/crypto';
 import type { Signer } from '@photon/signers';
 import type { CompileableTransactionMessage } from '@photon/transaction-messages';
 import { useTransactionSigner } from '../src/hooks/transaction-signer';
-import { WalletProvider, useWalletContext } from '../src/providers';
+import { useWalletContext } from '../src/providers';
 import * as walletHook from '../src/hooks/wallet';
 import * as signerAdapter from '../src/wallet/signer-adapter';
 import * as transactions from '@photon/transactions';
@@ -61,8 +60,7 @@ const mockTransaction = {
   signatures: new Map([['wallet123' as Address, 'signature123' as Signature]]),
 };
 
-// Wrapper component for providing context
-const wrapper = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+// No wrapper needed since we're mocking the context
 
 describe('useTransactionSigner', () => {
   beforeEach(() => {
@@ -120,7 +118,7 @@ describe('useTransactionSigner', () => {
 
   describe('initial state', () => {
     it('should have correct initial state', () => {
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       expect(result.current.state).toBe('idle');
       expect(result.current.isSigningTransaction).toBe(false);
@@ -131,7 +129,7 @@ describe('useTransactionSigner', () => {
     });
 
     it('should detect mobile context', () => {
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       expect(result.current.mobileContext).toHaveProperty('platform');
       expect(result.current.mobileContext).toHaveProperty('isInAppBrowser');
@@ -141,7 +139,7 @@ describe('useTransactionSigner', () => {
 
   describe('signTransaction', () => {
     it('should sign a transaction successfully', async () => {
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       let signedTx;
       await act(async () => {
@@ -152,7 +150,7 @@ describe('useTransactionSigner', () => {
       expect(vi.mocked(transactions.signTransaction)).toHaveBeenCalledWith(
         [mockSigner],
         mockMessage,
-        expect.any(Object)
+        expect.any(Object),
       );
       expect(signedTx).toEqual(mockTransaction);
       expect(result.current.state).toBe('signed');
@@ -164,7 +162,7 @@ describe('useTransactionSigner', () => {
       const error = new Error('Signing failed');
       vi.mocked(transactions.signTransaction).mockRejectedValueOnce(error);
 
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       await act(async () => {
         await expect(result.current.signTransaction(mockMessage)).rejects.toThrow('Signing failed');
@@ -180,7 +178,7 @@ describe('useTransactionSigner', () => {
         publicKey: null,
         wallet: null,
       } as any);
-      
+
       vi.mocked(useWalletContext).mockReturnValue({
         wallet: null,
         wallets: [],
@@ -197,24 +195,26 @@ describe('useTransactionSigner', () => {
         connectionConfig: {},
       } as any);
 
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       await act(async () => {
-        await expect(result.current.signTransaction(mockMessage)).rejects.toThrow('Wallet not connected');
+        await expect(result.current.signTransaction(mockMessage)).rejects.toThrow(
+          'Wallet not connected',
+        );
       });
     });
 
     it('should handle timeout', async () => {
       vi.mocked(transactions.signTransaction).mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 5000))
+        () => new Promise((resolve) => setTimeout(resolve, 5000)),
       );
 
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       await act(async () => {
-        await expect(
-          result.current.signTransaction(mockMessage, { timeout: 100 })
-        ).rejects.toThrow('Transaction signing timeout');
+        await expect(result.current.signTransaction(mockMessage, { timeout: 100 })).rejects.toThrow(
+          'Transaction signing timeout',
+        );
       });
 
       expect(result.current.state).toBe('failed');
@@ -228,7 +228,7 @@ describe('useTransactionSigner', () => {
         sign: vi.fn().mockResolvedValue('signature2' as Signature),
       };
 
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       await act(async () => {
         await result.current.signWithSigners(mockMessage, [additionalSigner]);
@@ -237,7 +237,7 @@ describe('useTransactionSigner', () => {
       expect(vi.mocked(transactions.signTransaction)).toHaveBeenCalledWith(
         [mockSigner, additionalSigner],
         mockMessage,
-        expect.any(Object)
+        expect.any(Object),
       );
       expect(result.current.state).toBe('signed');
     });
@@ -247,7 +247,7 @@ describe('useTransactionSigner', () => {
     it('should sign multiple transactions', async () => {
       const messages = [mockMessage, mockMessage, mockMessage];
 
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       let batchResult;
       await act(async () => {
@@ -271,7 +271,7 @@ describe('useTransactionSigner', () => {
         .mockRejectedValueOnce(error)
         .mockResolvedValueOnce(mockTransaction);
 
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       let batchResult;
       await act(async () => {
@@ -292,12 +292,12 @@ describe('useTransactionSigner', () => {
         .mockResolvedValueOnce(mockTransaction)
         .mockRejectedValueOnce(error);
 
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       await act(async () => {
-        await expect(
-          result.current.signBatch(messages, { abortOnError: true })
-        ).rejects.toThrow('Failed to sign');
+        await expect(result.current.signBatch(messages, { abortOnError: true })).rejects.toThrow(
+          'Failed to sign',
+        );
       });
 
       expect(result.current.state).toBe('failed');
@@ -314,7 +314,7 @@ describe('useTransactionSigner', () => {
 
       vi.mocked(transactions.partiallySignTransaction).mockResolvedValue(partialResult);
 
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       let signResult;
       await act(async () => {
@@ -323,7 +323,7 @@ describe('useTransactionSigner', () => {
 
       expect(vi.mocked(transactions.partiallySignTransaction)).toHaveBeenCalledWith(
         [mockSigner],
-        mockMessage
+        mockMessage,
       );
       expect(signResult).toEqual(partialResult);
       expect(result.current.state).toBe('signed');
@@ -339,7 +339,7 @@ describe('useTransactionSigner', () => {
 
       vi.mocked(transactions.partiallySignTransaction).mockResolvedValue(partialResult);
 
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       await act(async () => {
         await result.current.partialSign(mockMessage);
@@ -362,7 +362,7 @@ describe('useTransactionSigner', () => {
 
       vi.mocked(transactions.partiallySignTransaction).mockResolvedValue(partialResult);
 
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       await act(async () => {
         await result.current.partialSign(mockMessage, [customSigner]);
@@ -370,28 +370,23 @@ describe('useTransactionSigner', () => {
 
       expect(vi.mocked(transactions.partiallySignTransaction)).toHaveBeenCalledWith(
         [customSigner],
-        mockMessage
+        mockMessage,
       );
     });
   });
 
   describe('addSignatures', () => {
     it('should add signatures to existing transaction', () => {
-      const newSignatures = new Map([
-        ['signer2' as Address, 'signature2' as Signature],
-      ]);
+      const newSignatures = new Map([['signer2' as Address, 'signature2' as Signature]]);
 
       const updatedTransaction = {
         ...mockTransaction,
-        signatures: new Map([
-          ...mockTransaction.signatures,
-          ...newSignatures,
-        ]),
+        signatures: new Map([...mockTransaction.signatures, ...newSignatures]),
       };
 
       vi.mocked(transactions.addSignaturesToTransaction).mockReturnValue(updatedTransaction);
 
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       act(() => {
         result.current.addSignatures(mockTransaction, newSignatures);
@@ -399,7 +394,7 @@ describe('useTransactionSigner', () => {
 
       expect(vi.mocked(transactions.addSignaturesToTransaction)).toHaveBeenCalledWith(
         mockTransaction,
-        newSignatures
+        newSignatures,
       );
       expect(result.current.currentTransaction).toEqual(updatedTransaction);
     });
@@ -410,12 +405,14 @@ describe('useTransactionSigner', () => {
       const error = new Error('Test error');
       vi.mocked(transactions.signTransaction).mockRejectedValueOnce(error);
 
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       await act(async () => {
         try {
           await result.current.signTransaction(mockMessage);
-        } catch {}
+        } catch {
+          // Expected to throw
+        }
       });
 
       expect(result.current.error).toEqual(error);
@@ -428,7 +425,7 @@ describe('useTransactionSigner', () => {
     });
 
     it('should reset state', async () => {
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       await act(async () => {
         await result.current.signTransaction(mockMessage);
@@ -452,7 +449,7 @@ describe('useTransactionSigner', () => {
       const missingSigners = ['signer2' as Address, 'signer3' as Address];
       vi.mocked(transactions.getMissingSigners).mockReturnValue(missingSigners);
 
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       act(() => {
         result.current.addSignatures(mockTransaction, new Map());
@@ -462,7 +459,7 @@ describe('useTransactionSigner', () => {
     });
 
     it.skip('should track if transaction is fully signed', () => {
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       // First time - not fully signed
       vi.mocked(transactions.isFullySigned).mockReturnValueOnce(false);
@@ -496,10 +493,13 @@ describe('useTransactionSigner', () => {
         configurable: true,
       });
 
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       // Check that mobile context was set correctly
-      if (result.current.mobileContext.requiresAppSwitch && result.current.mobileContext.sessionId) {
+      if (
+        result.current.mobileContext.requiresAppSwitch &&
+        result.current.mobileContext.sessionId
+      ) {
         await act(async () => {
           await result.current.signTransaction(mockMessage, {
             mobile: {
@@ -511,18 +511,17 @@ describe('useTransactionSigner', () => {
 
         expect(sessionStorageSpy).toHaveBeenCalledWith(
           expect.stringContaining('photon_signing_'),
-          expect.any(String)
+          expect.any(String),
         );
       } else {
-        // Skip test if mobile context not properly set
-        console.log('Mobile context not set, skipping test');
+        // Skip test if mobile context not properly set - test will be skipped
       }
     });
   });
 
   describe('version support', () => {
     it('should support legacy transactions', async () => {
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       await act(async () => {
         await result.current.signTransaction(mockMessage, {
@@ -534,7 +533,7 @@ describe('useTransactionSigner', () => {
     });
 
     it('should support versioned transactions', async () => {
-      const { result } = renderHook(() => useTransactionSigner(), { wrapper });
+      const { result } = renderHook(() => useTransactionSigner());
 
       await act(async () => {
         await result.current.signTransaction(mockMessage, {
