@@ -10,10 +10,11 @@ This task list covers the implementation of missing core SPL Token instructions 
 
 **Goal**: Implement multisignature account support for secure multi-party token operations
 
-### SPL-1: Implement InitializeMultisig instruction
+### ✅ SPL-1: Implement InitializeMultisig instruction
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `spl-token`, `multisig`  
-**Dependencies**: SDK core modules
+**Dependencies**: SDK core modules  
+**Status**: Completed - Branch: `feat/spl-1-initialize-multisig`
 
 **Description**:
 Create the InitializeMultisig instruction to set up multisignature accounts that require M-of-N signatures for operations.
