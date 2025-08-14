@@ -21,6 +21,11 @@ import type {
 import { detectWallets, validateProvider } from './detector';
 import { createSecurityManager } from './security';
 import { createSessionStorage } from './session-storage';
+import {
+  createEnhancedRateLimiter,
+  type EnhancedRateLimiter,
+  type RateLimitStatus,
+} from './rate-limiter';
 
 /**
  * Connection state for each wallet
@@ -70,6 +75,7 @@ export class WalletConnectionManager implements ConnectionEventEmitter {
   private connectionAttempts: Map<string, ConnectionAttempt[]> = new Map();
   private globalConnectionCount = 0;
   private lastGlobalReset = Date.now();
+  public readonly rateLimiter: EnhancedRateLimiter;
 
   constructor(config?: ConnectionManagerConfig) {
     this.config = {
@@ -99,6 +105,16 @@ export class WalletConnectionManager implements ConnectionEventEmitter {
         perWallet: true,
       },
     );
+
+    // Initialize enhanced rate limiter
+    this.rateLimiter = createEnhancedRateLimiter(
+      this.config.rateLimit || {
+        maxAttempts: 5,
+        timeWindow: 60000,
+        perWallet: true,
+      },
+    );
+
     this.sessionStorage = createSessionStorage(this.config.sessionDuration || 24 * 60 * 60 * 1000);
 
     if (this.config.detectOnInit) {
@@ -231,37 +247,33 @@ export class WalletConnectionManager implements ConnectionEventEmitter {
    * Check rate limiting for connection attempts
    */
   private checkRateLimit(walletName: string): void {
+    // Check global rate limit first
     const now = Date.now();
-    const { rateLimit } = this.config;
+    if (this.config.rateLimit?.globalMaxAttempts) {
+      // Reset global counter if time window passed
+      if (now - this.lastGlobalReset > (this.config.rateLimit.timeWindow || 60000)) {
+        this.globalConnectionCount = 0;
+        this.lastGlobalReset = now;
+      }
 
-    if (!rateLimit) {
-      return;
-    }
-
-    // Check global rate limit
-    if (now - this.lastGlobalReset > rateLimit.timeWindow) {
-      this.globalConnectionCount = 0;
-      this.lastGlobalReset = now;
-    }
-
-    if (rateLimit.globalMaxAttempts && this.globalConnectionCount >= rateLimit.globalMaxAttempts) {
-      throw new WalletRateLimitError('Global connection rate limit exceeded');
+      if (this.globalConnectionCount >= this.config.rateLimit.globalMaxAttempts) {
+        throw new WalletRateLimitError('Global connection rate limit exceeded');
+      }
     }
 
     // Check per-wallet rate limit
-    if (rateLimit.perWallet) {
-      const attempts = this.connectionAttempts.get(walletName) || [];
-      const recentAttempts = attempts.filter(
-        (attempt) => now - attempt.timestamp < rateLimit.timeWindow,
-      );
+    if (!this.rateLimiter.canAttempt(walletName)) {
+      const status = this.rateLimiter.getRateLimitStatus(walletName);
+      const cooldownTime = this.rateLimiter.getCooldownTime(walletName);
 
-      if (recentAttempts.length >= rateLimit.maxAttempts) {
-        throw new WalletRateLimitError(
-          `Too many connection attempts for ${walletName}. Please wait before trying again.`,
-        );
-      }
+      // Emit rate limit event for UI updates
+      this.emit('rateLimit', {
+        wallet: walletName,
+        status,
+        cooldownTime,
+      });
 
-      this.connectionAttempts.set(walletName, recentAttempts);
+      throw new WalletRateLimitError(status.message);
     }
   }
 
@@ -274,14 +286,20 @@ export class WalletConnectionManager implements ConnectionEventEmitter {
       timestamp: Date.now(),
       success,
       walletName,
-      ...(errorCode ? { errorCode } : {}),
+      errorCode,
     };
 
     const attempts = this.connectionAttempts.get(walletName) || [];
     attempts.push(attempt);
     this.connectionAttempts.set(walletName, attempts);
 
-    if (!success) {
+    // Record in enhanced rate limiter
+    this.rateLimiter.recordAttempt(walletName, success);
+
+    // Update global counter
+    if (success) {
+      this.globalConnectionCount = Math.max(0, this.globalConnectionCount - 1);
+    } else {
       this.globalConnectionCount++;
     }
   }
@@ -492,6 +510,54 @@ export class WalletConnectionManager implements ConnectionEventEmitter {
 
     // Connect to new wallet
     await this.connect(walletName, options);
+  }
+
+  /**
+   * Get rate limit status for a wallet
+   */
+  getRateLimitStatus(walletName: string): RateLimitStatus {
+    return this.rateLimiter.getRateLimitStatus(walletName);
+  }
+
+  /**
+   * Get cooldown time remaining for a wallet
+   */
+  getRateLimitCooldown(walletName: string): number {
+    return this.rateLimiter.getCooldownTime(walletName);
+  }
+
+  /**
+   * Force retry a connection (override rate limit once)
+   */
+  async forceRetryConnection(walletName: string, options?: WalletConnectionOptions): Promise<void> {
+    const normalizedName = walletName.toLowerCase();
+
+    if (!this.rateLimiter.forceRetry(normalizedName)) {
+      throw new WalletRateLimitError('Override already used. Please wait for rate limit to reset.');
+    }
+
+    await this.connect(walletName, options);
+  }
+
+  /**
+   * Clear rate limit for a wallet or all wallets
+   */
+  clearRateLimit(walletName?: string): void {
+    if (walletName) {
+      this.rateLimiter.clearRateLimit(walletName.toLowerCase());
+    } else {
+      this.rateLimiter.clearRateLimit();
+    }
+
+    // Emit event for UI updates
+    this.emit('rateLimitCleared', { wallet: walletName });
+  }
+
+  /**
+   * Get attempt statistics for a wallet
+   */
+  getAttemptStats(walletName: string) {
+    return this.rateLimiter.getAttemptStats(walletName.toLowerCase());
   }
 
   /**
