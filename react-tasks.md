@@ -181,7 +181,7 @@ Build intelligent auto-connection that remembers user preferences and reconnects
 
 ## Epic 2: Security & Validation
 
-### RW-6: Implement wallet verification
+### ✅ RW-6: Implement wallet verification
 
 **Priority**: Highest | **Story Points**: 3 | **Labels**: `feature`, `security`, `wallet`  
 **Dependencies**: RW-2
