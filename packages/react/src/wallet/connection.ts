@@ -286,7 +286,7 @@ export class WalletConnectionManager implements ConnectionEventEmitter {
       timestamp: Date.now(),
       success,
       walletName,
-      errorCode,
+      ...(errorCode ? { errorCode } : {}),
     };
 
     const attempts = this.connectionAttempts.get(walletName) || [];
