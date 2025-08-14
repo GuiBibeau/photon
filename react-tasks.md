@@ -215,7 +215,7 @@ Add comprehensive security checks to prevent wallet hijacking and validate provi
 
 ---
 
-### RW-7: Add connection rate limiting
+### ✅ RW-7: Add connection rate limiting
 
 **Priority**: High | **Story Points**: 2 | **Labels**: `feature`, `security`, `wallet`  
 **Dependencies**: RW-6
