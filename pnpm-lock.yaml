@@ -331,6 +331,9 @@ importers:
       '@photon/errors':
         specifier: workspace:*
         version: link:../errors
+      '@photon/sysvars':
+        specifier: workspace:*
+        version: link:../sysvars
       '@photon/transaction-messages':
         specifier: workspace:*
         version: link:../transaction-messages

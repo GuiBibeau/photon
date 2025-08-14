@@ -121,3 +121,13 @@ export interface ApproveConfig {
   /** Additional signers if owner is a multisig */
   signers?: Address[];
 }
+
+/**
+ * Configuration for initializing a multisig account
+ */
+export interface MultisigConfig {
+  /** Number of required signatures (M) */
+  m: number;
+  /** Array of signer public keys (2-11 signers) */
+  signers: Address[];
+}

@@ -61,6 +61,7 @@
     "@photon/addresses": "workspace:*",
     "@photon/codecs": "workspace:*",
     "@photon/errors": "workspace:*",
+    "@photon/sysvars": "workspace:*",
     "@photon/transaction-messages": "workspace:*"
   }
 }
