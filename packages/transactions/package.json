@@ -2,7 +2,7 @@
   "name": "@photon/transactions",
   "version": "0.0.0",
   "description": "Transaction utilities for Photon SDK",
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
