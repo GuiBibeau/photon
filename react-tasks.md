@@ -249,7 +249,7 @@ Implement rate limiting to prevent connection spam and abuse.
 
 ## Epic 3: Transaction Signing
 
-### RW-8: Build transaction signer
+### ✅  RW-8: Build transaction signer
 
 **Priority**: Highest | **Story Points**: 5 | **Labels**: `feature`, `wallet`, `transactions`  
 **Dependencies**: RW-4, SDK transactions
@@ -287,7 +287,7 @@ Implement transaction signing that integrates with the SDK's transaction system.
 
 ---
 
-### RW-9: Add message signing
+### ✅ RW-9: Add message signing
 
 **Priority**: High | **Story Points**: 3 | **Labels**: `feature`, `wallet`, `auth`  
 **Dependencies**: RW-8
