@@ -8,6 +8,8 @@ const STORAGE_KEYS = {
   SESSIONS: 'photon_wallet_sessions',
   LAST_WALLET: 'photon_last_wallet',
   AUTO_CONNECT: 'photon_auto_connect',
+  EXPLICITLY_DISCONNECTED: 'photon_explicitly_disconnected',
+  CONNECTION_STATE: 'photon_connection_state',
 } as const;
 
 /**
@@ -29,6 +31,12 @@ export interface SessionStorage {
   getLastWallet(): string | null;
   setAutoConnect(enabled: boolean): void;
   getAutoConnect(): boolean;
+  
+  // Connection state management
+  setExplicitlyDisconnected(disconnected: boolean): void;
+  isExplicitlyDisconnected(): boolean;
+  setConnectionState(connected: boolean, walletName?: string): void;
+  getConnectionState(): { connected: boolean; walletName?: string } | null;
 }
 
 /**
@@ -273,6 +281,51 @@ export function createSessionStorage(defaultDuration: number): SessionStorage {
     getAutoConnect(): boolean {
       const value = storage.getItem(STORAGE_KEYS.AUTO_CONNECT);
       return value === 'true';
+    },
+    
+    /**
+     * Set explicitly disconnected flag
+     */
+    setExplicitlyDisconnected(disconnected: boolean): void {
+      if (disconnected) {
+        storage.setItem(STORAGE_KEYS.EXPLICITLY_DISCONNECTED, 'true');
+        // Also clear connection state when explicitly disconnected
+        storage.removeItem(STORAGE_KEYS.CONNECTION_STATE);
+      } else {
+        storage.removeItem(STORAGE_KEYS.EXPLICITLY_DISCONNECTED);
+      }
+    },
+    
+    /**
+     * Check if explicitly disconnected
+     */
+    isExplicitlyDisconnected(): boolean {
+      return storage.getItem(STORAGE_KEYS.EXPLICITLY_DISCONNECTED) === 'true';
+    },
+    
+    /**
+     * Set connection state
+     */
+    setConnectionState(connected: boolean, walletName?: string): void {
+      if (connected && walletName) {
+        storage.setItem(STORAGE_KEYS.CONNECTION_STATE, JSON.stringify({ connected, walletName }));
+        // Clear explicitly disconnected flag when connecting
+        storage.removeItem(STORAGE_KEYS.EXPLICITLY_DISCONNECTED);
+      } else {
+        storage.removeItem(STORAGE_KEYS.CONNECTION_STATE);
+      }
+    },
+    
+    /**
+     * Get connection state
+     */
+    getConnectionState(): { connected: boolean; walletName?: string } | null {
+      try {
+        const state = storage.getItem(STORAGE_KEYS.CONNECTION_STATE);
+        return state ? JSON.parse(state) : null;
+      } catch {
+        return null;
+      }
     },
   };
 }

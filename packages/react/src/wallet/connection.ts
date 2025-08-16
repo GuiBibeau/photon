@@ -76,6 +76,7 @@ export class WalletConnectionManager implements ConnectionEventEmitter {
   private globalConnectionCount = 0;
   private lastGlobalReset = Date.now();
   public readonly rateLimiter: EnhancedRateLimiter;
+  private isDisconnecting = false;
 
   constructor(config?: ConnectionManagerConfig) {
     this.config = {
@@ -122,6 +123,7 @@ export class WalletConnectionManager implements ConnectionEventEmitter {
     }
 
     if (this.config.autoConnect) {
+      console.log(this.config);
       this.autoConnect();
     }
   }
@@ -177,11 +179,33 @@ export class WalletConnectionManager implements ConnectionEventEmitter {
   }
 
   /**
+   * Remove event listeners for a wallet provider
+   */
+  private removeWalletEventListeners(walletName: string, provider: WalletProvider): void {
+    // Remove all event listeners
+    provider.off('connect', () => {});
+    provider.off('disconnect', () => {});
+    provider.off('accountChanged', () => {});
+    console.log('[ConnectionManager] Removed event listeners for:', walletName);
+  }
+
+  /**
    * Setup event listeners for a wallet provider
    */
   private setupWalletEventListeners(walletName: string, provider: WalletProvider): void {
     // Connect event
     provider.on('connect', () => {
+      console.log(
+        '[ConnectionManager Event] Provider connect event fired, isDisconnecting:',
+        this.isDisconnecting,
+      );
+
+      // Ignore connect events during disconnect process
+      if (this.isDisconnecting) {
+        console.log('[ConnectionManager Event] Ignoring connect event during disconnect');
+        return;
+      }
+
       const state = this.wallets.get(walletName);
       if (state) {
         state.connected = true;
@@ -393,6 +417,10 @@ export class WalletConnectionManager implements ConnectionEventEmitter {
       state.publicKey = state.provider.publicKey;
       this.currentWallet = normalizedName;
 
+      // Save last wallet for auto-connect
+      this.sessionStorage.saveLastWallet(normalizedName);
+      console.log('[ConnectionManager.connect] Saved last wallet:', normalizedName);
+
       // Create session
       if (state.publicKey) {
         state.session = this.sessionStorage.createSession(
@@ -435,33 +463,84 @@ export class WalletConnectionManager implements ConnectionEventEmitter {
    * Disconnect from current wallet
    */
   async disconnect(): Promise<void> {
+    console.log('[ConnectionManager.disconnect] Starting, currentWallet:', this.currentWallet);
     if (!this.currentWallet) {
+      console.log('[ConnectionManager.disconnect] No wallet connected, throwing error');
       throw new WalletDisconnectedError('No wallet is connected');
     }
 
     const state = this.wallets.get(this.currentWallet);
+    console.log('[ConnectionManager.disconnect] Wallet state:', {
+      connected: state?.connected,
+      connecting: state?.connecting,
+      publicKey: state?.publicKey?.toString(),
+    });
+
     if (!state) {
       throw new WalletDisconnectedError('Wallet state not found');
     }
 
+    // Set disconnecting flag to prevent reconnection
+    this.isDisconnecting = true;
+    console.log('[ConnectionManager.disconnect] Set isDisconnecting = true');
+
     try {
-      await state.provider.disconnect();
+      // First, remove event listeners to prevent any reconnection
+      console.log('[ConnectionManager.disconnect] Removing event listeners');
+      this.removeWalletEventListeners(this.currentWallet, state.provider);
+
+      // Force clear the provider's state
+      console.log('[ConnectionManager.disconnect] Force clearing provider state');
+      state.provider.connected = false;
+      state.provider.publicKey = null;
+
+      console.log('[ConnectionManager.disconnect] Calling provider.disconnect()');
+      // Try to disconnect but don't fail if it throws
+      try {
+        await state.provider.disconnect();
+        console.log('[ConnectionManager.disconnect] Provider disconnect completed');
+      } catch (err) {
+        console.log('[ConnectionManager.disconnect] Provider disconnect error (ignored):', err);
+      }
 
       // Clear session
       if (state.session) {
+        console.log('[ConnectionManager.disconnect] Revoking session:', state.session.id);
         this.sessionStorage.revokeSession(state.session.id);
       }
 
+      // Capture wallet name before clearing
+      const previousWallet = this.currentWallet;
+
+      // Force clear all state
       state.connected = false;
       state.publicKey = null;
+      state.connecting = false;
       delete state.session;
 
-      const previousWallet = this.currentWallet;
       this.currentWallet = null;
+      console.log(
+        '[ConnectionManager.disconnect] Reset currentWallet to null, was:',
+        previousWallet,
+      );
 
       // Emit disconnect event
+      console.log('[ConnectionManager.disconnect] Emitting disconnect event for:', previousWallet);
       this.emit('disconnect', { wallet: previousWallet });
+      console.log('[ConnectionManager.disconnect] Disconnect completed successfully');
+
+      // Reset disconnecting flag and re-add listeners immediately
+      this.isDisconnecting = false;
+      console.log('[ConnectionManager.disconnect] Reset isDisconnecting = false');
+
+      // Re-add event listeners immediately
+      if (state.provider) {
+        console.log('[ConnectionManager.disconnect] Re-adding event listeners');
+        this.setupWalletEventListeners(previousWallet || '', state.provider);
+      }
     } catch (error) {
+      this.isDisconnecting = false;
+      console.error('[ConnectionManager.disconnect] Error during disconnect:', error);
       throw new WalletConnectionError(
         `Failed to disconnect: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
@@ -565,28 +644,63 @@ export class WalletConnectionManager implements ConnectionEventEmitter {
    */
   async autoConnect(): Promise<void> {
     try {
-      // Check for saved session
+      console.log('[ConnectionManager.autoConnect] Starting auto-connect');
+
+      // First try saved sessions
       const sessions = this.sessionStorage.getActiveSessions();
-      if (sessions.length === 0) {
-        return;
-      }
+      if (sessions.length > 0) {
+        // Try to reconnect to the most recent session
+        const mostRecent = sessions.sort((a, b) => b.lastActivity - a.lastActivity)[0];
+        console.log(
+          '[ConnectionManager.autoConnect] Found active session:',
+          mostRecent?.walletName,
+        );
 
-      // Try to reconnect to the most recent session
-      const mostRecent = sessions.sort((a, b) => b.lastActivity - a.lastActivity)[0];
-
-      if (mostRecent) {
-        const state = this.wallets.get(mostRecent.walletName);
-        if (state) {
-          try {
-            await this.connect(mostRecent.walletName, {
-              onlyIfTrusted: true,
-            });
-          } catch (_error) {
-            // Silent failure for auto-connect
-            // Silent failure for auto-connect
-            this.sessionStorage.revokeSession(mostRecent.id);
+        if (mostRecent) {
+          const state = this.wallets.get(mostRecent.walletName);
+          if (state) {
+            try {
+              await this.connect(mostRecent.walletName, {
+                onlyIfTrusted: true,
+              });
+              console.log('[ConnectionManager.autoConnect] Reconnected to session');
+              return;
+            } catch (_error) {
+              console.log('[ConnectionManager.autoConnect] Session reconnect failed');
+            }
           }
         }
+      }
+
+      // Fall back to last wallet from localStorage
+      const lastWallet = this.sessionStorage.getLastWallet();
+      console.log('[ConnectionManager.autoConnect] Last wallet from storage:', lastWallet);
+
+      if (lastWallet) {
+        // Check if wallet is available
+        const state = this.wallets.get(lastWallet.toLowerCase());
+        if (state) {
+          try {
+            console.log(
+              '[ConnectionManager.autoConnect] Attempting to connect to last wallet:',
+              lastWallet,
+            );
+            await this.connect(lastWallet, {
+              onlyIfTrusted: true,
+            });
+            console.log('[ConnectionManager.autoConnect] Successfully connected to last wallet');
+          } catch (_error) {
+            console.log('[ConnectionManager.autoConnect] Failed to connect to last wallet');
+            // Silent failure for auto-connect
+          }
+        } else {
+          console.log(
+            '[ConnectionManager.autoConnect] Wallet not found in registered wallets:',
+            lastWallet,
+          );
+        }
+      } else {
+        console.log('[ConnectionManager.autoConnect] No last wallet saved');
       }
     } catch (error) {
       console.error('Auto-connect error:', error);

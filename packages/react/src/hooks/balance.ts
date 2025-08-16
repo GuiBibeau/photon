@@ -106,6 +106,14 @@ export function useBalance(address?: Address, config?: UseBalanceConfig): UseBal
 
   // Track if component is mounted to prevent state updates after unmount
   const isMountedRef = useRef(true);
+  
+  // Ensure mounted ref is true on mount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Store interval ID for cleanup
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -235,11 +243,9 @@ export function useBalance(address?: Address, config?: UseBalanceConfig): UseBal
     };
   }, [config?.enableSubscription, targetAddress, rpc]);
 
-  // Cleanup on unmount
+  // Cleanup interval and subscriptions on unmount
   useEffect(() => {
     return () => {
-      isMountedRef.current = false;
-
       // Clear interval
       if (intervalRef.current) {
         clearInterval(intervalRef.current);

@@ -395,7 +395,14 @@ function createInjectedWalletProvider(
     async connect(options) {
       const result = await provider.connect(options);
       // Update publicKey after connection
-      this.publicKey = result.publicKey ? parseAddress(result.publicKey.toString()) : null;
+      // Check result first, then fallback to provider.publicKey property
+      if (result?.publicKey) {
+        this.publicKey = parseAddress(result.publicKey.toString());
+      } else if (provider.publicKey) {
+        this.publicKey = parseAddress(provider.publicKey.toString());
+      } else {
+        this.publicKey = null;
+      }
       this.connected = true;
     },
 

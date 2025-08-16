@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import type { Address } from '@photon/addresses';
 import type { DetectedWallet, WalletConnectionOptions, WalletReadyState } from '../types';
 import { useWalletContext } from '../providers';
@@ -107,6 +107,7 @@ export function useWallet(): UseWalletResult {
   const [localError, setLocalError] = useState<Error | null>(null);
   const [autoConnecting, setAutoConnecting] = useState(false);
   const [autoConnectAttempted, setAutoConnectAttempted] = useState(false);
+  const manuallyDisconnectedRef = useRef(false);
 
   // Combine context error with local error
   const error = context.error || localError;
@@ -156,6 +157,8 @@ export function useWallet(): UseWalletResult {
     async (walletName?: string, options?: WalletConnectionOptions) => {
       try {
         setLocalError(null);
+        manuallyDisconnectedRef.current = false; // Reset flag when connecting
+        console.log('[Connect] Reset manuallyDisconnected to false');
 
         // If no wallet specified and none selected, try to select first available
         let targetWallet = walletName;
@@ -180,8 +183,11 @@ export function useWallet(): UseWalletResult {
   // Disconnect with error handling
   const disconnect = useCallback(async () => {
     try {
+      console.log('[Disconnect] Starting disconnect, setting manuallyDisconnected to true');
       setLocalError(null);
+      manuallyDisconnectedRef.current = true; // Set flag to prevent auto-reconnect
       await context.disconnect();
+      console.log('[Disconnect] Disconnect completed, manuallyDisconnected:', manuallyDisconnectedRef.current);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to disconnect');
       setLocalError(error);
@@ -197,6 +203,7 @@ export function useWallet(): UseWalletResult {
     },
     [context],
   );
+
 
   // Auto-connect functionality with enhanced options
   const autoConnect = useCallback(async () => {
@@ -340,11 +347,32 @@ export function useWallet(): UseWalletResult {
 
   // Auto-connect on mount if enabled
   useEffect(() => {
-    if (!autoConnectAttempted && !context.connected && !context.connecting) {
+    console.log('[Auto-connect useEffect]', {
+      autoConnectAttempted,
+      connected: context.connected,
+      connecting: context.connecting,
+      manuallyDisconnected: manuallyDisconnectedRef.current,
+      autoConnectPref: context.sessionStorage?.getAutoConnect(),
+      explicitlyDisconnected: context.sessionStorage?.isExplicitlyDisconnected(),
+    });
+    
+    if (!autoConnectAttempted && !context.connected && !context.connecting && !manuallyDisconnectedRef.current) {
+      // Check if user explicitly disconnected (persists across page refreshes)
+      const isExplicitlyDisconnected = context.sessionStorage?.isExplicitlyDisconnected();
+      
+      // Skip auto-connect if user manually disconnected
+      if (isExplicitlyDisconnected) {
+        console.log('[Auto-connect] Skipping - user explicitly disconnected');
+        setAutoConnectAttempted(true);
+        return;
+      }
+      
       // Check stored preference
       const storedAutoConnect = context.sessionStorage?.getAutoConnect();
       const shouldAutoConnect =
         storedAutoConnect !== undefined ? storedAutoConnect : context.autoConnect;
+
+      console.log('[Auto-connect] Should auto-connect?', shouldAutoConnect);
 
       if (shouldAutoConnect) {
         // Use eager or lazy connection based on configuration
