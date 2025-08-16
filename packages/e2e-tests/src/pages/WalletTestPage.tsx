@@ -61,11 +61,18 @@ export function WalletTestPage() {
     const clickNum = disconnectClickCount + 1;
     setDisconnectClickCount(clickNum);
     console.log(`[UI Disconnect] Click #${clickNum} - Starting disconnect...`);
-    console.log(`[UI Disconnect] Current state before disconnect:`, { connected, connecting, wallet });
-    
+    console.log(`[UI Disconnect] Current state before disconnect:`, {
+      connected,
+      connecting,
+      wallet,
+    });
+
     try {
       await disconnect();
-      console.log(`[UI Disconnect] Click #${clickNum} - Disconnect completed, connected state:`, connected);
+      console.log(
+        `[UI Disconnect] Click #${clickNum} - Disconnect completed, connected state:`,
+        connected,
+      );
     } catch (err) {
       console.error(`[UI Disconnect] Click #${clickNum} - Failed to disconnect:`, err);
     }
@@ -92,7 +99,7 @@ export function WalletTestPage() {
     console.log('Toggling autoConnect:', { current: autoConnectEnabled, new: newValue });
     setAutoConnect(newValue);
     setAutoConnectEnabled(newValue);
-    
+
     // Verify it was saved
     const savedValue = getAutoConnectPreference();
     console.log('Saved autoConnect preference:', savedValue);
@@ -398,12 +405,14 @@ export function WalletTestPage() {
         </div>
 
         {availableWallets.length === 0 ? (
-          <div style={{ 
-            padding: '20px', 
-            background: '#fff3cd', 
-            borderRadius: '6px',
-            border: '1px solid #ffc107'
-          }}>
+          <div
+            style={{
+              padding: '20px',
+              background: '#fff3cd',
+              borderRadius: '6px',
+              border: '1px solid #ffc107',
+            }}
+          >
             <p style={{ color: '#856404', margin: 0, fontWeight: 'bold' }}>
               ⚠️ No wallets detected
             </p>
@@ -411,14 +420,26 @@ export function WalletTestPage() {
               Please install a Solana wallet extension to test wallet connection:
             </p>
             <ul style={{ color: '#856404', marginTop: '10px' }}>
-              <li><a href="https://phantom.app/" target="_blank" rel="noopener noreferrer">Phantom</a></li>
-              <li><a href="https://solflare.com/" target="_blank" rel="noopener noreferrer">Solflare</a></li>
-              <li><a href="https://www.backpack.app/" target="_blank" rel="noopener noreferrer">Backpack</a></li>
+              <li>
+                <a href="https://phantom.app/" target="_blank" rel="noopener noreferrer">
+                  Phantom
+                </a>
+              </li>
+              <li>
+                <a href="https://solflare.com/" target="_blank" rel="noopener noreferrer">
+                  Solflare
+                </a>
+              </li>
+              <li>
+                <a href="https://www.backpack.app/" target="_blank" rel="noopener noreferrer">
+                  Backpack
+                </a>
+              </li>
             </ul>
           </div>
         ) : (
           <div style={{ display: 'grid', gap: '10px' }}>
-            {availableWallets.map((w: any) => (
+            {availableWallets.map((w) => (
               <div
                 key={w.name}
                 style={{
@@ -520,7 +541,10 @@ export function WalletTestPage() {
                 disabled={autoConnecting || !localStorage.getItem('photon_wallet_name')}
                 style={{
                   padding: '10px 20px',
-                  cursor: autoConnecting || !localStorage.getItem('photon_wallet_name') ? 'not-allowed' : 'pointer',
+                  cursor:
+                    autoConnecting || !localStorage.getItem('photon_wallet_name')
+                      ? 'not-allowed'
+                      : 'pointer',
                   background: '#28a745',
                   color: 'white',
                   border: 'none',
@@ -528,7 +552,11 @@ export function WalletTestPage() {
                   fontSize: '1em',
                   opacity: autoConnecting || !localStorage.getItem('photon_wallet_name') ? 0.6 : 1,
                 }}
-                title={!localStorage.getItem('photon_wallet_name') ? 'No previous wallet connection found' : 'Reconnect to last used wallet'}
+                title={
+                  !localStorage.getItem('photon_wallet_name')
+                    ? 'No previous wallet connection found'
+                    : 'Reconnect to last used wallet'
+                }
               >
                 {autoConnecting ? 'Auto Connecting...' : 'Auto Connect (Last Wallet)'}
               </button>
@@ -564,7 +592,8 @@ export function WalletTestPage() {
       >
         <h2 style={{ color: '#333', marginTop: 0 }}>Settings</h2>
         <div style={{ marginBottom: '10px', fontSize: '0.9em', color: '#666' }}>
-          <strong>Auto-Connect Preference:</strong> When enabled, the wallet will automatically reconnect on page refresh
+          <strong>Auto-Connect Preference:</strong> When enabled, the wallet will automatically
+          reconnect on page refresh
         </div>
         <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -576,15 +605,17 @@ export function WalletTestPage() {
             />
             <span>Enable Auto-Connect on Page Load</span>
           </label>
-          
-          <span style={{ 
-            padding: '4px 8px', 
-            background: autoConnectEnabled ? '#4caf50' : '#f44336',
-            color: 'white',
-            borderRadius: '4px',
-            fontSize: '0.85em',
-            fontWeight: 'bold'
-          }}>
+
+          <span
+            style={{
+              padding: '4px 8px',
+              background: autoConnectEnabled ? '#4caf50' : '#f44336',
+              color: 'white',
+              borderRadius: '4px',
+              fontSize: '0.85em',
+              fontWeight: 'bold',
+            }}
+          >
             {autoConnectEnabled ? 'ON' : 'OFF'}
           </span>
 
@@ -619,13 +650,24 @@ export function WalletTestPage() {
       >
         <h3 style={{ marginTop: 0, color: '#1976d2' }}>Debug Info</h3>
         <div style={{ fontFamily: 'monospace', fontSize: '0.9em' }}>
-          <div>localStorage.photon_auto_connect: {localStorage.getItem('photon_auto_connect') || 'null'}</div>
-          <div>localStorage.photon_last_wallet: {localStorage.getItem('photon_last_wallet') || 'null'}</div>
-          <div>localStorage.photon_wallet_name: {localStorage.getItem('photon_wallet_name') || 'null'}</div>
-          <div style={{ color: '#ff5722', fontWeight: 'bold' }}>
-            localStorage.photon_explicitly_disconnected: {localStorage.getItem('photon_explicitly_disconnected') || 'null'}
+          <div>
+            localStorage.photon_auto_connect:{' '}
+            {localStorage.getItem('photon_auto_connect') || 'null'}
           </div>
-          <div>localStorage.photon_connection_state: {localStorage.getItem('photon_connection_state') || 'null'}</div>
+          <div>
+            localStorage.photon_last_wallet: {localStorage.getItem('photon_last_wallet') || 'null'}
+          </div>
+          <div>
+            localStorage.photon_wallet_name: {localStorage.getItem('photon_wallet_name') || 'null'}
+          </div>
+          <div style={{ color: '#ff5722', fontWeight: 'bold' }}>
+            localStorage.photon_explicitly_disconnected:{' '}
+            {localStorage.getItem('photon_explicitly_disconnected') || 'null'}
+          </div>
+          <div>
+            localStorage.photon_connection_state:{' '}
+            {localStorage.getItem('photon_connection_state') || 'null'}
+          </div>
           <div>Hook autoConnectEnabled: {autoConnectEnabled.toString()}</div>
           <div>Hook getAutoConnectPreference(): {getAutoConnectPreference().toString()}</div>
           <div>Available wallets count: {availableWallets.length}</div>
