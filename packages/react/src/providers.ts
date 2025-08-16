@@ -8,6 +8,8 @@ import React, {
   type ReactNode,
 } from 'react';
 import type { Address } from '@photon/addresses';
+import type { RpcClient, Commitment } from '@photon/rpc';
+import { createSolanaRpc } from '@photon/rpc';
 import type {
   WalletProvider as WalletProviderInterface,
   DetectedWallet,
@@ -31,6 +33,9 @@ export interface WalletContextValue {
   error: Error | null;
   sessionStorage?: ReturnType<typeof createSessionStorage>;
   connectionConfig?: ConnectionManagerConfig;
+  rpc: RpcClient | null;
+  rpcEndpoint: string | null;
+  commitment: Commitment;
 
   select(walletName: string): void;
   connect(walletName?: string, options?: WalletConnectionOptions): Promise<void>;
@@ -51,6 +56,8 @@ export interface WalletProviderProps {
   autoConnect?: boolean;
   onError?: (error: Error) => void;
   connectionConfig?: ConnectionManagerConfig;
+  rpcEndpoint?: string;
+  commitment?: Commitment;
 }
 
 /**
@@ -72,6 +79,8 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
   autoConnect = false,
   onError,
   connectionConfig,
+  rpcEndpoint = 'https://api.mainnet-beta.solana.com',
+  commitment = 'confirmed',
 }) => {
   const [wallets, setWallets] = useState<DetectedWallet[]>([]);
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
@@ -80,6 +89,15 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
   const [disconnecting, setDisconnecting] = useState(false);
   const [publicKey, setPublicKey] = useState<Address | null>(null);
   const [error, setError] = useState<Error | null>(null);
+  const [autoConnectAttempted, setAutoConnectAttempted] = useState(false);
+
+  // Create RPC client instance
+  const rpc = useMemo(() => {
+    if (!rpcEndpoint) {
+      return null;
+    }
+    return createSolanaRpc(rpcEndpoint, { commitment });
+  }, [rpcEndpoint, commitment]);
 
   // Create connection manager instance
   const connectionManager = useMemo(() => {
@@ -102,8 +120,8 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
     const detectAndSetWallets = async () => {
       try {
         const detectedWallets = await detectWallets({
-          timeout: 3000,
-          pollInterval: 100,
+          timeout: 500, // Reduced from 3000ms for faster initial detection
+          pollInterval: 50, // Check more frequently
           detectWalletStandard: true,
           detectWindowInjection: true,
         });
@@ -131,6 +149,20 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
         wallet: string;
         publicKey: Address | null;
       };
+      console.log('[Provider Event] handleConnect fired:', {
+        walletName,
+        publicKey: pk?.toString(),
+      });
+
+      // Check if we're explicitly disconnected
+      if (connectionManager.sessionStorage?.isExplicitlyDisconnected()) {
+        console.log('[Provider Event] Ignoring connect - explicitly disconnected');
+        return;
+      }
+
+      // Save connection state
+      connectionManager.sessionStorage?.setConnectionState(true, walletName);
+
       setSelectedWallet(walletName);
       setPublicKey(pk);
       setConnected(true);
@@ -139,6 +171,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
     };
 
     const handleDisconnect = () => {
+      console.log('[Provider Event] handleDisconnect fired');
       setConnected(false);
       setPublicKey(null);
       setDisconnecting(false);
@@ -168,23 +201,56 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
     };
   }, [connectionManager, onError]);
 
-  // Auto-connect on mount if enabled
+  // Auto-connect when wallets are available
   useEffect(() => {
-    if (autoConnect && !connected && !connecting) {
+    // Skip if already attempted or no wallets
+    if (autoConnectAttempted || wallets.length === 0) {
+      if (wallets.length === 0) {
+        console.log('[Provider Auto-connect] No wallets detected yet, waiting...');
+      }
+      return;
+    }
+
+    // Check if user explicitly disconnected (persists across page refreshes)
+    const isExplicitlyDisconnected = connectionManager.sessionStorage?.isExplicitlyDisconnected();
+    const shouldAutoConnect = autoConnect || connectionManager.sessionStorage?.getAutoConnect();
+
+    console.log('[Provider Auto-connect]', {
+      shouldAutoConnect,
+      connected,
+      connecting,
+      walletsAvailable: wallets.length,
+      hasLastWallet: !!connectionManager.sessionStorage?.getLastWallet(),
+      explicitlyDisconnected: isExplicitlyDisconnected,
+    });
+
+    // Skip auto-connect if user manually disconnected
+    if (isExplicitlyDisconnected) {
+      console.log('[Provider] Skipping auto-connect - user explicitly disconnected');
+      setAutoConnectAttempted(true); // Mark as attempted to prevent future attempts
+      return;
+    }
+
+    if (shouldAutoConnect && !connected && !connecting) {
+      setAutoConnectAttempted(true); // Mark as attempted
+
       const performAutoConnect = async () => {
         try {
+          console.log('[Provider] Starting auto-connect...');
           setConnecting(true);
           await connectionManager.autoConnect();
-        } catch (_err) {
-          // Silent failure for auto-connect - no logging needed
+          console.log('[Provider] Auto-connect completed');
+        } catch (err) {
+          console.log('[Provider] Auto-connect failed:', err);
         } finally {
           setConnecting(false);
         }
       };
 
-      performAutoConnect();
+      // Small delay to let wallet registration complete
+      setTimeout(performAutoConnect, 100);
     }
-  }, [autoConnect, connected, connecting, connectionManager]);
+  }, [wallets.length, autoConnectAttempted, autoConnect, connected, connecting, connectionManager]); // Run when wallets are detected
 
   // Select wallet
   const select = useCallback((walletName: string) => {
@@ -202,9 +268,16 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
       }
 
       try {
+        // Clear explicitly disconnected flag when manually connecting
+        connectionManager.sessionStorage?.setExplicitlyDisconnected(false);
+        console.log('[Provider.connect] Cleared explicitly disconnected flag');
+
         setConnecting(true);
         setError(null);
         await connectionManager.connect(targetWallet, options);
+
+        // Save connection state
+        connectionManager.sessionStorage?.setConnectionState(true, targetWallet);
       } catch (err) {
         const error = err instanceof Error ? err : new Error('Connection failed');
         setError(error);
@@ -219,20 +292,35 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
 
   // Disconnect from wallet
   const disconnect = useCallback(async () => {
+    console.log('[Provider.disconnect] Starting disconnect');
+    console.log('[Provider.disconnect] Current state:', { connected, connecting, disconnecting });
+
+    // Set explicitly disconnected flag FIRST
+    connectionManager.sessionStorage?.setExplicitlyDisconnected(true);
+    console.log('[Provider.disconnect] Set explicitly disconnected flag');
+
     try {
       setDisconnecting(true);
       setError(null);
+      console.log('[Provider.disconnect] Calling connectionManager.disconnect()');
       await connectionManager.disconnect();
+      console.log('[Provider.disconnect] connectionManager.disconnect() completed');
       setSelectedWallet(null);
+      console.log('[Provider.disconnect] Reset selectedWallet to null');
+
+      // Clear connection state
+      connectionManager.sessionStorage?.setConnectionState(false);
     } catch (err) {
+      console.error('[Provider.disconnect] Error:', err);
       const error = err instanceof Error ? err : new Error('Disconnection failed');
       setError(error);
       onError?.(error);
       throw error;
     } finally {
       setDisconnecting(false);
+      console.log('[Provider.disconnect] Finished, disconnecting set to false');
     }
-  }, [connectionManager, onError]);
+  }, [connectionManager, onError, connected, connecting, disconnecting]);
 
   // Refresh wallet list
   const refreshWallets = useCallback(async () => {
@@ -269,6 +357,9 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
       error,
       sessionStorage: connectionManager.sessionStorage,
       connectionConfig: connectionConfig ?? ({} as ConnectionManagerConfig),
+      rpc,
+      rpcEndpoint,
+      commitment,
       select,
       connect,
       disconnect,
@@ -285,6 +376,9 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
       error,
       connectionManager.sessionStorage,
       connectionConfig,
+      rpc,
+      rpcEndpoint,
+      commitment,
       select,
       connect,
       disconnect,

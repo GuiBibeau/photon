@@ -1,52 +1,29 @@
 import './App.css';
-import { useState } from 'react';
+import { createRouter, RouterProvider } from '@tanstack/react-router';
 import { AppProvider } from './context/AppContext';
 import { WalletProvider } from '@photon/react';
-import { UnifiedDashboard } from './components/UnifiedDashboard';
-import { WalletTestPage } from './pages/WalletTestPage';
+import { routeTree } from './routeTree.gen';
+
+// Create a new router instance
+const router = createRouter({ routeTree });
+
+// Register the router instance for type safety
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
+}
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'wallet-test'>('dashboard');
-
   return (
-    <WalletProvider autoConnect={true}>
+    <WalletProvider 
+      autoConnect={true}
+      rpcEndpoint="https://api.devnet.solana.com"
+      commitment="confirmed"
+    >
       <AppProvider>
         <div className="app">
-          <header className="app-header">
-            <h1>⚡ Photon SDK</h1>
-            <p>Lightweight Solana Development Kit</p>
-            <nav style={{ marginTop: '10px' }}>
-              <button
-                onClick={() => setCurrentPage('dashboard')}
-                style={{
-                  marginRight: '10px',
-                  padding: '8px 16px',
-                  background: currentPage === 'dashboard' ? '#007bff' : '#6c757d',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                }}
-              >
-                Dashboard
-              </button>
-              <button
-                onClick={() => setCurrentPage('wallet-test')}
-                style={{
-                  padding: '8px 16px',
-                  background: currentPage === 'wallet-test' ? '#007bff' : '#6c757d',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                }}
-              >
-                Wallet Test (useWallet Hook)
-              </button>
-            </nav>
-          </header>
-
-          {currentPage === 'dashboard' ? <UnifiedDashboard /> : <WalletTestPage />}
+          <RouterProvider router={router} />
         </div>
       </AppProvider>
     </WalletProvider>
