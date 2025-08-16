@@ -106,7 +106,7 @@ export function useBalance(address?: Address, config?: UseBalanceConfig): UseBal
 
   // Track if component is mounted to prevent state updates after unmount
   const isMountedRef = useRef(true);
-  
+
   // Ensure mounted ref is true on mount
   useEffect(() => {
     isMountedRef.current = true;

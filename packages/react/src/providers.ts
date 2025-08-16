@@ -120,8 +120,8 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
     const detectAndSetWallets = async () => {
       try {
         const detectedWallets = await detectWallets({
-          timeout: 500,  // Reduced from 3000ms for faster initial detection
-          pollInterval: 50,  // Check more frequently
+          timeout: 500, // Reduced from 3000ms for faster initial detection
+          pollInterval: 50, // Check more frequently
           detectWalletStandard: true,
           detectWindowInjection: true,
         });
@@ -149,17 +149,20 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
         wallet: string;
         publicKey: Address | null;
       };
-      console.log('[Provider Event] handleConnect fired:', { walletName, publicKey: pk?.toString() });
-      
+      console.log('[Provider Event] handleConnect fired:', {
+        walletName,
+        publicKey: pk?.toString(),
+      });
+
       // Check if we're explicitly disconnected
       if (connectionManager.sessionStorage?.isExplicitlyDisconnected()) {
         console.log('[Provider Event] Ignoring connect - explicitly disconnected');
         return;
       }
-      
+
       // Save connection state
       connectionManager.sessionStorage?.setConnectionState(true, walletName);
-      
+
       setSelectedWallet(walletName);
       setPublicKey(pk);
       setConnected(true);
@@ -207,30 +210,30 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
       }
       return;
     }
-    
+
     // Check if user explicitly disconnected (persists across page refreshes)
     const isExplicitlyDisconnected = connectionManager.sessionStorage?.isExplicitlyDisconnected();
     const shouldAutoConnect = autoConnect || connectionManager.sessionStorage?.getAutoConnect();
-    
+
     console.log('[Provider Auto-connect]', {
       shouldAutoConnect,
       connected,
       connecting,
       walletsAvailable: wallets.length,
       hasLastWallet: !!connectionManager.sessionStorage?.getLastWallet(),
-      explicitlyDisconnected: isExplicitlyDisconnected
+      explicitlyDisconnected: isExplicitlyDisconnected,
     });
-    
+
     // Skip auto-connect if user manually disconnected
     if (isExplicitlyDisconnected) {
       console.log('[Provider] Skipping auto-connect - user explicitly disconnected');
       setAutoConnectAttempted(true); // Mark as attempted to prevent future attempts
       return;
     }
-    
+
     if (shouldAutoConnect && !connected && !connecting) {
       setAutoConnectAttempted(true); // Mark as attempted
-      
+
       const performAutoConnect = async () => {
         try {
           console.log('[Provider] Starting auto-connect...');
@@ -268,11 +271,11 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
         // Clear explicitly disconnected flag when manually connecting
         connectionManager.sessionStorage?.setExplicitlyDisconnected(false);
         console.log('[Provider.connect] Cleared explicitly disconnected flag');
-        
+
         setConnecting(true);
         setError(null);
         await connectionManager.connect(targetWallet, options);
-        
+
         // Save connection state
         connectionManager.sessionStorage?.setConnectionState(true, targetWallet);
       } catch (err) {
@@ -291,11 +294,11 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
   const disconnect = useCallback(async () => {
     console.log('[Provider.disconnect] Starting disconnect');
     console.log('[Provider.disconnect] Current state:', { connected, connecting, disconnecting });
-    
+
     // Set explicitly disconnected flag FIRST
     connectionManager.sessionStorage?.setExplicitlyDisconnected(true);
     console.log('[Provider.disconnect] Set explicitly disconnected flag');
-    
+
     try {
       setDisconnecting(true);
       setError(null);
@@ -304,7 +307,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
       console.log('[Provider.disconnect] connectionManager.disconnect() completed');
       setSelectedWallet(null);
       console.log('[Provider.disconnect] Reset selectedWallet to null');
-      
+
       // Clear connection state
       connectionManager.sessionStorage?.setConnectionState(false);
     } catch (err) {

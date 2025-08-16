@@ -31,7 +31,7 @@ export interface SessionStorage {
   getLastWallet(): string | null;
   setAutoConnect(enabled: boolean): void;
   getAutoConnect(): boolean;
-  
+
   // Connection state management
   setExplicitlyDisconnected(disconnected: boolean): void;
   isExplicitlyDisconnected(): boolean;
@@ -282,7 +282,7 @@ export function createSessionStorage(defaultDuration: number): SessionStorage {
       const value = storage.getItem(STORAGE_KEYS.AUTO_CONNECT);
       return value === 'true';
     },
-    
+
     /**
      * Set explicitly disconnected flag
      */
@@ -295,14 +295,14 @@ export function createSessionStorage(defaultDuration: number): SessionStorage {
         storage.removeItem(STORAGE_KEYS.EXPLICITLY_DISCONNECTED);
       }
     },
-    
+
     /**
      * Check if explicitly disconnected
      */
     isExplicitlyDisconnected(): boolean {
       return storage.getItem(STORAGE_KEYS.EXPLICITLY_DISCONNECTED) === 'true';
     },
-    
+
     /**
      * Set connection state
      */
@@ -315,7 +315,7 @@ export function createSessionStorage(defaultDuration: number): SessionStorage {
         storage.removeItem(STORAGE_KEYS.CONNECTION_STATE);
       }
     },
-    
+
     /**
      * Get connection state
      */

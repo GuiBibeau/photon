@@ -187,7 +187,10 @@ export function useWallet(): UseWalletResult {
       setLocalError(null);
       manuallyDisconnectedRef.current = true; // Set flag to prevent auto-reconnect
       await context.disconnect();
-      console.log('[Disconnect] Disconnect completed, manuallyDisconnected:', manuallyDisconnectedRef.current);
+      console.log(
+        '[Disconnect] Disconnect completed, manuallyDisconnected:',
+        manuallyDisconnectedRef.current,
+      );
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to disconnect');
       setLocalError(error);
@@ -203,7 +206,6 @@ export function useWallet(): UseWalletResult {
     },
     [context],
   );
-
 
   // Auto-connect functionality with enhanced options
   const autoConnect = useCallback(async () => {
@@ -355,18 +357,23 @@ export function useWallet(): UseWalletResult {
       autoConnectPref: context.sessionStorage?.getAutoConnect(),
       explicitlyDisconnected: context.sessionStorage?.isExplicitlyDisconnected(),
     });
-    
-    if (!autoConnectAttempted && !context.connected && !context.connecting && !manuallyDisconnectedRef.current) {
+
+    if (
+      !autoConnectAttempted &&
+      !context.connected &&
+      !context.connecting &&
+      !manuallyDisconnectedRef.current
+    ) {
       // Check if user explicitly disconnected (persists across page refreshes)
       const isExplicitlyDisconnected = context.sessionStorage?.isExplicitlyDisconnected();
-      
+
       // Skip auto-connect if user manually disconnected
       if (isExplicitlyDisconnected) {
         console.log('[Auto-connect] Skipping - user explicitly disconnected');
         setAutoConnectAttempted(true);
         return;
       }
-      
+
       // Check stored preference
       const storedAutoConnect = context.sessionStorage?.getAutoConnect();
       const shouldAutoConnect =

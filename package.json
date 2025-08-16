@@ -8,11 +8,12 @@
     "url": "https://github.com/GuiBibeau/photon.git"
   },
   "license": "MIT",
+  "packageManager": "pnpm@10.12.1",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "build": "pnpm -r build",
+    "build": "turbo run build",
     "test": "vitest run",
     "test:ci": "CI=true vitest run",
     "test:watch": "vitest watch",
@@ -21,13 +22,13 @@
     "test:packages": "pnpm -r test",
     "test:packages:watch": "pnpm -r test:watch",
     "test:packages:coverage": "pnpm -r test:coverage",
-    "lint": "eslint . && pnpm -r lint",
+    "lint": "turbo run lint",
     "lint:fix": "eslint . --fix && pnpm -r lint:fix",
-    "format": "prettier --check . && pnpm -r format",
+    "format": "turbo run format",
     "format:fix": "prettier --write . && pnpm -r format",
-    "typecheck": "pnpm -r typecheck",
-    "clean": "pnpm -r clean",
-    "dev": "pnpm -r --parallel dev",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean",
+    "dev": "turbo run dev",
     "size": "pnpm -r size",
     "prepare": "husky"
   },
@@ -47,6 +48,7 @@
     "lint-staged": "^16.1.4",
     "prettier": "^3.6.2",
     "tsup": "^8.5.0",
+    "turbo": "^2.5.6",
     "typescript": "^5.3.3",
     "typescript-eslint": "^8.39.1",
     "vitest": "^3.2.4"
